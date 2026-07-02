@@ -1,0 +1,32 @@
+openapi: 3.0.3
+x-wso2-basePath: /candidate-device-certification/v1
+x-wso2-throttling-tier: Unlimited
+x-telco-owner: Device Certification Lab
+x-telco-country-scope: BR,CO
+x-telco-data-classification: internal
+x-telco-monetization-model: certification-fee
+x-telco-api-product: Device Certification Candidate Product
+info:
+  title: Candidate Device Certification API
+  version: 0.9.0
+  description: Intentionally incomplete candidate API. Missing health check metadata and operationIds.
+servers:
+  - url: /candidate-device-certification/v1
+tags:
+  - name: devices
+    description: Device certification operations.
+paths:
+  /api/v1/devices/certifications:
+    post:
+      tags: [devices]
+      responses:
+        '202':
+          description: Certification request accepted.
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - default: []

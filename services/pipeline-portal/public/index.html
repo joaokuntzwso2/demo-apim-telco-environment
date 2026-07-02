@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Regional Telco API Governance Pipeline</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">AP</div>
+        <div>
+          <strong>Regional Telco Group</strong>
+          <span>API Governance Pipeline</span>
+        </div>
+      </div>
+
+      <nav class="side-nav">
+        <button class="nav-item active" data-view="backlog">Pipeline backlog</button>
+        <button class="nav-item" data-view="console">Execution console</button>
+        <button class="nav-item" data-view="imported">Imported APIs</button>
+        <button class="nav-item" data-view="proof">Demo proof</button>
+      </nav>
+
+      <div class="side-card">
+        <span class="mini-label">Runtime target</span>
+        <strong>WSO2 API Manager 4.7</strong>
+        <small>APICTL import-only flow. APIs are created/configured in Publisher, but not published and not gateway-deployed.</small>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">APIOps · Contract governance · APICTL · WSO2 APIM 4.7</div>
+          <h1 id="viewTitle">Pipeline backlog</h1>
+          <p id="viewSubtitle">Validate API contracts, enforce telco governance, and import compliant APIs into APIM as working copies.</p>
+        </div>
+
+        <div class="runtime-panel">
+          <div class="runtime-row">
+            <span>Mode</span>
+            <strong id="modeEffective">--</strong>
+          </div>
+          <div class="runtime-row">
+            <span>APIM</span>
+            <strong id="apimReachable">checking</strong>
+          </div>
+          <div class="runtime-row">
+            <span>APICTL</span>
+            <strong id="apictlAvailable">checking</strong>
+          </div>
+          <button id="resetBacklog" class="secondary-button">Reset backlog</button>
+        </div>
+      </header>
+
+      <main>
+        <section class="kpi-grid">
+          <article class="kpi-card">
+            <span>Selectable APIs</span>
+            <strong id="kpiBacklog">--</strong>
+            <small>available for pipeline execution</small>
+          </article>
+          <article class="kpi-card">
+            <span>Governance-ready</span>
+            <strong id="kpiReady">--</strong>
+            <small>eligible for APICTL import</small>
+          </article>
+          <article class="kpi-card">
+            <span>Rejected candidates</span>
+            <strong id="kpiRejected">--</strong>
+            <small>remain available for fix/resubmit</small>
+          </article>
+          <article class="kpi-card">
+            <span>Imported into APIM</span>
+            <strong id="kpiImported">--</strong>
+            <small>created as Publisher working copies</small>
+          </article>
+        </section>
+
+        <section class="view active" id="view-backlog">
+          <div class="content-grid">
+            <section class="panel">
+              <div class="panel-header">
+                <div>
+                  <span class="panel-kicker">API backlog</span>
+                  <h2>Contract candidates</h2>
+                </div>
+                <div class="filter-tabs">
+                  <button class="filter active" data-filter="all">All</button>
+                  <button class="filter" data-filter="ready">Ready</button>
+                  <button class="filter" data-filter="violations">Violations</button>
+                </div>
+              </div>
+              <div id="catalog" class="api-grid"></div>
+            </section>
+
+            <aside class="panel inspector">
+              <div class="panel-header">
+                <div>
+                  <span class="panel-kicker">Selected artifact</span>
+                  <h2 id="selectedTitle">No API selected</h2>
+                </div>
+              </div>
+              <div id="selectedApi" class="selected-empty">
+                Select an API card to inspect the contract, governance score, artifacts and execution behavior.
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="view-console">
+          <div class="content-grid console-grid">
+            <section class="panel console-panel">
+              <div class="console-title">
+                <div>
+                  <span class="panel-kicker">Live execution</span>
+                  <h2>Pipeline logs</h2>
+                </div>
+                <span id="jobStatus" class="status-pill neutral">No job yet</span>
+              </div>
+              <div id="console" class="console">
+                <div class="empty-state">
+                  Run a pipeline from the backlog to see validation, APICTL dry-run and import logs here.
+                </div>
+              </div>
+            </section>
+
+            <aside class="panel">
+              <span class="panel-kicker">Pipeline stages</span>
+              <h2>What the customer should notice</h2>
+              <div class="stage-list">
+                <div><b>1</b><span>Contract checkout</span><small>OpenAPI, AsyncAPI or SOAP/WSDL artifact is selected.</small></div>
+                <div><b>2</b><span>Governance validation</span><small>Ownership, healthcheck, security, monetization and country scope are checked.</small></div>
+                <div><b>3</b><span>APICTL dry run</span><small>Valid APIs are verified before import.</small></div>
+                <div><b>4</b><span>Import-only onboarding</span><small>API is created/configured in APIM without publishing or gateway deployment.</small></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="view-imported">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <span class="panel-kicker">APIM working copies</span>
+                <h2>Imported APIs</h2>
+              </div>
+              <button id="refreshImported" class="secondary-button">Refresh</button>
+            </div>
+            <div id="importedList" class="imported-grid"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-proof">
+          <div class="content-grid proof-grid">
+            <section class="panel hero-proof">
+              <span class="panel-kicker">Demo proof message</span>
+              <h2>This is not a gateway-only demo. It is an API operating model.</h2>
+              <p>The portal demonstrates how a regional telco can standardize API onboarding across countries while still supporting REST, SOAP/WSDL, event-driven APIs, monetization rules, and APIOps automation.</p>
+            </section>
+
+            <section class="panel">
+              <span class="panel-kicker">Proof checklist</span>
+              <h2>Customer-facing talking points</h2>
+              <div class="proof-list">
+                <div><strong>Governance before deployment</strong><span>Bad APIs are stopped before they become runtime risk.</span></div>
+                <div><strong>Import-only control</strong><span>APIs can be created in APIM without being published or deployed.</span></div>
+                <div><strong>Commercial readiness</strong><span>Monetization metadata is treated as mandatory for commercial APIs.</span></div>
+                <div><strong>Protocol coverage</strong><span>REST, SOAP modernization and event-driven API contracts are represented.</span></div>
+                <div><strong>Country-scale reuse</strong><span>Contracts are tagged with owner, market scope and data classification.</span></div>
+                <div><strong>Competitive differentiation</strong><span>Shows governance, lifecycle and APIOps instead of only gateway routing.</span></div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

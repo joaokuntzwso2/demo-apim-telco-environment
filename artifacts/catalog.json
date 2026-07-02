@@ -1,0 +1,101 @@
+{
+  "apis": [
+    {
+      "id": "candidate-stadium-experience",
+      "name": "CandidateStadiumExperienceAPI",
+      "version": "0.9.0",
+      "protocol": "REST",
+      "domain": "New Business / Venue Connectivity",
+      "owner": "Innovation API Office",
+      "countryScope": "MX,BR,CO",
+      "description": "Candidate API for stadium connectivity packages, premium event passes, temporary 5G capacity reservations, and venue partner activation.",
+      "spec": "contracts/openapi/candidate-stadium-experience.openapi.yaml",
+      "contractType": "OpenAPI"
+    },
+    {
+      "id": "candidate-iot-fleet",
+      "name": "CandidateIoTFleetTelemetryAPI",
+      "version": "0.9.0",
+      "protocol": "REST",
+      "domain": "New Business / Enterprise IoT",
+      "owner": "Enterprise IoT Platform",
+      "countryScope": "BR,CO,CL,PE",
+      "description": "Candidate API for enterprise fleet device telemetry, SIM status, vehicle heartbeat checks, and IoT monetization packages.",
+      "spec": "contracts/openapi/candidate-iot-fleet-telemetry.openapi.yaml",
+      "contractType": "OpenAPI"
+    },
+    {
+      "id": "candidate-drone-events",
+      "name": "CandidateDroneInspectionEventsAPI",
+      "version": "0.9.0",
+      "protocol": "ASYNC",
+      "backendProtocol": "AsyncAPI / Event Stream",
+      "domain": "New Business / Infrastructure Inspection",
+      "owner": "Network Automation Lab",
+      "countryScope": "MX,BR,CL",
+      "description": "Candidate event API for drone-based tower inspection events, image-processing outcomes, field dispatch triggers, and maintenance risk signals.",
+      "spec": "contracts/asyncapi/candidate-drone-inspection-events.asyncapi.yaml",
+      "importSpec": "contracts/openapi/candidate-drone-inspection-events-facade.openapi.yaml",
+      "contractType": "AsyncAPI + OpenAPI fa\u00e7ade"
+    },
+    {
+      "id": "candidate-edge-cache",
+      "name": "CandidateEdgeCacheControlAPI",
+      "version": "0.9.0",
+      "protocol": "REST",
+      "domain": "New Business / Edge Services",
+      "owner": "Edge Platform Incubation",
+      "countryScope": "MX,BR,CO,CL",
+      "description": "Candidate API for edge-cache invalidation, partner content pre-warming, CDN policy selection, and traffic steering at regional edge sites.",
+      "spec": "contracts/openapi/candidate-edge-cache-control.openapi.yaml",
+      "contractType": "OpenAPI"
+    },
+    {
+      "id": "candidate-bad-roaming-sponsor",
+      "name": "CandidateRoamingSponsorAPI-MissingMonetization",
+      "version": "0.9.0",
+      "protocol": "REST",
+      "domain": "Rejected Candidate / Roaming Sponsorship",
+      "owner": "Roaming Innovation",
+      "countryScope": "MX,BR",
+      "description": "Negative pipeline scenario: candidate API intentionally misses mandatory monetization metadata and should be rejected before APIM import.",
+      "spec": "invalid/candidate-roaming-sponsor-missing-monetization.openapi.yaml",
+      "contractType": "OpenAPI"
+    },
+    {
+      "id": "candidate-bad-device-certification",
+      "name": "CandidateDeviceCertificationAPI-MissingHealthCheck",
+      "version": "0.9.0",
+      "protocol": "REST",
+      "domain": "Rejected Candidate / Device Certification",
+      "owner": "Device Certification Lab",
+      "countryScope": "BR,CO",
+      "description": "Negative pipeline scenario: candidate API intentionally misses health-check metadata and operation IDs.",
+      "spec": "invalid/candidate-device-certification-missing-healthcheck.openapi.yaml",
+      "contractType": "OpenAPI"
+    },
+    {
+      "id": "candidate-workorder-soap",
+      "name": "CandidateFieldWorkOrderSOAPAPI",
+      "version": "0.9.0",
+      "protocol": "SOAP",
+      "type": "SOAP",
+      "backendProtocol": "SOAP/WSDL",
+      "domain": "Legacy Modernization / Field Operations",
+      "owner": "Field Service Transformation",
+      "countryScope": "MX,BR,AR",
+      "description": "Candidate SOAP pass-through API for a legacy field-work-order backend. This must be imported from WSDL as implementationType=SOAP, never as REST.",
+      "spec": "contracts/soap/candidate-field-workorder.wsdl",
+      "metadata": "contracts/soap/candidate-field-workorder.metadata.yaml",
+      "context": "/candidate-field-workorder-soap",
+      "soapBackendPath": "/soap/candidate-field-workorder",
+      "contractType": "SOAP/WSDL pass-through",
+      "tryoutInstructions": {
+        "contentType": "text/xml",
+        "soapAction": "CreateWorkOrder",
+        "requestExample": "contracts/soap/examples/candidate-field-workorder-create-request.xml",
+        "note": "For WSO2 SOAP pass-through Try Out, copy this envelope into the SOAP Request textarea. The built-in UI may show the envelope as Default value but does not always auto-fill the textarea."
+      }
+    }
+  ]
+}

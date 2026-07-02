@@ -1,0 +1,56 @@
+openapi: 3.0.3
+x-wso2-basePath: /candidate-field-workorder/v1
+x-wso2-throttling-tier: Unlimited
+x-telco-owner: Field Service Transformation
+x-telco-country-scope: MX,BR,AR
+x-telco-data-classification: confidential
+x-telco-monetization-model: internal-cost-allocation
+x-telco-api-product: Field Operations Modernization Candidate Product
+x-telco-healthcheck:
+  path: /health
+  method: GET
+info:
+  title: Candidate Field Work Order SOAP Facade
+  version: 0.9.0
+  description: Candidate OpenAPI façade for a legacy SOAP field work order backend.
+servers:
+  - url: /candidate-field-workorder/v1
+tags:
+  - name: workorders
+    description: Field work order façade operations.
+paths:
+  /health:
+    get:
+      tags: [workorders]
+      operationId: getFieldWorkOrderHealth
+      responses:
+        '200':
+          description: API health status.
+  /api/v1/field/workorders:
+    post:
+      tags: [workorders]
+      operationId: createFieldWorkOrder
+      responses:
+        '202':
+          description: Field work order accepted.
+  /api/v1/field/workorders/{workOrderId}:
+    get:
+      tags: [workorders]
+      operationId: getFieldWorkOrder
+      parameters:
+        - name: workOrderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Field work order details.
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - default: []

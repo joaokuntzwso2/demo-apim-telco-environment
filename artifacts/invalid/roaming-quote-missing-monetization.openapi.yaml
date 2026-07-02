@@ -1,0 +1,46 @@
+openapi: 3.0.3
+info:
+  title: RoamingQuoteAPI
+  version: 1.0.0
+  description: Roaming quote API intentionally missing monetization metadata for governance rejection.
+servers:
+  - url: http://telco-backend:8081
+x-wso2-basePath: /roaming-quote/v1
+x-wso2-production-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-throttling-tier: 10kPerMin
+x-telco-owner: Roaming Products
+x-telco-country-scope: [MX, BR]
+x-telco-data-classification: Confidential-Commercial
+x-telco-api-product: Partner Growth Pack
+x-telco-healthcheck:
+  method: GET
+  path: /health
+security:
+  - OAuth2: [roaming.quote]
+paths:
+  /api/v1/roaming/quote:
+    get:
+      tags: [Roaming]
+      operationId: getRoamingQuote
+      summary: Get roaming daily pass quote
+      parameters:
+        - name: msisdn
+          in: query
+          schema: { type: string }
+        - name: country
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Roaming quote
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.telco.example/oauth2/token
+          scopes:
+            roaming.quote: Get roaming quote

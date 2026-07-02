@@ -1,0 +1,83 @@
+openapi: 3.0.3
+info:
+  title: BillingAdjustmentSOAP
+  version: 1.0.0
+  description: Governed OpenAPI contract for a legacy SOAP/WSDL billing adjustment service. The backend endpoint accepts SOAP XML and preserves the WSDL as a supplemental contract.
+servers:
+  - url: http://telco-backend:8081
+x-wso2-basePath: /billing-adjustment-soap/v1
+x-wso2-production-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-sandbox-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-throttling-tier: 1kPerMin
+x-telco-owner: Billing Operations
+x-telco-country-scope: [MX, BR, CO, AR, PE]
+x-telco-data-classification: Confidential-Financial
+x-telco-monetization-model: Growth plan, billed per adjustment transaction after free tier
+x-telco-api-product: Legacy Billing Pack
+x-telco-backend-protocol: SOAP/WSDL
+x-telco-supplemental-contract: contracts/soap/billing-adjustment.wsdl
+x-telco-healthcheck:
+  method: GET
+  path: /health
+security:
+  - OAuth2: [billing.adjustment.write]
+tags:
+  - name: SOAP Billing
+paths:
+  /soap/billing-adjustment:
+    post:
+      tags: [SOAP Billing]
+      operationId: createBillingAdjustmentSoap
+      summary: Submit a SOAP billing adjustment request
+      description: Accepts a SOAP XML envelope and returns a SOAP XML response.
+      requestBody:
+        required: true
+        content:
+          text/xml:
+            schema:
+              type: string
+              example: |
+                <?xml version="1.0"?>
+                <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:bil="http://demo.telco.wso2.com/billing">
+                  <soapenv:Body>
+                    <bil:CreateBillingAdjustmentRequest>
+                      <msisdn>+525512340001</msisdn>
+                      <amount>12.40</amount>
+                      <currency>USD</currency>
+                      <reasonCode>ROAMING_CREDIT</reasonCode>
+                      <requestor>care-agent-778</requestor>
+                    </bil:CreateBillingAdjustmentRequest>
+                  </soapenv:Body>
+                </soapenv:Envelope>
+      responses:
+        '200':
+          description: SOAP XML billing adjustment response
+          content:
+            text/xml:
+              schema:
+                type: string
+  /wsdl/billing-adjustment.wsdl:
+    get:
+      tags: [SOAP Billing]
+      operationId: getBillingAdjustmentWsdl
+      summary: Retrieve the WSDL for the legacy billing adjustment service
+      responses:
+        '200':
+          description: WSDL document
+          content:
+            application/xml:
+              schema:
+                type: string
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.telco.example/oauth2/token
+          scopes:
+            billing.adjustment.write: Create billing adjustments

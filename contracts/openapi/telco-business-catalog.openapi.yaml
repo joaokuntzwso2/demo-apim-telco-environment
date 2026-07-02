@@ -1,0 +1,200 @@
+openapi: 3.0.3
+info:
+  title: TelcoBusinessCatalogAPI
+  version: 1.0.0
+  description: Regional telco business catalog used by portals to expose markets, partners, API products, plans, and platform metadata.
+servers:
+  - url: http://telco-backend:8081
+x-wso2-basePath: /telco-business-catalog/v1
+x-wso2-production-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-sandbox-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-throttling-tier: 10kPerMin
+x-telco-owner: Digital Platform Operations
+x-telco-country-scope: [MX, BR, CO, AR, PE, CL, EC, GT, HN, SV, DO, PR]
+x-telco-data-classification: Internal-Commercial
+x-telco-monetization-model: Non-billable platform metadata; indirectly supports monetized API products
+x-telco-api-product: Platform Operations Pack
+x-telco-healthcheck:
+  method: GET
+  path: /health
+security:
+  - OAuth2: [catalog.read]
+tags:
+  - name: Platform Metadata
+  - name: Countries
+  - name: Partners
+  - name: API Products
+  - name: Monetization
+paths:
+  /health:
+    get:
+      tags: [Platform Metadata]
+      operationId: getMockBackendHealth
+      summary: Check mocked telco backend status and supported protocols
+      responses:
+        '200':
+          description: Backend health and protocol support
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /metadata:
+    get:
+      tags: [Platform Metadata]
+      operationId: getPortalMetadata
+      summary: Retrieve complete metadata required by the telco demo portal
+      responses:
+        '200':
+          description: Portal metadata returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetadataResponse'
+  /api/v1/countries:
+    get:
+      tags: [Countries]
+      operationId: listOperatingCountries
+      summary: List operating companies and market metadata
+      responses:
+        '200':
+          description: Countries returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  countries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Country'
+  /api/v1/partners:
+    get:
+      tags: [Partners]
+      operationId: listStrategicPartners
+      summary: List strategic API consuming partners
+      responses:
+        '200':
+          description: Partners returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  partners:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Partner'
+  /api/v1/products:
+    get:
+      tags: [API Products]
+      operationId: listCommercialApiProducts
+      summary: List commercial API product packages
+      responses:
+        '200':
+          description: API products returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiProducts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiProduct'
+  /api/v1/monetization/plans:
+    get:
+      tags: [Monetization]
+      operationId: listBusinessMonetizationPlans
+      summary: List monetization plans used by the telco API business model
+      responses:
+        '200':
+          description: Monetization plans returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plans:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MonetizationPlan'
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.telco.example/oauth2/token
+          scopes:
+            catalog.read: Read catalog metadata
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        ok: { type: boolean }
+        service: { type: string }
+        brand: { type: string }
+        protocols:
+          type: array
+          items: { type: string }
+        timestamp: { type: string, format: date-time }
+    MetadataResponse:
+      type: object
+      properties:
+        brand: { type: string }
+        countries:
+          type: array
+          items: { $ref: '#/components/schemas/Country' }
+        partners:
+          type: array
+          items: { $ref: '#/components/schemas/Partner' }
+        apiProducts:
+          type: array
+          items: { $ref: '#/components/schemas/ApiProduct' }
+        monetizationPlans:
+          type: array
+          items: { $ref: '#/components/schemas/MonetizationPlan' }
+    Country:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        brand: { type: string }
+        region: { type: string }
+        currency: { type: string }
+        subscribers: { type: integer }
+    Partner:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        segment: { type: string }
+        tier: { type: string }
+        country: { type: string }
+    ApiProduct:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        apis:
+          type: array
+          items: { type: string }
+        plan: { type: string }
+        markets:
+          type: array
+          items: { type: string }
+    MonetizationPlan:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        price: { type: number }
+        currency: { type: string }
+        quota: { type: string }
+        overage: { type: number }
+        target: { type: string }

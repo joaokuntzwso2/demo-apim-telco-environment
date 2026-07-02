@@ -1,0 +1,70 @@
+# macOS / editor
+.DS_Store
+.AppleDouble
+.LSOverride
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+*.keystore
+*.truststore
+secrets/
+credentials/
+tokens/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.cache/
+
+# Logs
+logs/
+*.log
+
+# Docker / local runtime
+.pids/
+*.pid
+docker-compose.override.yml
+
+# Runtime state / generated local state
+state/
+runtime.json
+imported-apis.json
+apim-portal-state/
+pipeline-state/
+
+# APIM / APICTL generated state
+**/apictl-projects/
+**/generated/
+**/.wso2apictl/
+**/.wso2/
+
+# Demo temporary artifacts
+.tmp*/
+.tmp-*
+*.tmp
+*.bak
+*.backup
+.backups/
+.tmp-service-catalog-import/
+.tmp-service-catalog-import.zip
+
+# Generated archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz

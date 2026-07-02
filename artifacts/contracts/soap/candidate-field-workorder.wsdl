@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="CandidateFieldWorkOrderService"
+  targetNamespace="http://example.com/telco/field-workorder"
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  xmlns:tns="http://example.com/telco/field-workorder"
+  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+  <types>
+    <xsd:schema targetNamespace="http://example.com/telco/field-workorder"
+      elementFormDefault="qualified">
+
+      <xsd:element name="CreateWorkOrderRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="customerId" type="xsd:string"/>
+            <xsd:element name="siteId" type="xsd:string"/>
+            <xsd:element name="priority" type="xsd:string"/>
+            <xsd:element name="description" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="CreateWorkOrderResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="workOrderId" type="xsd:string"/>
+            <xsd:element name="status" type="xsd:string"/>
+            <xsd:element name="priority" type="xsd:string"/>
+            <xsd:element name="source" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetWorkOrderRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="workOrderId" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetWorkOrderResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="workOrderId" type="xsd:string"/>
+            <xsd:element name="status" type="xsd:string"/>
+            <xsd:element name="technicianTeam" type="xsd:string"/>
+            <xsd:element name="scheduledWindow" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+    </xsd:schema>
+  </types>
+
+  <message name="CreateWorkOrderRequestMessage">
+    <part name="parameters" element="tns:CreateWorkOrderRequest"/>
+  </message>
+
+  <message name="CreateWorkOrderResponseMessage">
+    <part name="parameters" element="tns:CreateWorkOrderResponse"/>
+  </message>
+
+  <message name="GetWorkOrderRequestMessage">
+    <part name="parameters" element="tns:GetWorkOrderRequest"/>
+  </message>
+
+  <message name="GetWorkOrderResponseMessage">
+    <part name="parameters" element="tns:GetWorkOrderResponse"/>
+  </message>
+
+  <portType name="CandidateFieldWorkOrderPortType">
+    <operation name="CreateWorkOrder">
+      <input message="tns:CreateWorkOrderRequestMessage"/>
+      <output message="tns:CreateWorkOrderResponseMessage"/>
+    </operation>
+    <operation name="GetWorkOrder">
+      <input message="tns:GetWorkOrderRequestMessage"/>
+      <output message="tns:GetWorkOrderResponseMessage"/>
+    </operation>
+  </portType>
+
+  <binding name="CandidateFieldWorkOrderBinding" type="tns:CandidateFieldWorkOrderPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+    <operation name="CreateWorkOrder">
+      <soap:operation soapAction="CreateWorkOrder"/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+
+    <operation name="GetWorkOrder">
+      <soap:operation soapAction="GetWorkOrder"/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service name="CandidateFieldWorkOrderService">
+    <port name="CandidateFieldWorkOrderPort" binding="tns:CandidateFieldWorkOrderBinding">
+      <soap:address location="http://telco-backend:8081/soap/candidate-field-workorder"/>
+    </port>
+  </service>
+</definitions>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:tns="http://demo.telco.wso2.com/billing"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             targetNamespace="http://demo.telco.wso2.com/billing"
+             name="BillingAdjustmentService">
+  <types>
+    <xsd:schema targetNamespace="http://demo.telco.wso2.com/billing">
+      <xsd:element name="CreateBillingAdjustmentRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="msisdn" type="xsd:string"/>
+            <xsd:element name="amount" type="xsd:decimal"/>
+            <xsd:element name="currency" type="xsd:string"/>
+            <xsd:element name="reasonCode" type="xsd:string"/>
+            <xsd:element name="requestor" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="CreateBillingAdjustmentResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="adjustmentId" type="xsd:string"/>
+            <xsd:element name="msisdn" type="xsd:string"/>
+            <xsd:element name="amount" type="xsd:decimal"/>
+            <xsd:element name="currency" type="xsd:string"/>
+            <xsd:element name="reasonCode" type="xsd:string"/>
+            <xsd:element name="status" type="xsd:string"/>
+            <xsd:element name="auditRequired" type="xsd:boolean"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+  <message name="CreateBillingAdjustmentInput">
+    <part name="parameters" element="tns:CreateBillingAdjustmentRequest"/>
+  </message>
+  <message name="CreateBillingAdjustmentOutput">
+    <part name="parameters" element="tns:CreateBillingAdjustmentResponse"/>
+  </message>
+  <portType name="BillingAdjustmentPortType">
+    <operation name="CreateBillingAdjustment">
+      <documentation>Create a credit/debit adjustment in the legacy BSS billing platform.</documentation>
+      <input message="tns:CreateBillingAdjustmentInput"/>
+      <output message="tns:CreateBillingAdjustmentOutput"/>
+    </operation>
+  </portType>
+  <binding name="BillingAdjustmentSoapBinding" type="tns:BillingAdjustmentPortType">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    <operation name="CreateBillingAdjustment">
+      <soap:operation soapAction="CreateBillingAdjustment"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+  <service name="BillingAdjustmentService">
+    <documentation>Mock legacy billing adjustment service used for API management and governance demonstration.</documentation>
+    <port name="BillingAdjustmentPort" binding="tns:BillingAdjustmentSoapBinding">
+      <soap:address location="http://telco-backend:8081/soap/billing-adjustment"/>
+    </port>
+  </service>
+</definitions>

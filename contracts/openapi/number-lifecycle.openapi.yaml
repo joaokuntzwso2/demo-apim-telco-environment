@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: NumberLifecycleAPI
+  version: 1.0.0
+  description: Number portability, device eligibility, roaming quotation, and subscriber lifecycle checks for partner onboarding journeys.
+servers:
+  - url: http://telco-backend:8081
+x-wso2-basePath: /number-lifecycle/v1
+x-wso2-production-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-sandbox-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-throttling-tier: 10kPerMin
+x-telco-owner: Number Lifecycle Platform
+x-telco-country-scope: [MX, BR, CO, AR, PE, CL]
+x-telco-data-classification: Confidential-PII
+x-telco-monetization-model: Included in Partner Growth Pack; billable per eligibility/verification call
+x-telco-api-product: Partner Growth Pack
+x-telco-healthcheck:
+  method: GET
+  path: /health
+security:
+  - OAuth2: [number.lifecycle.read]
+tags:
+  - name: Subscriber Eligibility
+  - name: Device Eligibility
+  - name: Number Portability
+  - name: Roaming
+paths:
+  /api/v1/subscribers/{msisdn}/eligibility:
+    get:
+      tags: [Subscriber Eligibility]
+      operationId: checkLifecycleSubscriberEligibility
+      summary: Check subscriber eligibility for a telco product or partner journey
+      parameters:
+        - $ref: '#/components/parameters/Msisdn'
+        - name: product
+          in: query
+          schema:
+            type: string
+            enum: [5g-sa, esim, roaming-pass, network-premium]
+      responses:
+        '200':
+          description: Subscriber eligibility returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberEligibility'
+  /api/v1/device/{imei}/eligibility:
+    get:
+      tags: [Device Eligibility]
+      operationId: checkDeviceEligibility
+      summary: Check device capability for 5G SA, eSIM, VoLTE, and financing risk
+      parameters:
+        - name: imei
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Device eligibility returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceEligibility'
+  /api/v1/number-portability/{msisdn}:
+    get:
+      tags: [Number Portability]
+      operationId: checkNumberPortability
+      summary: Check whether a number can be ported and whether OTP validation is required
+      parameters:
+        - $ref: '#/components/parameters/Msisdn'
+      responses:
+        '200':
+          description: Portability decision returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberPortability'
+  /api/v1/roaming/quote:
+    get:
+      tags: [Roaming]
+      operationId: getRoamingQuote
+      summary: Calculate a roaming pass quote for a subscriber and destination country
+      parameters:
+        - name: msisdn
+          in: query
+          schema: { type: string }
+        - name: country
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Roaming quote returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoamingQuote'
+components:
+  parameters:
+    Msisdn:
+      name: msisdn
+      in: path
+      required: true
+      schema: { type: string }
+      example: '+525512340001'
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.telco.example/oauth2/token
+          scopes:
+            number.lifecycle.read: Read number/device lifecycle checks
+  schemas:
+    SubscriberEligibility:
+      type: object
+      properties:
+        msisdn: { type: string }
+        product: { type: string }
+        eligible: { type: boolean }
+        reason: { type: string }
+        network:
+          type: object
+          properties:
+            rat: { type: string }
+            cellId: { type: string }
+    DeviceEligibility:
+      type: object
+      properties:
+        imei: { type: string }
+        tac: { type: string }
+        supports5gSA: { type: boolean }
+        eSIM: { type: boolean }
+        volte: { type: boolean }
+        deviceFinancingRisk: { type: string }
+    NumberPortability:
+      type: object
+      properties:
+        msisdn: { type: string }
+        portable: { type: boolean }
+        currentOperator: { type: string }
+        validationWindowMinutes: { type: integer }
+        otpRequired: { type: boolean }
+    RoamingQuote:
+      type: object
+      properties:
+        msisdn: { type: string }
+        destinationCountry: { type: string }
+        dailyPassUsd: { type: number }
+        fairUseGb: { type: number }
+        partnerNetwork: { type: string }

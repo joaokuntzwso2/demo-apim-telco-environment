@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:fw="http://example.com/telco/field-workorder">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <fw:CreateWorkOrderRequest>
+      <fw:customerId>CUST-10001</fw:customerId>
+      <fw:siteId>BR-SP-EDGE-03</fw:siteId>
+      <fw:priority>HIGH</fw:priority>
+      <fw:description>Field technician required for site inspection.</fw:description>
+    </fw:CreateWorkOrderRequest>
+  </soapenv:Body>
+</soapenv:Envelope>

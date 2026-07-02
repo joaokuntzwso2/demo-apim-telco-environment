@@ -1,0 +1,166 @@
+openapi: 3.0.3
+info:
+  title: Customer360API
+  version: 1.0.0
+  description: Subscriber profile, consent, lifecycle, and eligibility APIs for partner and care journeys.
+servers:
+  - url: http://telco-backend:8081
+x-wso2-basePath: /customer360/v1
+x-wso2-production-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-sandbox-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-throttling-tier: Unlimited
+x-telco-owner: BSS Digital Enablement
+x-telco-country-scope: [MX, BR, CO, AR, PE, CL, EC, GT, HN, SV, DO, PR]
+x-telco-data-classification: Confidential-PII
+x-telco-monetization-model: Included in Partner Growth Pack; billable at API product level
+x-telco-api-product: Partner Growth Pack
+x-telco-privacy-review: approved
+x-telco-healthcheck:
+  method: GET
+  path: /health
+security:
+  - OAuth2: [customer.read]
+tags:
+  - name: Customer Profile
+  - name: Consent
+  - name: Eligibility
+paths:
+  /api/v1/customers/{msisdn}/profile:
+    get:
+      tags: [Customer Profile]
+      operationId: getSubscriberProfile
+      summary: Retrieve subscriber profile and network context
+      parameters:
+        - $ref: '#/components/parameters/Msisdn'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Subscriber profile returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberProfileResponse'
+        '404':
+          description: Subscriber not found
+  /api/v1/customers/{msisdn}/consent:
+    get:
+      tags: [Consent]
+      operationId: getSubscriberConsent
+      summary: Retrieve subscriber consent state
+      parameters:
+        - $ref: '#/components/parameters/Msisdn'
+      responses:
+        '200':
+          description: Consent returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentResponse'
+    post:
+      tags: [Consent]
+      operationId: updateSubscriberConsent
+      summary: Update subscriber consent state
+      parameters:
+        - $ref: '#/components/parameters/Msisdn'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentPatch'
+      responses:
+        '202':
+          description: Consent update accepted
+  /api/v1/subscribers/{msisdn}/eligibility:
+    get:
+      tags: [Eligibility]
+      operationId: checkSubscriberEligibility
+      summary: Check subscriber eligibility for commercial/network products
+      parameters:
+        - $ref: '#/components/parameters/Msisdn'
+        - name: product
+          in: query
+          schema:
+            type: string
+            enum: [5g-sa, esim, roaming-pass, network-premium]
+      responses:
+        '200':
+          description: Eligibility result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EligibilityResponse'
+components:
+  parameters:
+    Msisdn:
+      name: msisdn
+      in: path
+      required: true
+      schema:
+        type: string
+      example: '+525512340001'
+    CorrelationId:
+      name: x-correlation-id
+      in: header
+      required: false
+      schema:
+        type: string
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.telco.example/oauth2/token
+          scopes:
+            customer.read: Read subscriber profile and consent
+            customer.write: Update subscriber consent
+  schemas:
+    SubscriberProfileResponse:
+      type: object
+      required: [customer, correlationId]
+      properties:
+        correlationId: { type: string }
+        customer:
+          $ref: '#/components/schemas/SubscriberProfile'
+    SubscriberProfile:
+      type: object
+      properties:
+        msisdn: { type: string }
+        country: { type: string }
+        segment: { type: string }
+        lifecycle: { type: string }
+        name: { type: string }
+        plan: { type: string }
+        arpu: { type: number }
+        riskScore: { type: integer }
+        network:
+          type: object
+          properties:
+            rat: { type: string }
+            cellId: { type: string }
+    ConsentPatch:
+      type: object
+      properties:
+        marketing: { type: boolean }
+        analytics: { type: boolean }
+        partnerDataShare: { type: boolean }
+    ConsentResponse:
+      type: object
+      properties:
+        msisdn: { type: string }
+        country: { type: string }
+        consent:
+          $ref: '#/components/schemas/ConsentPatch'
+        source: { type: string }
+        lastUpdated: { type: string, format: date-time }
+    EligibilityResponse:
+      type: object
+      properties:
+        msisdn: { type: string }
+        product: { type: string }
+        eligible: { type: boolean }
+        reason: { type: string }

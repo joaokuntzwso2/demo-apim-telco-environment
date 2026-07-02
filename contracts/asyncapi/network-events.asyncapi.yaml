@@ -1,0 +1,93 @@
+asyncapi: 3.0.0
+info:
+  title: NetworkEventsStreamAPI
+  version: 1.0.0
+  description: Streaming API for network alarms, QoD breaches, slice utilization, roaming partner degradation, and charging events.
+servers:
+  sseBackend:
+    host: telco-backend:8081
+    pathname: /events/network-events
+    protocol: http
+    description: SSE backend used for APIM streaming API creation.
+  websocketBackend:
+    host: telco-backend:8081
+    pathname: /ws/network-events
+    protocol: ws
+    description: WebSocket backend for interactive network event subscriptions.
+x-telco-owner: Network Assurance
+x-telco-country-scope: [MX, BR, CO, AR, CL, PE]
+x-telco-event-classification: Internal-Network-Operational
+x-telco-event-retention: P30D-hot/P365D-cold
+x-telco-monetization-model: Billable event stream in Network Premium plan
+x-telco-api-product: Network Monetization Pack
+channels:
+  network.events:
+    address: network.events
+    messages:
+      NetworkEvent:
+        $ref: '#/components/messages/NetworkEvent'
+  network.slice.utilization:
+    address: network.slice.utilization
+    messages:
+      SliceUtilizationEvent:
+        $ref: '#/components/messages/SliceUtilizationEvent'
+  network.qod.breach:
+    address: network.qod.breach
+    messages:
+      QodBreachEvent:
+        $ref: '#/components/messages/QodBreachEvent'
+operations:
+  receiveNetworkEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/network.events'
+    messages:
+      - $ref: '#/channels/network.events/messages/NetworkEvent'
+  receiveSliceUtilization:
+    action: receive
+    channel:
+      $ref: '#/channels/network.slice.utilization'
+    messages:
+      - $ref: '#/channels/network.slice.utilization/messages/SliceUtilizationEvent'
+  receiveQodBreach:
+    action: receive
+    channel:
+      $ref: '#/channels/network.qod.breach'
+    messages:
+      - $ref: '#/channels/network.qod.breach/messages/QodBreachEvent'
+components:
+  messages:
+    NetworkEvent:
+      name: NetworkEvent
+      title: Generic network event
+      payload:
+        $ref: '#/components/schemas/NetworkEventPayload'
+    SliceUtilizationEvent:
+      name: SliceUtilizationEvent
+      title: Slice utilization event
+      payload:
+        $ref: '#/components/schemas/NetworkEventPayload'
+    QodBreachEvent:
+      name: QodBreachEvent
+      title: Quality on Demand breach event
+      payload:
+        $ref: '#/components/schemas/NetworkEventPayload'
+  schemas:
+    NetworkEventPayload:
+      type: object
+      required: [id, timestamp, eventType, severity, country]
+      properties:
+        id: { type: string }
+        timestamp: { type: string, format: date-time }
+        eventType:
+          type: string
+          enum: [slice.utilization.high, qod.latency.breach, cell.congestion.warning, roaming.partner.degradation, charging.reconciliation.completed]
+        severity: { type: string, enum: [info, warning, critical] }
+        country: { type: string }
+        region: { type: string }
+        cellId: { type: string }
+        sliceId: { type: string }
+        latencyMs: { type: integer }
+        utilizationPct: { type: integer }
+        partnerId: { type: string }
+        monetizationImpactUsd: { type: number }

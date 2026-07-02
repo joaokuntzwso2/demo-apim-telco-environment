@@ -1,0 +1,13 @@
+{
+  "name": "telco-pipeline-portal",
+  "version": "1.0.0",
+  "description": "API governance and APICTL import portal for WSO2 APIM 4.7 demo.",
+  "main": "src/server.js",
+  "scripts": { "start": "node src/server.js" },
+  "dependencies": {
+    "adm-zip": "^0.5.12",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0",
+    "yaml": "^2.4.5"
+  }
+}

@@ -1,0 +1,97 @@
+openapi: 3.0.3
+info:
+  title: PartnerChargingAPI
+  version: 1.0.0
+  description: Partner usage settlement, revenue attribution, and monetization summaries.
+servers:
+  - url: http://telco-backend:8081
+x-wso2-basePath: /partner-charging/v1
+x-wso2-production-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-throttling-tier: 50kPerMin
+x-telco-owner: Wholesale Charging
+x-telco-country-scope: [MX, BR, CO, AR]
+x-telco-data-classification: Confidential-Commercial
+x-telco-monetization-model: Usage-based billing by billable event and settlement period
+x-telco-api-product: Partner Growth Pack
+x-telco-privacy-review: approved
+x-telco-healthcheck:
+  method: GET
+  path: /health
+security:
+  - OAuth2: [charging.read]
+tags:
+  - name: Settlement
+  - name: Usage
+  - name: Monetization
+paths:
+  /api/v1/partners/{partnerId}/settlement:
+    get:
+      tags: [Settlement]
+      operationId: getPartnerSettlement
+      summary: Retrieve current settlement summary for a partner
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Settlement summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+  /api/v1/usage/summary:
+    get:
+      tags: [Usage, Monetization]
+      operationId: getUsageSummary
+      summary: Get usage and revenue summary by country
+      parameters:
+        - name: country
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Usage summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageSummary'
+  /api/v1/monetization/plans:
+    get:
+      tags: [Monetization]
+      operationId: listMonetizationPlans
+      summary: List monetization plans available for API products
+      responses:
+        '200':
+          description: Monetization plans
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.telco.example/oauth2/token
+          scopes:
+            charging.read: Read settlement and monetization data
+  schemas:
+    Settlement:
+      type: object
+      properties:
+        period: { type: string }
+        billableEvents: { type: integer }
+        grossRevenueUsd: { type: number }
+        settlementStatus: { type: string }
+        invoiceId: { type: string }
+    UsageSummary:
+      type: object
+      properties:
+        country: { type: string }
+        period: { type: string }
+        apiCalls: { type: integer }
+        billableCalls: { type: integer }
+        revenueUsd: { type: number }
+        errorRatePct: { type: number }
+        topProduct: { type: string }

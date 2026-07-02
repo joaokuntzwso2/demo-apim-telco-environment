@@ -1,0 +1,15 @@
+{
+  "name": "telco-backend",
+  "version": "1.0.0",
+  "description": "Mock BSS/OSS telco backend exposing REST, SOAP, SSE and WebSocket endpoints.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "morgan": "^1.10.0",
+    "ws": "^8.17.1"
+  }
+}

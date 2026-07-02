@@ -1,0 +1,45 @@
+asyncapi: 2.6.0
+x-telco-owner: Network Automation Lab
+x-telco-country-scope: MX,BR,CL
+x-telco-event-classification: operational-maintenance
+x-telco-event-retention: 30-days
+x-telco-monetization-model: inspection-event-stream
+info:
+  title: Candidate Drone Inspection Events API
+  version: 0.9.0
+  description: Candidate event API for drone inspection results and maintenance dispatch triggers.
+servers:
+  production:
+    url: events.internal.example.local
+    protocol: kafka
+channels:
+  tower.inspection.completed:
+    publish:
+      operationId: publishTowerInspectionCompleted
+      message:
+        name: TowerInspectionCompleted
+        payload:
+          type: object
+          properties:
+            inspectionId:
+              type: string
+            towerId:
+              type: string
+            severity:
+              type: string
+            confidence:
+              type: number
+  tower.maintenance.dispatch.requested:
+    publish:
+      operationId: publishMaintenanceDispatchRequested
+      message:
+        name: MaintenanceDispatchRequested
+        payload:
+          type: object
+          properties:
+            dispatchId:
+              type: string
+            towerId:
+              type: string
+            priority:
+              type: string

@@ -1,0 +1,41 @@
+openapi: 3.0.3
+info:
+  title: DeviceEligibilityAPI
+  version: 1.0.0
+  description: Device eligibility API intentionally missing healthcheck metadata and operationId for governance rejection.
+servers:
+  - url: http://telco-backend:8081
+x-wso2-basePath: /device-eligibility/v1
+x-wso2-production-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-throttling-tier: 10kPerMin
+x-telco-owner: Device Platform
+x-telco-country-scope: [MX, BR, CO]
+x-telco-data-classification: Internal-Device
+x-telco-monetization-model: Included in activation partner plan
+x-telco-api-product: Partner Growth Pack
+security:
+  - OAuth2: [device.read]
+paths:
+  /api/v1/device/{imei}/eligibility:
+    get:
+      tags: [Device]
+      summary: Check if a device supports eSIM, VoLTE, and 5G SA
+      parameters:
+        - name: imei
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Device eligibility result
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.telco.example/oauth2/token
+          scopes:
+            device.read: Read device eligibility

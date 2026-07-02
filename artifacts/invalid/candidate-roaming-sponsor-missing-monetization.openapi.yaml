@@ -1,0 +1,42 @@
+openapi: 3.0.3
+x-wso2-basePath: /candidate-roaming-sponsor/v1
+x-wso2-throttling-tier: Unlimited
+x-telco-owner: Roaming Innovation
+x-telco-country-scope: MX,BR
+x-telco-data-classification: internal
+x-telco-api-product: Roaming Sponsorship Candidate Product
+x-telco-healthcheck:
+  path: /health
+  method: GET
+info:
+  title: Candidate Roaming Sponsor API
+  version: 0.9.0
+  description: Intentionally incomplete candidate API. Missing x-telco-monetization-model.
+servers:
+  - url: /candidate-roaming-sponsor/v1
+tags:
+  - name: sponsorship
+    description: Roaming sponsorship operations.
+paths:
+  /health:
+    get:
+      tags: [sponsorship]
+      operationId: getRoamingSponsorHealth
+      responses:
+        '200':
+          description: API health status.
+  /api/v1/roaming/sponsorships:
+    post:
+      tags: [sponsorship]
+      operationId: createRoamingSponsorship
+      responses:
+        '202':
+          description: Sponsorship request accepted.
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - default: []

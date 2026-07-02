@@ -1,0 +1,124 @@
+openapi: 3.0.3
+info:
+  title: NetworkSliceAPI
+  version: 1.0.0
+  description: 5G network slice catalog, reservation, and SLA status API for premium network monetization.
+servers:
+  - url: http://telco-backend:8081
+x-wso2-basePath: /network-slice/v1
+x-wso2-production-endpoints:
+  urls:
+    - http://telco-backend:8081
+x-wso2-throttling-tier: 10kPerMin
+x-telco-owner: Network Platform Engineering
+x-telco-country-scope: [MX, BR, CO, CL]
+x-telco-data-classification: Internal-Network
+x-telco-monetization-model: Network Premium plan; reserved capacity + event metering
+x-telco-api-product: Network Monetization Pack
+x-telco-privacy-review: approved-no-pii
+x-telco-healthcheck:
+  method: GET
+  path: /health
+security:
+  - OAuth2: [network.slice.read, network.slice.reserve]
+tags:
+  - name: Slices
+  - name: Reservations
+  - name: Cell Status
+paths:
+  /api/v1/network/slices:
+    get:
+      tags: [Slices]
+      operationId: listNetworkSlices
+      summary: List available and reserved 5G network slices
+      responses:
+        '200':
+          description: Slice catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NetworkSlice'
+  /api/v1/network/slices/reservations:
+    post:
+      tags: [Reservations]
+      operationId: reserveNetworkSlice
+      summary: Reserve a network slice for a partner workload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SliceReservationRequest'
+      responses:
+        '201':
+          description: Reservation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SliceReservationResponse'
+  /api/v1/network/cells/{cellId}/status:
+    get:
+      tags: [Cell Status]
+      operationId: getCellStatus
+      summary: Retrieve current radio cell status and utilization
+      parameters:
+        - name: cellId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Cell status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CellStatus'
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.telco.example/oauth2/token
+          scopes:
+            network.slice.read: Read slice catalog and cell status
+            network.slice.reserve: Reserve network slices
+  schemas:
+    NetworkSlice:
+      type: object
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [AVAILABLE, RESERVED, DEGRADED] }
+        maxLatencyMs: { type: integer }
+        maxThroughputMbps: { type: integer }
+        monetizationPlan: { type: string }
+    SliceReservationRequest:
+      type: object
+      required: [sliceId, country, partnerId, durationMinutes]
+      properties:
+        sliceId: { type: string }
+        country: { type: string }
+        partnerId: { type: string }
+        durationMinutes: { type: integer }
+        maxLatencyMs: { type: integer }
+    SliceReservationResponse:
+      type: object
+      properties:
+        reservationId: { type: string }
+        status: { type: string }
+        activationEtaSeconds: { type: integer }
+        chargePreviewUsd: { type: number }
+    CellStatus:
+      type: object
+      properties:
+        cellId: { type: string }
+        country: { type: string }
+        status: { type: string }
+        utilizationPct: { type: integer }
+        avgLatencyMs: { type: integer }
+        activeSessions: { type: integer }

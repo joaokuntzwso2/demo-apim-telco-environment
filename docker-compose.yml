@@ -1,0 +1,88 @@
+services:
+  telco-backend:
+    build:
+      context: services/telco-backend
+      dockerfile: Dockerfile
+    container_name: telco-backend
+    ports:
+      - "8081:8081"
+
+  wso2-apim:
+    build:
+      context: .
+      dockerfile: services/wso2-apim/Dockerfile
+    image: local/wso2am-demo:4.7.0
+    container_name: wso2-apim-4-7
+    environment:
+      JAVA_OPTS: "-Xms1024m -Xmx3072m -XX:+UseG1GC -XX:MaxMetaspaceSize=1024m"
+    ports:
+      - "9443:9443"
+      - "8243:8243"
+      - "8280:8280"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  apim-bootstrapper:
+    build:
+      context: .
+      dockerfile: services/apim-bootstrapper/Dockerfile
+    container_name: telco-apim-bootstrapper
+    environment:
+      APIM_ENV: "am47"
+      WSO2_APIM_URL: "https://wso2-apim:9443"
+      WSO2_APIM_GATEWAY_URL: "https://wso2-apim:8243"
+      WSO2_APIM_TOKEN_URL: "https://wso2-apim:9443/oauth2/token"
+      APIM_USERNAME: "admin"
+      APIM_PASSWORD: "admin"
+      TELCO_BACKEND_URL: "http://telco-backend:8081"
+      APIM_PORTAL_STATE_FILE: "/workspace/state/runtime.json"
+      PORTAL_APP_NAME: "Regional Portal"
+    volumes:
+      - apim-portal-state:/workspace/state
+    depends_on:
+      - wso2-apim
+      - telco-backend
+    restart: "no"
+
+  demo-portal:
+    build:
+      context: .
+      dockerfile: services/demo-portal/Dockerfile
+    container_name: telco-demo-portal
+    environment:
+      PORT: "8080"
+      APIM_PORTAL_STATE_FILE: "/workspace/apim-portal-state/runtime.json"
+    volumes:
+      - apim-portal-state:/workspace/apim-portal-state
+    depends_on:
+      - telco-backend
+      - apim-bootstrapper
+    ports:
+      - "8080:8080"
+
+  pipeline-portal:
+    build:
+      context: .
+      dockerfile: services/pipeline-portal/Dockerfile
+    container_name: telco-pipeline-portal
+    environment:
+      PORT: "8090"
+      APIM_MODE: "real"
+      APIM_ENV: "am47"
+      WSO2_APIM_URL: "https://wso2-apim:9443"
+      APIM_USERNAME: "admin"
+      APIM_PASSWORD: "admin"
+      APIM_INSECURE_TLS: "true"
+    volumes:
+      - pipeline-state:/workspace/state
+    depends_on:
+      - wso2-apim
+      - telco-backend
+    ports:
+      - "8090:8090"
+
+volumes:
+  apim-portal-state:
+  pipeline-state:

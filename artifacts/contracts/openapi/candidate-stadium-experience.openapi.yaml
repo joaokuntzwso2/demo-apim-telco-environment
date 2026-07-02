@@ -1,0 +1,70 @@
+openapi: 3.0.3
+x-wso2-basePath: /candidate-stadium-experience/v1
+x-wso2-throttling-tier: Unlimited
+x-telco-owner: Innovation API Office
+x-telco-country-scope: MX,BR,CO
+x-telco-data-classification: internal
+x-telco-monetization-model: event-package
+x-telco-api-product: Venue Connectivity Candidate Product
+x-telco-healthcheck:
+  path: /health
+  method: GET
+info:
+  title: Candidate Stadium Experience API
+  version: 0.9.0
+  description: Candidate API for venue connectivity and temporary 5G event experience packages.
+servers:
+  - url: /candidate-stadium-experience/v1
+tags:
+  - name: venues
+    description: Venue and event connectivity operations.
+  - name: packages
+    description: Commercial experience package operations.
+paths:
+  /health:
+    get:
+      tags: [venues]
+      operationId: getStadiumExperienceHealth
+      responses:
+        '200':
+          description: API health status.
+  /api/v1/venues:
+    get:
+      tags: [venues]
+      operationId: listVenueConnectivityProfiles
+      responses:
+        '200':
+          description: Venue connectivity profiles.
+  /api/v1/venues/{venueId}/packages:
+    get:
+      tags: [packages]
+      operationId: listVenueExperiencePackages
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Available packages for the venue.
+    post:
+      tags: [packages]
+      operationId: reserveVenueExperiencePackage
+      parameters:
+        - name: venueId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Package reservation accepted.
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - default: []

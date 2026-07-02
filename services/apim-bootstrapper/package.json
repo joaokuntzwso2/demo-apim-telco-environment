@@ -1,0 +1,13 @@
+{
+  "name": "apim-bootstrapper",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node src/bootstrap.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "undici": "^6.21.1",
+    "yaml": "^2.8.0"
+  }
+}

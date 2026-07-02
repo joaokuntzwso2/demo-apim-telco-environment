@@ -1,0 +1,9 @@
+owner: Field Service Transformation
+countryScope: MX,BR,AR
+dataClassification: confidential
+monetizationModel: internal-cost-allocation
+apiProduct: Field Operations Modernization Candidate Product
+security: OAuth2 application token
+healthcheck:
+  path: /soap/candidate-field-workorder
+  method: POST

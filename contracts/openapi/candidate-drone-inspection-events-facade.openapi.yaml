@@ -1,0 +1,43 @@
+openapi: 3.0.3
+x-wso2-basePath: /candidate-drone-inspection-events/v1
+x-wso2-throttling-tier: Unlimited
+x-telco-owner: Network Automation Lab
+x-telco-country-scope: MX,BR,CL
+x-telco-data-classification: internal
+x-telco-monetization-model: inspection-event-stream
+x-telco-api-product: Infrastructure Inspection Candidate Product
+x-telco-healthcheck:
+  path: /health
+  method: GET
+info:
+  title: Candidate Drone Inspection Events Facade
+  version: 0.9.0
+  description: APIM-importable façade for the candidate drone inspection event API.
+servers:
+  - url: /candidate-drone-inspection-events/v1
+tags:
+  - name: events
+    description: Event stream façade operations.
+paths:
+  /health:
+    get:
+      tags: [events]
+      operationId: getDroneInspectionEventsHealth
+      responses:
+        '200':
+          description: API health status.
+  /api/v1/events/drone-inspections:
+    get:
+      tags: [events]
+      operationId: streamDroneInspectionEvents
+      responses:
+        '200':
+          description: Drone inspection event stream.
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - default: []

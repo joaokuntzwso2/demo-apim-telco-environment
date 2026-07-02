@@ -1,0 +1,59 @@
+openapi: 3.0.3
+x-wso2-basePath: /candidate-edge-cache-control/v1
+x-wso2-throttling-tier: Unlimited
+x-telco-owner: Edge Platform Incubation
+x-telco-country-scope: MX,BR,CO,CL
+x-telco-data-classification: internal
+x-telco-monetization-model: partner-tier
+x-telco-api-product: Edge Services Candidate Product
+x-telco-healthcheck:
+  path: /health
+  method: GET
+info:
+  title: Candidate Edge Cache Control API
+  version: 0.9.0
+  description: Candidate API for edge cache invalidation, pre-warming, and traffic steering.
+servers:
+  - url: /candidate-edge-cache-control/v1
+tags:
+  - name: cache
+    description: Edge cache control operations.
+  - name: traffic
+    description: Edge routing and traffic steering operations.
+paths:
+  /health:
+    get:
+      tags: [cache]
+      operationId: getEdgeCacheHealth
+      responses:
+        '200':
+          description: API health status.
+  /api/v1/edge/sites:
+    get:
+      tags: [traffic]
+      operationId: listEdgeSites
+      responses:
+        '200':
+          description: Available regional edge sites.
+  /api/v1/edge/cache/invalidation:
+    post:
+      tags: [cache]
+      operationId: createEdgeCacheInvalidation
+      responses:
+        '202':
+          description: Cache invalidation accepted.
+  /api/v1/edge/cache/prewarm:
+    post:
+      tags: [cache]
+      operationId: createEdgeCachePrewarm
+      responses:
+        '202':
+          description: Cache pre-warm accepted.
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - default: []

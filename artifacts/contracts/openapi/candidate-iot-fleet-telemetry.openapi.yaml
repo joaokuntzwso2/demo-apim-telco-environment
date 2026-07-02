@@ -1,0 +1,64 @@
+openapi: 3.0.3
+x-wso2-basePath: /candidate-iot-fleet-telemetry/v1
+x-wso2-throttling-tier: Unlimited
+x-telco-owner: Enterprise IoT Platform
+x-telco-country-scope: BR,CO,CL,PE
+x-telco-data-classification: confidential
+x-telco-monetization-model: per-device-usage
+x-telco-api-product: Enterprise IoT Candidate Product
+x-telco-healthcheck:
+  path: /health
+  method: GET
+info:
+  title: Candidate IoT Fleet Telemetry API
+  version: 0.9.0
+  description: Candidate API for fleet telemetry, SIM heartbeat, and enterprise IoT commercial packages.
+servers:
+  - url: /candidate-iot-fleet-telemetry/v1
+tags:
+  - name: fleet
+    description: Fleet telemetry operations.
+  - name: devices
+    description: IoT device and SIM operations.
+paths:
+  /health:
+    get:
+      tags: [fleet]
+      operationId: getFleetTelemetryHealth
+      responses:
+        '200':
+          description: API health status.
+  /api/v1/fleets/{fleetId}/devices:
+    get:
+      tags: [devices]
+      operationId: listFleetDevices
+      parameters:
+        - name: fleetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Devices assigned to a fleet.
+  /api/v1/fleets/{fleetId}/telemetry/summary:
+    get:
+      tags: [fleet]
+      operationId: getFleetTelemetrySummary
+      parameters:
+        - name: fleetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fleet telemetry summary.
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - default: []

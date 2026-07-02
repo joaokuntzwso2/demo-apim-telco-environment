@@ -1,0 +1,12 @@
+owner: Billing Operations
+countryScope: [MX, BR, CO, AR, PE]
+dataClassification: Confidential-Financial
+monetizationModel: Growth plan, billed per adjustment transaction after free tier
+apiProduct: Legacy Billing Pack
+security: OAuth2 client_credentials + SOAP message audit
+healthcheck:
+  method: GET
+  path: /health
+privacyReview: approved
+operations:
+  - CreateBillingAdjustment
