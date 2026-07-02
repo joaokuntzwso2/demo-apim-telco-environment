@@ -29,14 +29,16 @@
       "name": "CandidateDroneInspectionEventsAPI",
       "version": "0.9.0",
       "protocol": "ASYNC",
-      "backendProtocol": "AsyncAPI / Event Stream",
+      "backendProtocol": "Server-Sent Events (SSE)",
       "domain": "New Business / Infrastructure Inspection",
       "owner": "Network Automation Lab",
       "countryScope": "MX,BR,CL",
       "description": "Candidate event API for drone-based tower inspection events, image-processing outcomes, field dispatch triggers, and maintenance risk signals.",
       "spec": "contracts/asyncapi/candidate-drone-inspection-events.asyncapi.yaml",
-      "importSpec": "contracts/openapi/candidate-drone-inspection-events-facade.openapi.yaml",
-      "contractType": "AsyncAPI + OpenAPI fa\u00e7ade"
+      "contractType": "AsyncAPI/SSE",
+      "type": "SSE",
+      "context": "/candidate-drone-inspection-events/v1",
+      "streamingBackendPath": "/events/drone-inspections"
     },
     {
       "id": "candidate-edge-cache",

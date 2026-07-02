@@ -3,7 +3,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { fetch, Agent } = require('undici');
 const YAML = require('yaml');
-const { createSoapPassThroughApi } = require('./soap-publisher');
+const { createSoapPassThroughApi } = require('./soap-publisher'); const { importStreamingApi } = require('./streaming-publisher');
 
 const dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
 
@@ -105,23 +105,7 @@ const portalApis = [
     soapBackendPath: '/soap/billing-adjustment',
     routes: ['/soap/billing-adjustment']
   },
-  {
-    id: 'network-events',
-    name: 'NetworkEventsStreamAPI',
-    version: '1.0.0',
-    importSpecCandidates: [
-      'contracts/network-events-facade.openapi.yaml',
-      'network-events-facade.openapi.yaml',
-      'contracts/network-events.openapi.yaml',
-      'network-events.openapi.yaml'
-    ],
-    supplementalSpecCandidates: [
-      'contracts/network-events.asyncapi.yaml',
-      'network-events.asyncapi.yaml'
-    ],
-    context: '/network-events/v1',
-    routes: ['/events/network-events']
-  }
+  { id: 'network-events', name: 'NetworkEventsStreamAPI', version: '1.0.0', protocol: 'ASYNC', type: 'SSE', asyncapiSpecCandidates: [ 'contracts/asyncapi/network-events.asyncapi.yaml', 'contracts/network-events.asyncapi.yaml', 'network-events.asyncapi.yaml' ], context: '/network-events/v1', routes: ['/events/network-events'] }
 ];
 
 function log(message) {
@@ -525,7 +509,45 @@ async function publishApiWithPublisherRest(api) {
 }
 
 
-async function importAndPublishApi(api) {
+async function importAndPublishStreamingApi(api) {
+  const token = await getAdminToken();
+  const asyncapiPath = findSpec(
+    api.asyncapiSpecCandidates || api.importSpecCandidates || api.supplementalSpecCandidates || [],
+    api.name,
+    'asyncapi'
+  );
+
+  if (!asyncapiPath) {
+    throw new Error(`No AsyncAPI contract found for streaming API ${api.name}`);
+  }
+
+  const created = importStreamingApi({
+    apimUrl: APIM_URL,
+    token,
+    name: api.name,
+    version: api.version,
+    context: api.context,
+    asyncapiPath,
+    endpointUrl: BACKEND_URL,
+    type: api.type || api.protocol || 'SSE',
+    deleteExisting: true,
+    deploy: true,
+    publish: true,
+    log
+  });
+
+  return {
+    id: api.id,
+    name: api.name,
+    version: api.version,
+    protocol: api.protocol || api.type || 'SSE',
+    contractType: 'AsyncAPI/SSE',
+    context: api.context,
+    gatewayBaseUrl: `${APIM_GATEWAY_URL}${api.context}`,
+    spec: asyncapiPath,
+    routes: api.routes || []
+  };
+} async function importAndPublishApi(api) { if (api.type === 'SSE' || api.protocol === 'SSE' || api.type === 'ASYNC' || api.protocol === 'ASYNC') { return importAndPublishStreamingApi(api); }
   if (api.type === 'SOAP' || api.protocol === 'SOAP') {
     return importAndPublishSoapApi(api);
   }

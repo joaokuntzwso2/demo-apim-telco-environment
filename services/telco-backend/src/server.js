@@ -608,3 +608,39 @@ app.post('/soap/candidate-field-workorder', express.text({ type: '*/*', limit: '
 
 
 server.listen(port, () => console.log(`Telco mock backend running on ${port}`));
+
+app.get('/events/drone-inspections', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  });
+
+  let counter = 0;
+  const towers = ['TOWER-BR-SP-009', 'TOWER-BR-RJ-014', 'TOWER-BR-MG-021'];
+  const statuses = ['COMPLETED', 'ATTENTION_REQUIRED', 'MAINTENANCE_DISPATCHED'];
+  const severities = ['INFO', 'WARNING', 'CRITICAL'];
+
+  const writeEvent = () => {
+    counter += 1;
+
+    const event = {
+      eventId: `DRONE-EVT-${String(counter).padStart(5, '0')}`,
+      towerId: towers[counter % towers.length],
+      inspectionStatus: statuses[counter % statuses.length],
+      severity: severities[counter % severities.length],
+      timestamp: new Date().toISOString()
+    };
+
+    res.write('event: drone-inspection\n');
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  };
+
+  writeEvent();
+  const interval = setInterval(writeEvent, 1500);
+
+  req.on('close', () => {
+    clearInterval(interval);
+  });
+});

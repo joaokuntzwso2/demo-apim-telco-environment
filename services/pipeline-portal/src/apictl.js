@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const AdmZip = require('adm-zip');
-const YAML = require('yaml');
+const YAML = require('yaml'); const { importStreamingApi } = require('./streaming-publisher');
 
 function safeName(name) {
   return name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
@@ -488,7 +488,46 @@ function executeSoapWsdlImport(entry, artifactsRoot, stateRoot, env, log) {
 }
 
 
-function executeRealImport(entry, artifactsRoot, stateRoot, env, log) {
+function executeAsyncApiImport(entry, artifactsRoot, stateRoot, env, log) {
+  const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
+
+  if (!soapApimReachable(env)) {
+    throw new Error(`APIM is not reachable at ${apimUrl}.`);
+  }
+
+  const asyncapiPath = path.join(artifactsRoot, entry.spec);
+
+  if (!fs.existsSync(asyncapiPath)) {
+    throw new Error(`Streaming import requires an AsyncAPI file. Not found: ${entry.spec}`);
+  }
+
+  const token = getPublisherTokenForSoap(env, log);
+  const version = entry.version || '1.0.0';
+  const context = entry.context || `/${safeName(entry.name).toLowerCase()}/v1`;
+  const endpointUrl = env.TELCO_BACKEND_URL || 'http://telco-backend:8081';
+  const streamingType = entry.type || entry.protocol || 'SSE';
+
+  const created = importStreamingApi({
+    apimUrl,
+    token,
+    name: entry.name,
+    version,
+    context,
+    asyncapiPath,
+    endpointUrl,
+    type: streamingType,
+    deleteExisting: true,
+    deploy: true,
+    publish: true,
+    log
+  });
+
+  return {
+    projectDir: asyncapiPath,
+    apiId: created.id,
+    streaming: true
+  };
+} function executeRealImport(entry, artifactsRoot, stateRoot, env, log) {
   // Hard SOAP/WSDL shortcut: WSDL-based APIs must never go through APICTL/OpenAPI project generation.
   if (
     entry.spec?.endsWith('.wsdl') ||
@@ -497,6 +536,17 @@ function executeRealImport(entry, artifactsRoot, stateRoot, env, log) {
     /SOAP\/WSDL/i.test(entry.contractType || '')
   ) {
     return executeSoapWsdlImport(entry, artifactsRoot, stateRoot, env, log);
+  }
+
+  if (
+    entry.protocol === 'SSE' ||
+    entry.type === 'SSE' ||
+    entry.protocol === 'ASYNC' ||
+    entry.type === 'ASYNC' ||
+    /AsyncAPI/i.test(entry.contractType || '') ||
+    /\.asyncapi\.ya?ml$/i.test(entry.spec || '')
+  ) {
+    return executeAsyncApiImport(entry, artifactsRoot, stateRoot, env, log);
   }
 
   const cli = apictlStatus();

@@ -1,45 +1,62 @@
-asyncapi: 2.6.0
-x-telco-owner: Network Automation Lab
-x-telco-country-scope: MX,BR,CL
-x-telco-event-classification: operational-maintenance
-x-telco-event-retention: 30-days
-x-telco-monetization-model: inspection-event-stream
+asyncapi: 3.0.0
 info:
-  title: Candidate Drone Inspection Events API
+  title: CandidateDroneInspectionEventsAPI
   version: 0.9.0
-  description: Candidate event API for drone inspection results and maintenance dispatch triggers.
+  description: Candidate Server-Sent Events API for drone inspection events.
 servers:
   production:
-    url: events.internal.example.local
-    protocol: kafka
+    host: telco-backend:8081
+    protocol: http
 channels:
-  tower.inspection.completed:
-    publish:
-      operationId: publishTowerInspectionCompleted
-      message:
-        name: TowerInspectionCompleted
-        payload:
-          type: object
-          properties:
-            inspectionId:
-              type: string
-            towerId:
-              type: string
-            severity:
-              type: string
-            confidence:
-              type: number
-  tower.maintenance.dispatch.requested:
-    publish:
-      operationId: publishMaintenanceDispatchRequested
-      message:
-        name: MaintenanceDispatchRequested
-        payload:
-          type: object
-          properties:
-            dispatchId:
-              type: string
-            towerId:
-              type: string
-            priority:
-              type: string
+  droneInspections:
+    address: /events/drone-inspections
+    messages:
+      DroneInspectionEvent:
+        $ref: '#/components/messages/DroneInspectionEvent'
+operations:
+  receiveDroneInspectionEvents:
+    action: receive
+    channel:
+      $ref: '#/channels/droneInspections'
+    messages:
+      - $ref: '#/channels/droneInspections/messages/DroneInspectionEvent'
+x-telco-owner: Field Operations
+x-telco-country-scope:
+  - BR
+x-telco-event-classification: OPERATIONAL
+x-telco-event-retention: 14
+x-telco-monetization-model: EVENT_STREAM
+components:
+  messages:
+    DroneInspectionEvent:
+      name: DroneInspectionEvent
+      title: Drone inspection event
+      contentType: application/json
+      payload:
+        type: object
+        required:
+          - eventId
+          - towerId
+          - inspectionStatus
+          - severity
+          - timestamp
+        properties:
+          eventId:
+            type: string
+          towerId:
+            type: string
+          inspectionStatus:
+            type: string
+            enum:
+              - COMPLETED
+              - ATTENTION_REQUIRED
+              - MAINTENANCE_DISPATCHED
+          severity:
+            type: string
+            enum:
+              - INFO
+              - WARNING
+              - CRITICAL
+          timestamp:
+            type: string
+            format: date-time
