@@ -1,0 +1,54 @@
+[
+  {
+    "policyName": "TelcoFreeTrial",
+    "displayName": "Telco Free Trial",
+    "description": "Free developer trial for telco APIs: 100 requests per minute.",
+    "requestCount": 100,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "FREE",
+    "stopOnQuotaReach": true
+  },
+  {
+    "policyName": "TelcoPartnerStandard",
+    "displayName": "Telco Partner Standard",
+    "description": "Paid standard commercial plan for partner API consumption: 1000 requests per minute.",
+    "requestCount": 1000,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "COMMERCIAL",
+    "stopOnQuotaReach": true
+  },
+  {
+    "policyName": "TelcoPartnerPremium",
+    "displayName": "Telco Partner Premium",
+    "description": "Paid premium plan for high-volume telco partners: 5000 requests per minute.",
+    "requestCount": 5000,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "COMMERCIAL",
+    "stopOnQuotaReach": true
+  },
+  {
+    "policyName": "TelcoEventStreamPremium",
+    "displayName": "Telco Event Stream Premium",
+    "description": "Paid event-stream plan for SSE/AsyncAPI products: 10000 events per minute.",
+    "requestCount": 10000,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "COMMERCIAL",
+    "stopOnQuotaReach": true
+  },
+  {
+    "policyName": "TelcoGraphQLPartner",
+    "displayName": "Telco GraphQL Partner",
+    "description": "Paid GraphQL partner insights plan with request quota plus query depth/complexity defaults.",
+    "requestCount": 2000,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "COMMERCIAL",
+    "stopOnQuotaReach": true,
+    "graphQLMaxDepth": 6,
+    "graphQLMaxComplexity": 120
+  }
+]

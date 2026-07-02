@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const AdmZip = require('adm-zip');
-const YAML = require('yaml'); const { importStreamingApi } = require('./streaming-publisher');
+const YAML = require('yaml'); const { importStreamingApi } = require('./streaming-publisher'); const { importGraphQLApi } = require('./graphql-publisher');
 
 function safeName(name) {
   return name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
@@ -64,6 +64,21 @@ function createArtifact(entry, artifactsRoot, stateRoot) {
 }
 
 function commandPlan(entry, artifactPath, env) {
+  if (
+    entry.protocol === 'GRAPHQL' ||
+    entry.type === 'GRAPHQL' ||
+    /GraphQL/i.test(entry.contractType || '') ||
+    /\.graphql$/i.test(entry.spec || '')
+  ) {
+    const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
+    return [
+      `curl -k -H "Authorization: Bearer <publisher-token>" -F file=@${entry.spec} -F additionalProperties=@graphql-api.json ${apimUrl}/api/am/publisher/v4/apis/import-graphql-schema`,
+      `keep ${entry.name} as Publisher working copy; no revision deployment`,
+      `do not publish ${entry.name}; lifecycle remains pre-published`
+    ];
+  }
+
+
   const insecure = env.APIM_INSECURE_TLS === 'true' ? ' -k' : '';
   const apimEnv = env.APIM_ENV || 'am47';
   const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
@@ -517,8 +532,8 @@ function executeAsyncApiImport(entry, artifactsRoot, stateRoot, env, log) {
     endpointUrl,
     type: streamingType,
     deleteExisting: true,
-    deploy: true,
-    publish: true,
+    deploy: false,
+    publish: false,
     log
   });
 
@@ -527,7 +542,54 @@ function executeAsyncApiImport(entry, artifactsRoot, stateRoot, env, log) {
     apiId: created.id,
     streaming: true
   };
+} function executeGraphQLImport(entry, artifactsRoot, stateRoot, env, log) {
+  const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
+
+  if (!soapApimReachable(env)) {
+    throw new Error(`APIM is not reachable at ${apimUrl}.`);
+  }
+
+  const schemaPath = path.join(artifactsRoot, entry.spec);
+
+  if (!fs.existsSync(schemaPath)) {
+    throw new Error(`GraphQL import requires an SDL schema file. Not found: ${entry.spec}`);
+  }
+
+  const token = getPublisherTokenForSoap(env, log);
+  const version = entry.version || '1.0.0';
+  const context = entry.context || `/${safeName(entry.name).toLowerCase()}/v1`;
+  const endpointUrl = `${env.TELCO_BACKEND_URL || 'http://telco-backend:8081'}${entry.graphqlBackendPath || '/graphql/partner-insights'}`;
+
+  const created = importGraphQLApi({
+    apimUrl,
+    token,
+    name: entry.name,
+    version,
+    context,
+    schemaPath,
+    endpointUrl,
+    deleteExisting: true,
+    deploy: false,
+    publish: false,
+    log
+  });
+
+  return {
+    projectDir: schemaPath,
+    apiId: created.id,
+    graphql: true
+  };
 } function executeRealImport(entry, artifactsRoot, stateRoot, env, log) {
+  if (
+    entry.protocol === 'GRAPHQL' ||
+    entry.type === 'GRAPHQL' ||
+    /GraphQL/i.test(entry.contractType || '') ||
+    /\.graphql$/i.test(entry.spec || '')
+  ) {
+    return executeGraphQLImport(entry, artifactsRoot, stateRoot, env, log);
+  }
+
+
   // Hard SOAP/WSDL shortcut: WSDL-based APIs must never go through APICTL/OpenAPI project generation.
   if (
     entry.spec?.endsWith('.wsdl') ||

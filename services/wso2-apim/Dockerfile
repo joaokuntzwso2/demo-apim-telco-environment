@@ -46,4 +46,6 @@ RUN set -eux; \
     mv "$TMP" "$CONF"; \
     chown wso2carbon "$CONF"
 
+COPY services/wso2-apim/governance/default-rulesets/ /home/wso2carbon/wso2am-4.7.0/repository/resources/governance/default-rulesets/
+RUN chown -R wso2carbon /home/wso2carbon/wso2am-4.7.0/repository/resources/governance/default-rulesets
 USER wso2carbon

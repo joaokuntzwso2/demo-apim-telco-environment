@@ -1,0 +1,44 @@
+{
+  "rules": {
+    "telco-api-product-required": {
+      "description": "Every API must be mapped to a commercial API product.",
+      "message": "additionalPropertiesMap.api_product is required.",
+      "severity": "error",
+      "given": "$.data.additionalPropertiesMap",
+      "then": {
+        "field": "api_product",
+        "function": "truthy"
+      }
+    },
+    "telco-health-path-required": {
+      "description": "Every API must declare an operational health path.",
+      "message": "additionalPropertiesMap.health_path is required.",
+      "severity": "error",
+      "given": "$.data.additionalPropertiesMap",
+      "then": {
+        "field": "health_path",
+        "function": "truthy"
+      }
+    },
+    "telco-health-method-required": {
+      "description": "Every API must declare an operational health method.",
+      "message": "additionalPropertiesMap.health_method is required.",
+      "severity": "error",
+      "given": "$.data.additionalPropertiesMap",
+      "then": {
+        "field": "health_method",
+        "function": "truthy"
+      }
+    },
+    "telco-business-owner-required": {
+      "description": "Every API must have a business owner.",
+      "message": "businessInformation.businessOwner is required.",
+      "severity": "warn",
+      "given": "$.data.businessInformation",
+      "then": {
+        "field": "businessOwner",
+        "function": "truthy"
+      }
+    }
+  }
+}

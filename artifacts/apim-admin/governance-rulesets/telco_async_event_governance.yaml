@@ -1,0 +1,49 @@
+name: Telco Async Event Governance
+description: Demo AsyncAPI/SSE governance rules for event-stream products.
+rulesetType: API_DEFINITION
+artifactType: ASYNC_API
+documentationLink: https://example.com/telco-event-governance
+formats:
+  - asyncapi2
+  - asyncapi3
+
+rules:
+  telco-event-classification-required:
+    description: Streaming APIs must classify the type of events being exposed.
+    message: x-telco-event-classification is required.
+    severity: error
+    given:
+      - "$"
+    then:
+      field: x-telco-event-classification
+      function: truthy
+
+  telco-event-retention-required:
+    description: Streaming APIs must declare an event retention policy.
+    message: x-telco-event-retention is required.
+    severity: error
+    given:
+      - "$"
+    then:
+      field: x-telco-event-retention
+      function: truthy
+
+  telco-event-monetization-required:
+    description: Streaming APIs must declare their monetization model.
+    message: x-telco-monetization-model is required.
+    severity: error
+    given:
+      - "$"
+    then:
+      field: x-telco-monetization-model
+      function: truthy
+
+  telco-async-channel-address-required:
+    description: Every AsyncAPI channel must expose a concrete address.
+    message: Channel address is required.
+    severity: warn
+    given:
+      - "$.channels[*]"
+    then:
+      field: address
+      function: truthy

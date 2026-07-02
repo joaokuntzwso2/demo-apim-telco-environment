@@ -1,0 +1,17 @@
+owner: Partner Marketplace Platform
+countryScope: MX,BR,CO,CL
+dataClassification: PARTNER_BUSINESS
+monetizationModel: REVENUE_SHARE
+apiProduct: Partner Growth Pack
+healthcheck:
+  path: /graphql/partner-insights
+  method: POST
+  query: "{ schemaHealth { ok service timestamp } }"
+security:
+  scheme: OAuth2
+  scopes:
+    - partner.insights.read
+    - partner.insights.write
+complexity:
+  maxDepth: 6
+  maxComplexity: 120

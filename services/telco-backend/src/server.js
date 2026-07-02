@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express'); const { graphql, buildSchema } = require('graphql');
 const cors = require('cors');
 const morgan = require('morgan');
 const http = require('http');
@@ -577,6 +577,280 @@ function wsdlXml(endpoint) {
   </service>
 </definitions>`;
 }
+
+
+// -----------------------------------------------------------------------------
+// CandidatePartnerInsightsGraphQLAPI
+// Real GraphQL backend used only by the APIOps pipeline candidate.
+// -----------------------------------------------------------------------------
+const partnerInsightGraphqlSchema = buildSchema(`
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  schemaHealth: SchemaHealth!
+  partnerInsight(partnerId: ID!): PartnerInsight
+  partnerPortfolio(country: String, segment: String): [PartnerInsight!]!
+  marketplaceRecommendations(partnerId: ID!, country: String): [ApiRecommendation!]!
+  subscriberOpportunity(msisdn: String!): SubscriberOpportunity!
+}
+
+type Mutation {
+  reservePartnerCampaign(input: CampaignReservationInput!): CampaignReservationResult!
+}
+
+type SchemaHealth {
+  ok: Boolean!
+  service: String!
+  timestamp: String!
+}
+
+type PartnerInsight {
+  partnerId: ID!
+  name: String!
+  segment: String!
+  country: String!
+  tier: String!
+  activeSubscribers: Int!
+  monthlyApiCalls: Int!
+  revenueUsd: Float!
+  churnRisk: String!
+  recommendedApis: [ApiRecommendation!]!
+}
+
+type ApiRecommendation {
+  apiName: String!
+  apiProduct: String!
+  reason: String!
+  fitScore: Int!
+  monetizationModel: String!
+}
+
+type SubscriberOpportunity {
+  msisdn: String!
+  country: String!
+  customerSegment: String!
+  consentReady: Boolean!
+  eligibleOffers: [String!]!
+  recommendedPartner: PartnerInsight!
+}
+
+input CampaignReservationInput {
+  partnerId: ID!
+  country: String!
+  campaignName: String!
+  targetSegment: String!
+  budgetUsd: Float!
+}
+
+type CampaignReservationResult {
+  reservationId: ID!
+  accepted: Boolean!
+  status: String!
+  estimatedReach: Int!
+  chargePreviewUsd: Float!
+  submittedAt: String!
+}
+`);
+
+const partnerInsightRecords = [
+  {
+    partnerId: 'banking-superapp',
+    name: 'Continental SuperApp Bank',
+    segment: 'Fintech',
+    country: 'MX',
+    tier: 'Platinum',
+    activeSubscribers: 1830000,
+    monthlyApiCalls: 47200000,
+    revenueUsd: 146500.25,
+    churnRisk: 'LOW'
+  },
+  {
+    partnerId: 'ride-hailing',
+    name: 'UrbanMove Mobility',
+    segment: 'Mobility',
+    country: 'BR',
+    tier: 'Gold',
+    activeSubscribers: 940000,
+    monthlyApiCalls: 28100000,
+    revenueUsd: 78200.90,
+    churnRisk: 'MEDIUM'
+  },
+  {
+    partnerId: 'iot-energy',
+    name: 'Andes Smart Energy',
+    segment: 'IoT',
+    country: 'CO',
+    tier: 'Gold',
+    activeSubscribers: 420000,
+    monthlyApiCalls: 19300000,
+    revenueUsd: 51990.00,
+    churnRisk: 'LOW'
+  },
+  {
+    partnerId: 'retail-marketplace',
+    name: 'Digital Retail Partner',
+    segment: 'Retail',
+    country: 'CL',
+    tier: 'Enterprise',
+    activeSubscribers: 610000,
+    monthlyApiCalls: 22400000,
+    revenueUsd: 66850.45,
+    churnRisk: 'MEDIUM'
+  }
+];
+
+function partnerRecommendations(partnerId, country) {
+  const byPartner = {
+    'banking-superapp': [
+      ['Customer360API', 'Partner Growth Pack', 'Consent-aware customer profile and eligibility checks for financial journeys.', 94, 'REVENUE_SHARE'],
+      ['NumberLifecycleAPI', 'Partner Growth Pack', 'Number verification and portability intelligence for onboarding.', 89, 'PER_TRANSACTION']
+    ],
+    'ride-hailing': [
+      ['NetworkSliceAPI', 'Network Monetization Pack', 'Low-latency mobility corridors and QoD-backed premium trips.', 91, 'USAGE_BASED'],
+      ['PartnerChargingAPI', 'Partner Growth Pack', 'Settlement and charging for sponsored mobility bundles.', 86, 'REVENUE_SHARE']
+    ],
+    'iot-energy': [
+      ['CandidateIoTFleetTelemetryAPI', 'Enterprise IoT Pack', 'Fleet and device telemetry for managed connectivity.', 96, 'SUBSCRIPTION_PLUS_OVERAGE'],
+      ['NetworkEventsStreamAPI', 'Network Monetization Pack', 'Operational event stream for field and network anomaly detection.', 88, 'EVENT_STREAM']
+    ],
+    'retail-marketplace': [
+      ['Customer360API', 'Partner Growth Pack', 'Audience segmentation with consent-aware customer data access.', 90, 'REVENUE_SHARE'],
+      ['CandidateEdgeCacheControlAPI', 'Edge Services Pack', 'Regional edge pre-warming for campaign and media assets.', 84, 'USAGE_BASED']
+    ]
+  };
+
+  const records = byPartner[partnerId] || byPartner['banking-superapp'];
+
+  return records.map(([apiName, apiProduct, reason, fitScore, monetizationModel]) => ({
+    apiName,
+    apiProduct,
+    reason: country ? `${reason} Market focus: ${country}.` : reason,
+    fitScore,
+    monetizationModel
+  }));
+}
+
+function enrichPartnerInsight(record) {
+  return {
+    ...record,
+    recommendedApis: partnerRecommendations(record.partnerId, record.country)
+  };
+}
+
+function inferCountryFromMsisdn(msisdn) {
+  if (String(msisdn).startsWith('+55')) return 'BR';
+  if (String(msisdn).startsWith('+57')) return 'CO';
+  if (String(msisdn).startsWith('+56')) return 'CL';
+  return 'MX';
+}
+
+function partnerInsightResolvers() {
+  return {
+    schemaHealth: () => ({
+      ok: true,
+      service: 'candidate-partner-insights-graphql',
+      timestamp: nowIso()
+    }),
+
+    partnerInsight: ({ partnerId }) => {
+      const record = partnerInsightRecords.find(p => p.partnerId === partnerId);
+      return record ? enrichPartnerInsight(record) : null;
+    },
+
+    partnerPortfolio: ({ country, segment }) => {
+      return partnerInsightRecords
+        .filter(p => !country || p.country === country)
+        .filter(p => !segment || p.segment.toLowerCase() === String(segment).toLowerCase())
+        .map(enrichPartnerInsight);
+    },
+
+    marketplaceRecommendations: ({ partnerId, country }) => partnerRecommendations(partnerId, country),
+
+    subscriberOpportunity: ({ msisdn }) => {
+      const country = inferCountryFromMsisdn(msisdn);
+      const partner = partnerInsightRecords.find(p => p.country === country) || partnerInsightRecords[0];
+
+      return {
+        msisdn,
+        country,
+        customerSegment: country === 'BR' ? 'Postpaid Consumer' : 'Postpaid Premium',
+        consentReady: true,
+        eligibleOffers: [
+          'partner-data-share',
+          'number-verification',
+          'sponsored-connectivity',
+          'premium-qod-bundle'
+        ],
+        recommendedPartner: enrichPartnerInsight(partner)
+      };
+    },
+
+    reservePartnerCampaign: ({ input }) => {
+      const baseReach = Math.max(25000, Math.floor(Number(input.budgetUsd || 0) * 38));
+
+      return {
+        reservationId: `gql-campaign-${Date.now()}`,
+        accepted: true,
+        status: 'PENDING_COMMERCIAL_APPROVAL',
+        estimatedReach: baseReach,
+        chargePreviewUsd: Number((Number(input.budgetUsd || 0) * 0.082).toFixed(2)),
+        submittedAt: nowIso()
+      };
+    }
+  };
+}
+
+async function handlePartnerInsightsGraphQL(req, res) {
+  try {
+    if (req.method === 'GET' && !req.query.query) {
+      return res.json({
+        service: 'candidate-partner-insights-graphql',
+        endpoint: '/graphql/partner-insights',
+        example: {
+          query: 'query PartnerPortfolio($country: String) { partnerPortfolio(country: $country) { partnerId name country tier recommendedApis { apiName fitScore monetizationModel } } }',
+          variables: { country: 'BR' }
+        }
+      });
+    }
+
+    const source = req.method === 'GET' ? req.query.query : req.body?.query;
+    const operationName = req.method === 'GET' ? req.query.operationName : req.body?.operationName;
+    let variableValues = req.method === 'GET' ? req.query.variables : req.body?.variables;
+
+    if (typeof variableValues === 'string' && variableValues.trim()) {
+      variableValues = JSON.parse(variableValues);
+    }
+
+    if (!source) {
+      return res.status(400).json({
+        errors: [{ message: 'GraphQL query is required.' }]
+      });
+    }
+
+    const result = await graphql({
+      schema: partnerInsightGraphqlSchema,
+      source,
+      rootValue: partnerInsightResolvers(),
+      variableValues,
+      operationName,
+      contextValue: {
+        correlationId: req.headers['x-correlation-id'] || `gql-${Date.now()}`
+      }
+    });
+
+    res.status(result.errors ? 400 : 200).json(result);
+  } catch (e) {
+    res.status(400).json({
+      errors: [{ message: e.message }]
+    });
+  }
+}
+
+app.get('/graphql/partner-insights', handlePartnerInsightsGraphQL);
+app.post('/graphql/partner-insights', handlePartnerInsightsGraphQL);
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws/network-events' });

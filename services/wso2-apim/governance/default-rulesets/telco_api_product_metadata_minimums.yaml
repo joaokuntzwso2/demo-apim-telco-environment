@@ -1,0 +1,48 @@
+name: Telco API Product Metadata Minimums
+description: Demo API metadata governance rules for commercial productization.
+rulesetType: API_METADATA
+artifactType: REST_API
+documentationLink: https://example.com/telco-api-product-metadata
+
+rules:
+  telco-api-product-required:
+    description: Every commercialized API must be mapped to an API product or offer.
+    message: additionalPropertiesMap.api_product is required.
+    severity: error
+    given:
+      - "$.data.additionalPropertiesMap"
+    then:
+      field: api_product
+      function: truthy
+
+  telco-owner-required:
+    description: Every API must have a business owner for lifecycle and commercial accountability.
+    message: businessInformation.businessOwner is required.
+    severity: error
+    given:
+      - "$.data.businessInformation"
+    then:
+      field: businessOwner
+      function: truthy
+
+  telco-health-path-required:
+    description: APIs must expose or document a health path for operational readiness checks.
+    message: additionalPropertiesMap.health_path is required.
+    severity: error
+    given:
+      - "$.data.additionalPropertiesMap"
+    then:
+      field: health_path
+      function: truthy
+
+  telco-commercial-plan-required:
+    description: Commercial APIs should expose at least one Telco demo business plan.
+    message: API policies should include one of the Telco commercial plans.
+    severity: warn
+    given:
+      - "$.data"
+    then:
+      field: policies
+      function: pattern
+      functionOptions:
+        match: "TelcoFreeTrial|TelcoPartnerStandard|TelcoPartnerPremium|TelcoEventStreamPremium|TelcoGraphQLPartner"

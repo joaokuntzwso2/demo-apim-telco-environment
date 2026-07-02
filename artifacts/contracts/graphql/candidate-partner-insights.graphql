@@ -1,0 +1,69 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  schemaHealth: SchemaHealth!
+  partnerInsight(partnerId: ID!): PartnerInsight
+  partnerPortfolio(country: String, segment: String): [PartnerInsight!]!
+  marketplaceRecommendations(partnerId: ID!, country: String): [ApiRecommendation!]!
+  subscriberOpportunity(msisdn: String!): SubscriberOpportunity!
+}
+
+type Mutation {
+  reservePartnerCampaign(input: CampaignReservationInput!): CampaignReservationResult!
+}
+
+type SchemaHealth {
+  ok: Boolean!
+  service: String!
+  timestamp: String!
+}
+
+type PartnerInsight {
+  partnerId: ID!
+  name: String!
+  segment: String!
+  country: String!
+  tier: String!
+  activeSubscribers: Int!
+  monthlyApiCalls: Int!
+  revenueUsd: Float!
+  churnRisk: String!
+  recommendedApis: [ApiRecommendation!]!
+}
+
+type ApiRecommendation {
+  apiName: String!
+  apiProduct: String!
+  reason: String!
+  fitScore: Int!
+  monetizationModel: String!
+}
+
+type SubscriberOpportunity {
+  msisdn: String!
+  country: String!
+  customerSegment: String!
+  consentReady: Boolean!
+  eligibleOffers: [String!]!
+  recommendedPartner: PartnerInsight!
+}
+
+input CampaignReservationInput {
+  partnerId: ID!
+  country: String!
+  campaignName: String!
+  targetSegment: String!
+  budgetUsd: Float!
+}
+
+type CampaignReservationResult {
+  reservationId: ID!
+  accepted: Boolean!
+  status: String!
+  estimatedReach: Int!
+  chargePreviewUsd: Float!
+  submittedAt: String!
+}

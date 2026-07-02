@@ -98,6 +98,23 @@
         "requestExample": "contracts/soap/examples/candidate-field-workorder-create-request.xml",
         "note": "For WSO2 SOAP pass-through Try Out, copy this envelope into the SOAP Request textarea. The built-in UI may show the envelope as Default value but does not always auto-fill the textarea."
       }
+    },
+    {
+      "id": "candidate-partner-insights-graphql",
+      "name": "CandidatePartnerInsightsGraphQLAPI",
+      "version": "0.9.0",
+      "protocol": "GRAPHQL",
+      "type": "GRAPHQL",
+      "backendProtocol": "GraphQL over HTTP",
+      "domain": "New Business / Partner Marketplace",
+      "owner": "Partner Marketplace Platform",
+      "countryScope": "MX,BR,CO,CL",
+      "description": "Candidate GraphQL API for partner portfolio analytics, subscriber opportunity discovery, API marketplace recommendations, and campaign reservation.",
+      "spec": "contracts/graphql/candidate-partner-insights.graphql",
+      "metadata": "contracts/graphql/candidate-partner-insights.metadata.yaml",
+      "context": "/candidate-partner-insights-graphql",
+      "graphqlBackendPath": "/graphql/partner-insights",
+      "contractType": "GraphQL SDL"
     }
   ]
 }

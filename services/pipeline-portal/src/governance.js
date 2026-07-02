@@ -12,13 +12,18 @@ function readText(file) {
 
 function validate(entry, root) {
   const file = path.join(root, entry.spec);
-  const ext = path.extname(file).toLowerCase();
-  if (!fs.existsSync(file)) return violation('CRITICAL', 'artifact-found', 'Artifact file must exist', entry.spec);
+  const protocol = String(entry.protocol || '').toUpperCase();
 
-  if (entry.protocol === 'REST') return validateOpenApi(entry, file);
-  if (entry.protocol === 'ASYNC') return validateAsyncApi(entry, file);
-  if (entry.protocol === 'SOAP') return validateSoap(entry, file, root);
-  return violation('ERROR', 'protocol-supported', 'Protocol must be REST, SOAP, or ASYNC', entry.protocol);
+  if (!fs.existsSync(file)) {
+    return violation('CRITICAL', 'artifact-found', 'Artifact file must exist', entry.spec);
+  }
+
+  if (protocol === 'REST') return validateOpenApi(entry, file);
+  if (protocol === 'ASYNC') return validateAsyncApi(entry, file);
+  if (protocol === 'GRAPHQL') return validateGraphQL(entry, file, root);
+  if (protocol === 'SOAP') return validateSoap(entry, file, root);
+
+  return violation('ERROR', 'protocol-supported', 'Protocol must be REST, SOAP, ASYNC, or GRAPHQL', entry.protocol);
 }
 
 function validateOpenApi(entry, file) {
@@ -67,7 +72,38 @@ function validateAsyncApi(entry, file) {
   return summarize(entry, findings);
 }
 
-function validateSoap(entry, file, root) {
+function validateGraphQL(entry, file, root) {
+  const schema = readText(file);
+  const findings = [];
+
+  requireValue(findings, /schema\s*\{/.test(schema) || /type\s+Query\s*\{/.test(schema), 'graphql-schema', 'GraphQL schema or Query root is required', '$.schema');
+  requireValue(findings, /type\s+Query\s*\{/.test(schema), 'graphql-query-root', 'GraphQL Query root type is required', 'type Query');
+  requireValue(findings, /partnerPortfolio|partnerInsight|marketplaceRecommendations|subscriberOpportunity/.test(schema), 'graphql-business-operations', 'At least one telco partner insight query is required', 'type Query');
+
+  if (entry.metadata) {
+    const mdPath = path.join(root, entry.metadata);
+    if (!fs.existsSync(mdPath)) {
+      findings.push(makeFinding('ERROR', 'graphql-metadata', 'GraphQL governance sidecar metadata is missing', entry.metadata));
+    } else {
+      const md = loadYaml(mdPath);
+      requireValue(findings, md.owner, 'telco-owner', 'Business/API owner is required', '$.owner');
+      requireValue(findings, md.countryScope, 'country-scope', 'Country/market scope is required', '$.countryScope');
+      requireValue(findings, md.dataClassification, 'data-classification', 'Data classification is required', '$.dataClassification');
+      requireValue(findings, md.monetizationModel, 'monetization-model', 'Monetization model is required', '$.monetizationModel');
+      requireValue(findings, md.apiProduct, 'api-product', 'API product mapping is required', '$.apiProduct');
+      requireValue(findings, md.healthcheck && md.healthcheck.path, 'health-path', 'GraphQL health check path is required', '$.healthcheck.path');
+      requireValue(findings, md.healthcheck && md.healthcheck.method, 'health-method', 'GraphQL health check method is required', '$.healthcheck.method');
+      requireValue(findings, md.healthcheck && md.healthcheck.query, 'health-query', 'GraphQL health check query is required', '$.healthcheck.query');
+      requireValue(findings, md.security, 'security-scheme', 'Security model is required', '$.security');
+      requireValue(findings, md.complexity && md.complexity.maxDepth, 'complexity-depth', 'GraphQL max query depth policy is required', '$.complexity.maxDepth');
+      requireValue(findings, md.complexity && md.complexity.maxComplexity, 'complexity-cost', 'GraphQL query complexity policy is required', '$.complexity.maxComplexity');
+    }
+  } else {
+    findings.push(makeFinding('ERROR', 'graphql-metadata', 'GraphQL governance sidecar metadata is required', '$.metadata'));
+  }
+
+  return summarize(entry, findings);
+} function validateSoap(entry, file, root) {
   const wsdl = readText(file);
   const findings = [];
   requireValue(findings, /definitions|wsdl:definitions/.test(wsdl), 'wsdl-definitions', 'WSDL definitions are required', 'wsdl:definitions');

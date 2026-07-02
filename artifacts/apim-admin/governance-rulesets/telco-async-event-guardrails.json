@@ -1,0 +1,44 @@
+{
+  "rules": {
+    "telco-event-classification-required": {
+      "description": "Streaming APIs must classify the events they expose.",
+      "message": "x-telco-event-classification is required.",
+      "severity": "error",
+      "given": "$",
+      "then": {
+        "field": "x-telco-event-classification",
+        "function": "truthy"
+      }
+    },
+    "telco-event-retention-required": {
+      "description": "Streaming APIs must declare an event retention policy.",
+      "message": "x-telco-event-retention is required.",
+      "severity": "error",
+      "given": "$",
+      "then": {
+        "field": "x-telco-event-retention",
+        "function": "truthy"
+      }
+    },
+    "telco-event-monetization-required": {
+      "description": "Streaming APIs must declare their event monetization model.",
+      "message": "x-telco-monetization-model is required.",
+      "severity": "error",
+      "given": "$",
+      "then": {
+        "field": "x-telco-monetization-model",
+        "function": "truthy"
+      }
+    },
+    "telco-channel-address-required": {
+      "description": "Each AsyncAPI channel must expose a concrete address.",
+      "message": "Channel address is required.",
+      "severity": "warn",
+      "given": "$.channels[*]",
+      "then": {
+        "field": "address",
+        "function": "truthy"
+      }
+    }
+  }
+}
