@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:fw="http://example.com/telco/field-workorder">
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wor="http://demo.telco.wso2.com/workorder">
   <soapenv:Header/>
   <soapenv:Body>
-    <fw:CreateWorkOrderRequest>
-      <fw:customerId>CUST-10001</fw:customerId>
-      <fw:siteId>BR-SP-EDGE-03</fw:siteId>
-      <fw:priority>HIGH</fw:priority>
-      <fw:description>Field technician required for site inspection.</fw:description>
-    </fw:CreateWorkOrderRequest>
+    <wor:CreateWorkOrderRequest>
+      <wor:customerId>CUST-10001</wor:customerId>
+      <wor:siteId>BR-SP-EDGE-03</wor:siteId>
+      <wor:priority>HIGH</wor:priority>
+      <wor:description>Field technician required for site inspection.</wor:description>
+    </wor:CreateWorkOrderRequest>
   </soapenv:Body>
 </soapenv:Envelope>

@@ -84,17 +84,44 @@ function deleteLegacyApiIfPossible(apimUrl, token, name, version, log = console.
 
 function soapTryoutSample() {
   return `<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:bil="http://example.com/telco/billing-adjustment">
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:bil="http://demo.telco.wso2.com/billing">
   <soapenv:Header/>
   <soapenv:Body>
     <bil:CreateBillingAdjustmentRequest>
-      <bil:customerId>CUST-10001</bil:customerId>
       <bil:msisdn>+5511999990001</bil:msisdn>
       <bil:amount>12.50</bil:amount>
-      <bil:reason>Demo billing adjustment through SOAP pass-through API.</bil:reason>
+      <bil:currency>BRL</bil:currency>
+      <bil:reasonCode>DEMO_CREDIT</bil:reasonCode>
+      <bil:requestor>apim-publisher-demo</bil:requestor>
     </bil:CreateBillingAdjustmentRequest>
   </soapenv:Body>
 </soapenv:Envelope>`;
+} function soapBodySchema(sample) {
+  return {
+    type: 'string',
+    format: 'xml',
+    default: sample,
+    example: sample,
+    'x-example': sample,
+    xml: {
+      name: 'Envelope',
+      namespace: 'http://schemas.xmlsoap.org/soap/envelope/',
+      prefix: 'soapenv'
+    }
+  };
+}
+
+function soapActionHeaderParameter(action) {
+  const quotedAction = `"${action}"`;
+  return {
+    name: 'SOAPAction',
+    in: 'header',
+    description: 'SOAPAction header for SOAP 1.1.',
+    required: true,
+    type: 'string',
+    default: quotedAction,
+    enum: [quotedAction]
+  };
 }
 
 function patchSoapTryoutExample({ apimUrl, token, apiId, log = console.log }) {
@@ -139,17 +166,23 @@ function patchSoapTryoutExample({ apimUrl, token, apiId, log = console.log }) {
         }
 
         body.name = 'SOAP Request';
-        body.description = 'SOAP request envelope.';
-        body.required = true;
-        body.schema = {
-          type: 'string',
-          example: sample
-        };
+body.description = 'SOAP request envelope.';
+body.required = true;
+body.schema = soapBodySchema(sample);
+body['x-example'] = sample;
+body['x-examples'] = {
+  'text/xml': sample,
+  'application/xml': sample
+};
+operation['x-examples'] = {
+  'text/xml': sample,
+  'application/xml': sample
+};
 
-        operation['x-examples'] = {
-          'text/xml': sample,
-          'application/xml': sample
-        };
+if (Array.isArray(operation.parameters)) {
+  operation.parameters = operation.parameters.filter(p => p.name !== 'SOAPAction');
+  operation.parameters.unshift(soapActionHeaderParameter('CreateBillingAdjustment'));
+}
       }
     }
   } else if (swagger.openapi) {
@@ -160,18 +193,30 @@ function patchSoapTryoutExample({ apimUrl, token, apiId, log = console.log }) {
         operation.summary = operation.summary || 'Invoke SOAP operation';
         operation.description = 'Paste a SOAP envelope and invoke the SOAP pass-through API.';
         operation.requestBody = {
-          required: true,
-          content: {
-            'text/xml': {
-              schema: { type: 'string' },
-              example: sample
-            },
-            'application/xml': {
-              schema: { type: 'string' },
-              example: sample
-            }
-          }
-        };
+  required: true,
+  content: {
+    'text/xml': {
+      schema: soapBodySchema(sample),
+      example: sample,
+      examples: {
+        default: {
+          summary: 'SOAP request envelope',
+          value: sample
+        }
+      }
+    },
+    'application/xml': {
+      schema: soapBodySchema(sample),
+      example: sample,
+      examples: {
+        default: {
+          summary: 'SOAP request envelope',
+          value: sample
+        }
+      }
+    }
+  }
+};
       }
     }
   }

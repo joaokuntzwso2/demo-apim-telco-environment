@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:bil="http://example.com/telco/billing-adjustment">
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:bil="http://demo.telco.wso2.com/billing">
   <soapenv:Header/>
   <soapenv:Body>
     <bil:CreateBillingAdjustmentRequest>
-      <bil:customerId>CUST-10001</bil:customerId>
       <bil:msisdn>+5511999990001</bil:msisdn>
       <bil:amount>12.50</bil:amount>
-      <bil:reason>Demo billing adjustment through SOAP pass-through API.</bil:reason>
+      <bil:currency>BRL</bil:currency>
+      <bil:reasonCode>DEMO_CREDIT</bil:reasonCode>
+      <bil:requestor>apim-publisher-demo</bil:requestor>
     </bil:CreateBillingAdjustmentRequest>
   </soapenv:Body>
 </soapenv:Envelope>
