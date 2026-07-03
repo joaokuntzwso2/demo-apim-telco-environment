@@ -1,0 +1,111 @@
+{
+  "id": "regional-federated-gateway-dashboard",
+  "name": "Regional & Federated Gateway Dashboard",
+  "description": "Business-oriented dashboard for a multi-country telco API platform operating centralized governance with federated API runtimes.",
+  "businessStory": "A regional telco group wants one API business model, but execution must happen close to each market, cloud, edge location and partner ecosystem. The platform governs centrally while gateway runtimes operate regionally.",
+  "businessOutcome": "Accelerates multi-country rollout, reduces operational fragmentation and gives business teams visibility into API products, runtime health, commercial exposure and regional readiness.",
+  "controlPlane": {
+    "name": "WSO2 API Manager Control Plane",
+    "role": "Central API design, lifecycle, governance, productization, subscription, policy and analytics coordination.",
+    "scope": "Regional / group-level API operating model"
+  },
+  "federatedRuntimes": [
+    {
+      "id": "mx-central",
+      "country": "Mexico",
+      "region": "LATAM North",
+      "runtimeType": "WSO2 Universal Gateway",
+      "deployment": "OpenShift",
+      "status": "Healthy",
+      "latencyMs": 42,
+      "availabilityPct": 99.98,
+      "apiProducts": 18,
+      "monthlyCalls": 84200000,
+      "businessFocus": "Open Gateway fraud APIs and partner onboarding",
+      "risk": "Low"
+    },
+    {
+      "id": "br-southeast",
+      "country": "Brazil",
+      "region": "LATAM South",
+      "runtimeType": "WSO2 Universal Gateway + Kafka event bridge",
+      "deployment": "Kubernetes",
+      "status": "Healthy",
+      "latencyMs": 38,
+      "availabilityPct": 99.99,
+      "apiProducts": 24,
+      "monthlyCalls": 128700000,
+      "businessFocus": "5G monetization, BSS exposure and event-native products",
+      "risk": "Low"
+    },
+    {
+      "id": "co-andes",
+      "country": "Colombia",
+      "region": "Andean",
+      "runtimeType": "Federated Gateway",
+      "deployment": "Hybrid cloud",
+      "status": "Warning",
+      "latencyMs": 71,
+      "availabilityPct": 99.91,
+      "apiProducts": 11,
+      "monthlyCalls": 33600000,
+      "businessFocus": "Customer and BSS partner APIs",
+      "risk": "Medium"
+    },
+    {
+      "id": "cl-edge",
+      "country": "Chile",
+      "region": "Southern Cone",
+      "runtimeType": "Edge Gateway",
+      "deployment": "Edge / regional PoP",
+      "status": "Healthy",
+      "latencyMs": 29,
+      "availabilityPct": 99.96,
+      "apiProducts": 9,
+      "monthlyCalls": 21800000,
+      "businessFocus": "Low-latency enterprise APIs",
+      "risk": "Low"
+    },
+    {
+      "id": "regional-events",
+      "country": "Regional",
+      "region": "Multi-country event fabric",
+      "runtimeType": "Event Gateway / Kafka-compatible broker",
+      "deployment": "Redpanda demo broker",
+      "status": "Healthy",
+      "latencyMs": 18,
+      "availabilityPct": 99.95,
+      "apiProducts": 6,
+      "monthlyCalls": 15900000,
+      "businessFocus": "Event-native monetization and SLA alerts",
+      "risk": "Low"
+    }
+  ],
+  "federationModel": [
+    {
+      "capability": "Central governance",
+      "description": "API standards, lifecycle gates, security policies and metadata rules remain centrally governed."
+    },
+    {
+      "capability": "Regional runtime autonomy",
+      "description": "Each country or runtime cluster can execute traffic locally while still following global policy."
+    },
+    {
+      "capability": "Commercial product consistency",
+      "description": "API products, plans and billing metadata are aligned across countries for regional partners."
+    },
+    {
+      "capability": "Event-native expansion",
+      "description": "REST, SOAP, streaming and Kafka-style event products are represented in the same operating model."
+    }
+  ],
+  "executiveKpis": {
+    "countries": 5,
+    "gatewayRuntimes": 5,
+    "apiProducts": 68,
+    "monthlyCalls": 284200000,
+    "averageLatencyMs": 40,
+    "availabilityPct": 99.96,
+    "estimatedMonthlyRevenueUsd": 1840000
+  }
+}

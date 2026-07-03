@@ -1,4 +1,6 @@
 const express = require('express');
+const { registerDemoArtifactRoutes } = require('./demo-artifact-routes');
+const { registerRegionalGatewayRoutes } = require('./regional-gateway-routes');
 const { registerKafkaRoutes } = require('./kafka-routes'); const { graphql, buildSchema } = require('graphql');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -6,12 +8,14 @@ const http = require('http');
 const { WebSocketServer } = require('ws');
 
 const app = express();
+registerDemoArtifactRoutes(app);
 const port = Number(process.env.PORT || 8081);
 const brand = process.env.MOCK_TELCO_BRAND || 'Regional Telco Group';
 
 app.use(cors());
 app.use(morgan('tiny'));
 app.use(express.json({ limit: '2mb' }));
+registerRegionalGatewayRoutes(app);
 registerKafkaRoutes(app);
 app.use(express.text({ type: ['text/xml', 'application/xml', '*/xml'], limit: '2mb' }));
 

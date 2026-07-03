@@ -22,3 +22,8 @@ curl -s http://localhost:8081/api/v1/moesif/export | python3 -m json.tool | head
 echo
 echo "== Kafka status =="
 curl -s http://localhost:8081/api/v1/kafka/status | python3 -m json.tool || true
+
+
+echo
+echo "== Regional gateway dashboard =="
+curl -s http://localhost:8081/api/v1/regional-gateways/dashboard | python3 -m json.tool | head -120 || true

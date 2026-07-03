@@ -31,6 +31,12 @@
       time: '4 min',
       talk: 'Show that the telco can productize event streams as Kafka-style topics, not only synchronous REST APIs. Partners subscribe to governed network, fraud and settlement events, and each delivered event becomes a billable Moesif meter.',
       proof: ['Kafka-style topic catalog', 'Broker event delivery', 'SLA alert metering', 'Event-stream settlement']
+    },
+    {
+      title: 'Regional federated gateways',
+      time: '4 min',
+      talk: 'Show how a regional telco group can keep central API governance while executing traffic through country, cloud, edge and event-native gateway runtimes.',
+      proof: ['Central control plane', 'Country gateway estate', 'Edge runtime visibility', 'Regional failover simulation']
     }
   ];
 

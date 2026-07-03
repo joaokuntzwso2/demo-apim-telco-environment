@@ -26,6 +26,8 @@ services:
       - "9644:9644"
 
   telco-backend:
+    volumes:
+      - ./artifacts:/workspace/artifacts:ro
     environment:
       KAFKA_ENABLED: "true"
       KAFKA_BROKERS: redpanda:9092

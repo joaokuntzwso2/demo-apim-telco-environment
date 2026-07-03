@@ -1634,3 +1634,191 @@ body.og-portal-page {
   }
 }
 /* END REAL KAFKA UI */
+
+/* BEGIN REGIONAL FEDERATED GATEWAY DASHBOARD */
+.regional-gateway-dashboard {
+  display: grid;
+  gap: 18px;
+}
+
+.gateway-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gateway-kpi-grid article,
+.gateway-runtime-card,
+.gateway-model-row {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.08);
+}
+
+.gateway-kpi-grid span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gateway-kpi-grid strong {
+  display: block;
+  color: #0f172a;
+  font-size: 26px;
+  margin-top: 8px;
+}
+
+.gateway-runtime-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.gateway-runtime-card {
+  border-top: 5px solid #2563eb;
+}
+
+.gateway-runtime-card.healthy {
+  border-top-color: #16a34a;
+}
+
+.gateway-runtime-card.warning {
+  border-top-color: #f59e0b;
+}
+
+.gateway-runtime-card.critical {
+  border-top-color: #dc2626;
+}
+
+.runtime-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.runtime-top h3 {
+  margin: 4px 0 0;
+  color: #0f172a;
+}
+
+.runtime-top span {
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.gateway-runtime-card.healthy .runtime-top span {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.gateway-runtime-card.warning .runtime-top span {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.gateway-runtime-card p {
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.gateway-runtime-card dl {
+  display: grid;
+  gap: 9px;
+  margin: 14px 0 0;
+}
+
+.gateway-runtime-card dl div {
+  display: grid;
+  grid-template-columns: 95px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.gateway-runtime-card dt {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.gateway-runtime-card dd {
+  margin: 0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.gateway-two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+}
+
+.gateway-model-row {
+  margin-top: 12px;
+}
+
+.gateway-model-row strong {
+  color: #0f172a;
+}
+
+.gateway-model-row p {
+  color: #64748b;
+  margin-bottom: 0;
+}
+
+.gateway-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gateway-action {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 15px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.gateway-output {
+  min-height: 260px;
+  max-height: 420px;
+  overflow: auto;
+  border-radius: 16px;
+  padding: 16px;
+  background: #0f172a;
+  color: #bbf7d0;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1400px) {
+  .gateway-kpi-grid,
+  .gateway-runtime-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gateway-two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .gateway-kpi-grid,
+  .gateway-runtime-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* END REGIONAL FEDERATED GATEWAY DASHBOARD */

@@ -22,6 +22,7 @@
         <button class="nav-item active" data-tab="overview">Executive overview</button>
         <button class="nav-item" data-tab="customer">Customer & BSS</button>
         <button class="nav-item" data-tab="network">Network APIs</button>
+        <button class="nav-item" data-tab="regionalGateways">Regional gateways</button>
         <button class="nav-item" data-tab="commercial">Products & monetization</button>
         <button class="nav-item" data-tab="runtime">Streaming & legacy</button>
         <button class="nav-item" data-tab="openGateway">Open Gateway</button>
@@ -247,7 +248,56 @@
         </article>
 
 </section>
-      </main>
+      
+      <section id="tab-regionalGateways" class="tab-panel">
+        <div class="regional-gateway-dashboard">
+          <article class="story-card accent">
+            <div class="card-kicker">Regional control plane</div>
+            <h2>Federated gateway dashboard</h2>
+            <p>
+              One API business model across multiple countries, clouds, edge locations and runtime types.
+              Central governance stays consistent while traffic executes close to each market.
+            </p>
+          </article>
+
+          <div class="gateway-kpi-grid" id="regionalGatewayKpis"></div>
+
+          <article class="story-card">
+            <div class="section-heading">
+              <div>
+                <div class="card-kicker">Federated runtimes</div>
+                <h2>Regional gateway estate</h2>
+                <p>Country, edge and event runtimes operating under one API product and governance model.</p>
+              </div>
+              <button class="gateway-action" id="refreshRegionalGateways">Refresh dashboard</button>
+            </div>
+            <div class="gateway-runtime-grid" id="regionalGatewayRuntimeGrid"></div>
+          </article>
+
+          <div class="gateway-two-column">
+            <article class="story-card">
+              <div class="card-kicker">Operating model</div>
+              <h2>How federation works</h2>
+              <div id="regionalGatewayModel"></div>
+            </article>
+
+            <article class="story-card">
+              <div class="card-kicker">Failover simulation</div>
+              <h2>Regional runtime failover</h2>
+              <p>
+                Simulate a degraded country gateway and show how selected API traffic can move to another runtime
+                without changing the central API product model.
+              </p>
+              <div class="gateway-actions">
+                <button class="gateway-action" id="simulateRegionalFailover">Simulate failover</button>
+              </div>
+              <pre class="gateway-output" id="regionalGatewayOutput">Waiting...</pre>
+            </article>
+          </div>
+        </div>
+      </section>
+
+    </main>
     </div>
   </div>
 
@@ -255,5 +305,6 @@
   <script src="/app.js"></script>
   <script defer src="/open-gateway-trust-pack.js"></script>
   <script src="/kafka-ui.js"></script>
+  <script src="/regional-gateway-dashboard.js"></script>
 </body>
 </html>
