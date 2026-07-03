@@ -1,0 +1,35 @@
+services:
+  redpanda:
+    image: redpandadata/redpanda:latest
+    container_name: telco-redpanda
+    command:
+      - redpanda
+      - start
+      - --mode
+      - dev-container
+      - --smp
+      - "1"
+      - --memory
+      - 512M
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr
+      - internal://redpanda:9092,external://localhost:19092
+    ports:
+      - "19092:19092"
+      - "9644:9644"
+
+  telco-backend:
+    environment:
+      KAFKA_ENABLED: "true"
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_CLIENT_ID: telco-demo-backend
+      KAFKA_GROUP_ID: telco-demo-portal-group
+    depends_on:
+      - redpanda

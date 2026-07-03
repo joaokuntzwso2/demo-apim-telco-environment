@@ -1,0 +1,107 @@
+const express = require('express');
+const {
+  kafkaTopics,
+  kafkaStatus,
+  publishKafkaEvent,
+  recentKafkaEvents
+} = require('./kafka-broker');
+
+
+ 
+
+app.get('/api/v1/kafka/status', async (req, res) => {
+  res.json(await kafkaStatus());
+});
+
+app.get('/api/v1/kafka/topics', async (req, res) => {
+  res.json({
+    topics: kafkaTopics,
+    story: 'Real Kafka-protocol topics used by the event-native telco monetization demo.'
+  });
+});
+
+app.get('/api/v1/kafka/topics/:topic/events', async (req, res) => {
+  const topic = req.params.topic;
+
+  if (!kafkaTopics.includes(topic)) {
+    return res.status(404).json({
+      error: 'topic_not_found',
+      topic,
+      availableTopics: kafkaTopics
+    });
+  }
+
+  res.json(await recentKafkaEvents(topic));
+});
+
+app.post('/api/v1/kafka/topics/:topic/events', async (req, res) => {
+  const topic = req.params.topic;
+
+  if (!kafkaTopics.includes(topic)) {
+    return res.status(404).json({
+      error: 'topic_not_found',
+      topic,
+      availableTopics: kafkaTopics
+    });
+  }
+
+  const event = Object.assign({
+    eventId: `evt-${Date.now()}`,
+    eventType: 'BROKER_EVENT',
+    topic,
+    partnerId: 'demo-partner',
+    country: 'BR',
+    payload: {
+      message: 'Demo Kafka event'
+    },
+    commercial: {
+      billable: true,
+      meter: 'broker_event_delivery',
+      productKey: 'moesif_prod_event_native_broker_simulation',
+      billingCatalogReference: 'billing.catalog.event-native-broker-simulation.v1',
+      revenueShareModel: 'EVENT_STREAM_REVENUE_SHARE',
+      settlementOwner: 'Telco Network Monetization Office'
+    }
+  }, req.body || {});
+
+  const result = await publishKafkaEvent(topic, event);
+  res.status(result.delivered ? 201 : 202).json(result);
+});
+
+app.post('/api/v1/kafka/produce-network-incident', async (req, res) => {
+  const event = {
+    eventId: `evt-network-sla-${Date.now()}`,
+    eventType: 'NETWORK_SLA_DEGRADATION',
+    topic: 'telco.network.qod.events',
+    partnerId: req.body?.partnerId || 'enterprise-private-5g',
+    country: req.body?.country || 'BR',
+    region: req.body?.region || 'Sao Paulo',
+    sliceId: req.body?.sliceId || 'slice-enterprise-sp-001',
+    severity: req.body?.severity || 'CRITICAL',
+    latencyMs: Number(req.body?.latencyMs || 92),
+    packetLossPct: Number(req.body?.packetLossPct || 2.4),
+    commercial: {
+      billable: true,
+      meter: 'sla_alert_delivery',
+      productKey: 'moesif_prod_event_native_broker_simulation',
+      billingCatalogReference: 'billing.catalog.event-native-broker-simulation.v1',
+      revenueShareModel: 'EVENT_STREAM_REVENUE_SHARE',
+      settlementOwner: 'Telco Network Monetization Office'
+    },
+    story: 'A real Kafka-protocol network SLA event was produced and can be metered as an event-native API product.'
+  };
+
+  const result = await publishKafkaEvent('telco.network.qod.events', event);
+
+  res.status(result.delivered ? 201 : 202).json({
+    accepted: true,
+    story: 'A real Kafka-protocol event was produced to the broker topic when Kafka is connected.',
+    kafka: result,
+    moesifMeter: {
+      eventName: 'sla_alert_delivery',
+      productKey: 'moesif_prod_event_native_broker_simulation',
+      billingCatalogReference: 'billing.catalog.event-native-broker-simulation.v1'
+    }
+  });
+});
+// END REAL KAFKA UI ROUTES

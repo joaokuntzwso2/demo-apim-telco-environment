@@ -25,6 +25,12 @@
       time: '4 min',
       talk: 'Show how WSO2 owns API product exposure while Moesif receives product, meter and settlement metadata.',
       proof: ['Billing catalog reference', 'Product keys', 'Revenue share models', 'Settlement owner']
+    },
+    {
+      title: 'Event-native broker monetization',
+      time: '4 min',
+      talk: 'Show that the telco can productize event streams as Kafka-style topics, not only synchronous REST APIs. Partners subscribe to governed network, fraud and settlement events, and each delivered event becomes a billable Moesif meter.',
+      proof: ['Kafka-style topic catalog', 'Broker event delivery', 'SLA alert metering', 'Event-stream settlement']
     }
   ];
 
@@ -233,7 +239,13 @@
       const result = {
         backendHealth: await fetchJson(`${BACKEND}/health`),
         apiProductBundles: await fetchJson(`${BACKEND}/api/v1/api-product-bundles`),
-        moesifExport: await fetchJson(`${BACKEND}/api/v1/moesif/export`)
+        moesifExport: await fetchJson(`${BACKEND}/api/v1/moesif/export`),
+        eventBrokerSimulation: await fetchJson(`${BACKEND}/api/v1/event-broker/simulation`),
+        eventBrokerIncident: await fetchJson(`${BACKEND}/api/v1/event-broker/simulate/network-incident`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ partnerId: 'enterprise-private-5g', country: 'BR', region: 'Sao Paulo' })
+        })
       };
 
       writeJson('rtx-platform-check-result', result);

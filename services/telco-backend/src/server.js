@@ -1,4 +1,5 @@
-const express = require('express'); const { graphql, buildSchema } = require('graphql');
+const express = require('express');
+const { registerKafkaRoutes } = require('./kafka-routes'); const { graphql, buildSchema } = require('graphql');
 const cors = require('cors');
 const morgan = require('morgan');
 const http = require('http');
@@ -11,6 +12,7 @@ const brand = process.env.MOCK_TELCO_BRAND || 'Regional Telco Group';
 app.use(cors());
 app.use(morgan('tiny'));
 app.use(express.json({ limit: '2mb' }));
+registerKafkaRoutes(app);
 app.use(express.text({ type: ['text/xml', 'application/xml', '*/xml'], limit: '2mb' }));
 
 const countries = [

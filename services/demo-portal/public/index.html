@@ -192,7 +192,61 @@
               <pre id="soapResult"></pre>
             </article>
           </div>
-        </section>
+        
+        <article class="story-card accent">
+          <div class="card-kicker">Event-native monetization</div>
+          <h2>Event-native broker simulation</h2>
+          <p>
+            Kafka-style topic catalog for network, fraud and settlement events.
+            This shows how the telco monetizes real-time event delivery in addition to REST APIs.
+          </p>
+          <div class="mini-grid">
+            <span>telco.network.qod.events</span>
+            <span>telco.fraud.sim-swap.events</span>
+            <span>telco.partner.settlement.events</span>
+          </div>
+        </article>
+
+        <article class="story-card accent kafka-demo-card">
+          <div class="card-kicker">Real Kafka event-native demo</div>
+          <h2>Kafka broker event monetization</h2>
+          <p>
+            Publish a real Kafka-protocol network SLA event into Redpanda, then read the consumed event back from the telco broker topic.
+          </p>
+
+          <div class="kafka-form">
+            <label>
+              Partner
+              <input id="kafkaPartnerId" value="enterprise-private-5g" />
+            </label>
+            <label>
+              Country
+              <input id="kafkaCountry" value="BR" />
+            </label>
+            <label>
+              Region
+              <input id="kafkaRegion" value="Sao Paulo" />
+            </label>
+            <label>
+              Severity
+              <select id="kafkaSeverity">
+                <option>CRITICAL</option>
+                <option>HIGH</option>
+                <option>INFO</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="kafka-actions">
+            <button id="kafkaRefreshStatus">Kafka status</button>
+            <button id="kafkaPublishIncident">Publish SLA event</button>
+            <button id="kafkaConsumeEvents">Read events</button>
+          </div>
+
+          <pre id="kafkaUiOutput" class="kafka-output">Waiting...</pre>
+        </article>
+
+</section>
       </main>
     </div>
   </div>
@@ -200,5 +254,6 @@
   <script src="/config.js"></script>
   <script src="/app.js"></script>
   <script defer src="/open-gateway-trust-pack.js"></script>
+  <script src="/kafka-ui.js"></script>
 </body>
 </html>

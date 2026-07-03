@@ -1,7 +1,7 @@
 {
   "artifactType": "moesif.billing_catalog.export",
   "schemaVersion": "telco-demo/v1",
-  "generatedAt": "2026-07-03T17:00:31.646757+00:00",
+  "generatedAt": "2026-07-03T20:10:22.650461+00:00",
   "source": {
     "system": "WSO2 API Manager",
     "description": "API product bundle metadata, subscription plan references and billing dimensions prepared for Moesif."
@@ -247,6 +247,50 @@
         "wso2_governance_label": "Telco Commercial APIs",
         "demo_storyline": "The telco exposes selected legacy BSS functions safely to digital channels while keeping governance, throttling and monetization centralized."
       }
+    },
+    {
+      "productId": "event-native-broker-simulation",
+      "productKey": "moesif_prod_event_native_broker_simulation",
+      "name": "Event-Native Broker Simulation",
+      "description": "Kafka-style broker simulation for telco event monetization.",
+      "businessStory": "Partners subscribe to governed network, fraud and settlement event topics instead of polling REST APIs.",
+      "businessOutcome": "Real-time telco events become billable products with event-level metering and settlement.",
+      "buyer": "Banks, wallets, mobility platforms, enterprise private 5G customers and settlement teams",
+      "companyId": "regional-telco-group",
+      "billingCatalogReference": "billing.catalog.event-native-broker-simulation.v1",
+      "revenueShareModel": "EVENT_STREAM_REVENUE_SHARE",
+      "settlementOwner": "Telco Network Monetization Office",
+      "productLine": "Event-Native Network Monetization",
+      "markets": [
+        "BR",
+        "MX",
+        "CO",
+        "CL"
+      ],
+      "plans": [
+        "TelcoEventStreamPremium"
+      ],
+      "apim": {
+        "apiProductName": "EventNativeBrokerSimulationProduct",
+        "context": "/products/event-native-broker-simulation/v1",
+        "version": "1.0.0",
+        "visibility": "PUBLIC",
+        "governanceLabel": "Telco Commercial Streaming APIs"
+      },
+      "apis": [
+        {
+          "apiName": "NetworkEventsStreamAPI",
+          "capability": "Network event stream",
+          "method": "SSE",
+          "path": "/events/network-events",
+          "meter": "network_event_delivery"
+        }
+      ],
+      "metadata": {
+        "event_native": "true",
+        "broker_style": "Kafka-compatible simulation",
+        "demo_storyline": "Governed real-time events as monetizable API products"
+      }
     }
   ],
   "billingMeters": [
@@ -384,6 +428,60 @@
       "aggregation": "count",
       "billable": true,
       "revenueShareModel": "LEGACY_BSS_REVENUE_SHARE"
+    },
+    {
+      "meterId": "event-native-broker-simulation.broker_topic_subscription",
+      "productId": "event-native-broker-simulation",
+      "productKey": "moesif_prod_event_native_broker_simulation",
+      "eventName": "broker_topic_subscription",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "EVENT_STREAM_REVENUE_SHARE"
+    },
+    {
+      "meterId": "event-native-broker-simulation.broker_event_delivery",
+      "productId": "event-native-broker-simulation",
+      "productKey": "moesif_prod_event_native_broker_simulation",
+      "eventName": "broker_event_delivery",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "EVENT_STREAM_REVENUE_SHARE"
+    },
+    {
+      "meterId": "event-native-broker-simulation.fraud_event_delivery",
+      "productId": "event-native-broker-simulation",
+      "productKey": "moesif_prod_event_native_broker_simulation",
+      "eventName": "fraud_event_delivery",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "EVENT_STREAM_REVENUE_SHARE"
+    },
+    {
+      "meterId": "event-native-broker-simulation.network_event_delivery",
+      "productId": "event-native-broker-simulation",
+      "productKey": "moesif_prod_event_native_broker_simulation",
+      "eventName": "network_event_delivery",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "EVENT_STREAM_REVENUE_SHARE"
+    },
+    {
+      "meterId": "event-native-broker-simulation.settlement_event_delivery",
+      "productId": "event-native-broker-simulation",
+      "productKey": "moesif_prod_event_native_broker_simulation",
+      "eventName": "settlement_event_delivery",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "EVENT_STREAM_REVENUE_SHARE"
+    },
+    {
+      "meterId": "event-native-broker-simulation.sla_alert_delivery",
+      "productId": "event-native-broker-simulation",
+      "productKey": "moesif_prod_event_native_broker_simulation",
+      "eventName": "sla_alert_delivery",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "EVENT_STREAM_REVENUE_SHARE"
     }
   ],
   "usageEventExamples": [
@@ -429,6 +527,17 @@
         "api_product_bundle": "Legacy BSS Modernization Bundle",
         "business_outcome": "Modernize legacy revenue operations through API governance instead of a risky backend replacement program.",
         "settlement_owner": "Telco BSS Finance"
+      }
+    },
+    {
+      "eventName": "broker_event_delivery",
+      "companyId": "regional-telco-group",
+      "productKey": "moesif_prod_event_native_broker_simulation",
+      "billingCatalogReference": "billing.catalog.event-native-broker-simulation.v1",
+      "metadata": {
+        "topic": "telco.network.qod.events",
+        "broker": "Kafka-compatible simulation",
+        "settlement_owner": "Telco Network Monetization Office"
       }
     }
   ]

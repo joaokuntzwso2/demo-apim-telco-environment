@@ -1564,3 +1564,73 @@ body.og-portal-page {
   }
 }
 /* END NATIVE TAB CONTENT EXTENSIONS */
+
+/* BEGIN REAL KAFKA UI */
+.kafka-demo-card {
+  margin-top: 18px;
+}
+
+.kafka-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.kafka-form label {
+  display: grid;
+  gap: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.kafka-form input,
+.kafka-form select {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 11px 12px;
+  color: #0f172a;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 700;
+}
+
+.kafka-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.kafka-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 15px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.kafka-output {
+  min-height: 220px;
+  max-height: 420px;
+  overflow: auto;
+  border-radius: 16px;
+  padding: 16px;
+  background: #0f172a;
+  color: #bbf7d0;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1000px) {
+  .kafka-form {
+    grid-template-columns: 1fr;
+  }
+}
+/* END REAL KAFKA UI */

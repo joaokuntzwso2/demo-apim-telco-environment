@@ -1,0 +1,56 @@
+{
+  "id": "event-native-broker-simulation",
+  "name": "Event-Native Broker Simulation",
+  "description": "Kafka-style broker simulation for telco event monetization, showing how partners subscribe to governed network, fraud and SLA event topics.",
+  "businessStory": "A regional telco exposes not only REST APIs, but also monetizable real-time event streams. Banks, mobility partners and enterprise customers subscribe to governed event topics and are charged based on event delivery, topic subscription and SLA-critical alerts.",
+  "businessOutcome": "Turns network events into a sellable product line with governance, throttling, observability, partner settlement and event-level metering.",
+  "brokerModel": {
+    "style": "Kafka-compatible simulation",
+    "runtime": "Local mock broker API",
+    "productionMapping": [
+      "Kafka",
+      "Redpanda",
+      "Confluent Kafka",
+      "WSO2 Event Gateway",
+      "WSO2 Streaming Integrator",
+      "Cloud event broker"
+    ]
+  },
+  "topics": [
+    {
+      "topic": "telco.network.qod.events",
+      "domain": "5G Network Monetization",
+      "description": "Quality-on-demand and network SLA events for enterprise and mobility partners.",
+      "commercialMeter": "network_event_delivery",
+      "sampleConsumers": ["enterprise-private-5g", "mobility-platform", "iot-aggregator"]
+    },
+    {
+      "topic": "telco.fraud.sim-swap.events",
+      "domain": "Open Gateway Fraud Defense",
+      "description": "SIM swap and high-risk identity events for banks, wallets and marketplaces.",
+      "commercialMeter": "fraud_event_delivery",
+      "sampleConsumers": ["digital-bank", "wallet-provider", "marketplace-risk-engine"]
+    },
+    {
+      "topic": "telco.partner.settlement.events",
+      "domain": "Partner Settlement",
+      "description": "Usage, charging and settlement events for partner revenue-share operations.",
+      "commercialMeter": "settlement_event_delivery",
+      "sampleConsumers": ["partner-finance", "revenue-assurance", "billing-ops"]
+    }
+  ],
+  "moesif": {
+    "productLine": "Event-Native Network Monetization",
+    "billingCatalogReference": "billing.catalog.event-native-broker-simulation.v1",
+    "revenueShareModel": "EVENT_STREAM_REVENUE_SHARE",
+    "settlementOwner": "Telco Network Monetization Office",
+    "meters": [
+      "broker_topic_subscription",
+      "broker_event_delivery",
+      "fraud_event_delivery",
+      "network_event_delivery",
+      "settlement_event_delivery",
+      "sla_alert_delivery"
+    ]
+  }
+}
