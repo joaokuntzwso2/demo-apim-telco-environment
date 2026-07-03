@@ -10,7 +10,10 @@
       "countryScope": "MX,BR,CO",
       "description": "Candidate API for stadium connectivity packages, premium event passes, temporary 5G capacity reservations, and venue partner activation.",
       "spec": "contracts/openapi/candidate-stadium-experience.openapi.yaml",
-      "contractType": "OpenAPI"
+      "contractType": "OpenAPI",
+      "governanceLabels": [
+        "Telco Commercial APIs"
+      ]
     },
     {
       "id": "candidate-iot-fleet",
@@ -22,7 +25,10 @@
       "countryScope": "BR,CO,CL,PE",
       "description": "Candidate API for enterprise fleet device telemetry, SIM status, vehicle heartbeat checks, and IoT monetization packages.",
       "spec": "contracts/openapi/candidate-iot-fleet-telemetry.openapi.yaml",
-      "contractType": "OpenAPI"
+      "contractType": "OpenAPI",
+      "governanceLabels": [
+        "Telco Commercial APIs"
+      ]
     },
     {
       "id": "candidate-drone-events",
@@ -38,7 +44,11 @@
       "contractType": "AsyncAPI/SSE",
       "type": "SSE",
       "context": "/candidate-drone-inspection-events/v1",
-      "streamingBackendPath": "/events/drone-inspections"
+      "streamingBackendPath": "/events/drone-inspections",
+      "governanceLabels": [
+        "Telco Commercial Streaming APIs",
+        "Telco Governed Streaming APIs"
+      ]
     },
     {
       "id": "candidate-edge-cache",
@@ -50,7 +60,10 @@
       "countryScope": "MX,BR,CO,CL",
       "description": "Candidate API for edge-cache invalidation, partner content pre-warming, CDN policy selection, and traffic steering at regional edge sites.",
       "spec": "contracts/openapi/candidate-edge-cache-control.openapi.yaml",
-      "contractType": "OpenAPI"
+      "contractType": "OpenAPI",
+      "governanceLabels": [
+        "Telco Commercial APIs"
+      ]
     },
     {
       "id": "candidate-bad-roaming-sponsor",

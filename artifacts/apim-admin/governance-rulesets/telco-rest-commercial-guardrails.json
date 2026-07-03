@@ -4,7 +4,13 @@
       "description": "Every operation must have a stable operationId for APIOps, SDK generation and audit traceability.",
       "message": "Operation is missing operationId.",
       "severity": "error",
-      "given": "$.paths[*][get,post,put,patch,delete]",
+      "given": [
+        "$.paths.*.get",
+        "$.paths.*.post",
+        "$.paths.*.put",
+        "$.paths.*.patch",
+        "$.paths.*.delete"
+      ],
       "then": {
         "field": "operationId",
         "function": "truthy"
@@ -14,7 +20,13 @@
       "description": "Commercial APIs must document quota and throttling behavior.",
       "message": "Operation must document HTTP 429 response.",
       "severity": "warn",
-      "given": "$.paths[*][get,post,put,patch,delete].responses",
+      "given": [
+        "$.paths.*.get.responses",
+        "$.paths.*.post.responses",
+        "$.paths.*.put.responses",
+        "$.paths.*.patch.responses",
+        "$.paths.*.delete.responses"
+      ],
       "then": {
         "field": "429",
         "function": "truthy"

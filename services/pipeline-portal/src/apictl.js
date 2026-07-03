@@ -187,12 +187,146 @@ function getPublisherTokenForSoap(env, log) {
     '--data-urlencode', 'grant_type=password',
     '--data-urlencode', `username=${username}`,
     '--data-urlencode', `password=${password}`,
-    '--data-urlencode', 'scope=apim:api_view apim:api_create apim:api_manage apim:api_publish apim:api_import_export apim:api_delete apim:api_update',
+    '--data-urlencode', 'scope=apim:api_view apim:api_create apim:api_manage apim:api_publish apim:api_import_export apim:api_delete apim:api_update apim:label_view apim:label_manage apim:label_update apim:label_view apim:label_manage apim:label_update apim:api_definition_view apim:api_definition_update',
     `${apimUrl}/oauth2/token`
   ], log);
 
   return token.data.access_token;
 }
+
+  
+function requestedGovernanceLabels(entry) {
+  return Array.isArray(entry.governanceLabels)
+    ? entry.governanceLabels.filter(Boolean)
+    : [];
+}
+
+function listPublisherLabelsForPipeline(env, token, log) {
+  const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
+
+  const result = runCurlJson([
+    '-H', `Authorization: Bearer ${token}`,
+    `${apimUrl}/api/am/publisher/v4/labels`
+  ], log, [200]);
+
+  const labels =
+    result.data?.list ||
+    result.data?.data ||
+    result.data?.labels ||
+    result.data ||
+    [];
+
+  return Array.isArray(labels) ? labels : [];
+}
+
+function listPublisherApisForPipeline(env, token, log) {
+  const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
+
+  const result = runCurlJson([
+    '-H', `Authorization: Bearer ${token}`,
+    `${apimUrl}/api/am/publisher/v4/apis?limit=1000`
+  ], log, [200]);
+
+  const apis =
+    result.data?.list ||
+    result.data?.data ||
+    result.data?.apis ||
+    result.data ||
+    [];
+
+  return Array.isArray(apis) ? apis : [];
+}
+
+function findPublisherApiForPipelineEntry(env, token, entry, log) {
+  const expectedName = entry.name;
+  const expectedVersion = entry.version || '1.0.0';
+  const expectedContext = entry.context;
+
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    const apis = listPublisherApisForPipeline(env, token, log);
+
+    const exact = apis.find(api =>
+      api.name === expectedName &&
+      (!api.version || api.version === expectedVersion)
+    );
+
+    if (exact) {
+      return exact;
+    }
+
+    if (expectedContext) {
+      const byContext = apis.find(api =>
+        api.context === expectedContext &&
+        (!api.version || api.version === expectedVersion)
+      );
+
+      if (byContext) {
+        return byContext;
+      }
+    }
+
+    if (attempt === 1 || attempt % 5 === 0) {
+      const visibleCandidates = apis
+        .filter(api => String(api.name || '').includes('Candidate'))
+        .map(api => `${api.name}:${api.version || 'unknown'}:${api.type || 'unknown'}`)
+        .join(', ');
+
+      log(`Governance labels: waiting for ${expectedName} to appear in Publisher. Attempt ${attempt}/20. Current candidates: ${visibleCandidates || 'none'}`);
+    }
+
+    require('child_process').execFileSync('sh', ['-c', 'sleep 1'], {
+      stdio: ['ignore', 'ignore', 'ignore']
+    });
+  }
+
+  return null;
+}
+
+function attachPipelineGovernanceLabels(env, token, apiId, entry, log) {
+  const wanted = requestedGovernanceLabels(entry);
+
+  if (!wanted.length) {
+    log(`Governance labels: no labels requested for ${entry.name}.`);
+    return;
+  }
+
+  const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
+  const available = listPublisherLabelsForPipeline(env, token, log);
+
+  for (const labelName of wanted) {
+    const label = available.find(l =>
+      l.name === labelName ||
+      l.displayName === labelName
+    );
+
+    if (!label?.id) {
+      log(`Governance labels: "${labelName}" not found in APIM. Run governance-setup.js first.`);
+      continue;
+    }
+
+    runCurlJson([
+      '-X', 'POST',
+      '-H', `Authorization: Bearer ${token}`,
+      '-H', 'Content-Type: application/json',
+      '-d', JSON.stringify({ labels: [label.id] }),
+      `${apimUrl}/api/am/publisher/v4/apis/${apiId}/attach-labels`
+    ], log, [200, 201, 202, 409]);
+
+    log(`Governance labels: attached "${labelName}" to ${entry.name}.`);
+  }
+}
+
+function attachPipelineGovernanceLabelsByEntry(env, token, entry, log) {
+  const api = findPublisherApiForPipelineEntry(env, token, entry, log);
+
+  if (!api?.id) {
+    log(`Governance labels: imported API not found in Publisher for ${entry.name}.`);
+    return;
+  }
+
+  attachPipelineGovernanceLabels(env, token, api.id, entry, log);
+}
+
 
 function findPublisherApiForSoap(env, token, name, version, log) {
   const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
@@ -206,6 +340,33 @@ function findPublisherApiForSoap(env, token, name, version, log) {
   const list = res.data?.list || res.data?.data || [];
   return list.find(api => api.name === name && (!api.version || api.version === version)) || null;
 }
+
+
+function pipelineGovernanceLabels(entry) {
+  return Array.isArray(entry.governanceLabels)
+    ? entry.governanceLabels.filter(Boolean)
+    : [];
+}
+
+function listApimLabelsForPipeline(env, token, log) {
+  const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
+
+  const res = runCurlJson([
+    '-H', `Authorization: Bearer ${token}`,
+    `${apimUrl}/api/am/admin/v4/labels`
+  ], log, [200]);
+
+  const labels =
+    res.data?.list ||
+    res.data?.data ||
+    res.data?.labels ||
+    res.data ||
+    [];
+
+  return Array.isArray(labels) ? labels : [];
+}
+
+ 
 
 function deletePublisherApiForSoapIfExists(env, token, name, version, log) {
   const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
@@ -503,6 +664,38 @@ function executeSoapWsdlImport(entry, artifactsRoot, stateRoot, env, log) {
 }
 
 
+
+function ensurePipelineAsyncApiDefinitionStored(env, token, apiId, asyncapiPath, log) {
+  const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
+
+  if (!apiId) {
+    log('AsyncAPI definition sync: missing API id.');
+    return;
+  }
+
+  if (!asyncapiPath) {
+    log('AsyncAPI definition sync: missing AsyncAPI path.');
+    return;
+  }
+
+  const before = runCurlJson([
+    '-H', `Authorization: Bearer ${token}`,
+    `${apimUrl}/api/am/publisher/v4/apis/${apiId}/asyncapi`
+  ], log, [200, 404, 500]);
+
+  log(`AsyncAPI definition sync: current GET status ${before.status || 'unknown'}. Uploading definition.`);
+
+  runCurlJson([
+    '-X', 'PUT',
+    '-H', `Authorization: Bearer ${token}`,
+    '-F', `file=@${asyncapiPath}`,
+    `${apimUrl}/api/am/publisher/v4/apis/${apiId}/asyncapi`
+  ], log, [200, 201, 202]);
+
+  log('AsyncAPI definition sync: uploaded AsyncAPI definition into APIM project storage.');
+}
+
+
 function executeAsyncApiImport(entry, artifactsRoot, stateRoot, env, log) {
   const apimUrl = env.WSO2_APIM_URL || 'https://wso2-apim:9443';
 
@@ -531,11 +724,15 @@ function executeAsyncApiImport(entry, artifactsRoot, stateRoot, env, log) {
     asyncapiPath,
     endpointUrl,
     type: streamingType,
+    governanceLabels: entry.governanceLabels || [],
     deleteExisting: true,
     deploy: false,
     publish: false,
     log
   });
+
+  ensurePipelineAsyncApiDefinitionStored(env, token, created.id, asyncapiPath, log);
+
 
   return {
     projectDir: asyncapiPath,
@@ -689,7 +886,28 @@ function executeAsyncApiImport(entry, artifactsRoot, stateRoot, env, log) {
   run('apictl', ['import', 'api', '--file', projectDir, '--environment', apimEnv, '--dry-run', ...insecure], log);
   run('apictl', ['import', 'api', '--file', projectDir, '--environment', apimEnv, '--update=true', '--skip-deployments', ...insecure], log);
 
-  return { projectDir };
+  try {
+    const labelToken = getPublisherTokenForSoap(env, log);
+    const importedApi = findPublisherApiForSoap(env, labelToken, entry.name, entry.version || '1.0.0', log);
+
+    if (importedApi?.id) {
+      attachPipelineGovernanceLabels(env, labelToken, importedApi.id, entry, log);
+    } else {
+      log(`Governance labels: imported REST API not found in Publisher for ${entry.name}.`);
+    }
+  } catch (e) {
+    log(`Governance labels: failed to attach labels to ${entry.name}. ${e.message}`);
+  }
+
+  
+  try {
+    const labelToken = getPublisherTokenForSoap(env, log);
+    attachPipelineGovernanceLabelsByEntry(env, labelToken, entry, log);
+  } catch (e) {
+    log(`Governance labels: failed to attach labels to ${entry.name}. ${e.message}`);
+  }
+
+return { projectDir };
 }
 
 function patchApiProject(projectDir, entry, openApi, username) {

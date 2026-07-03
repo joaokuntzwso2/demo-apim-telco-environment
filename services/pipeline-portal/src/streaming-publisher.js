@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { execFileSync } = require('child_process');
+const { attachGovernanceLabels } = require('./label-helper');
 
 function runCurlJson(args, log = console.log, okStatuses = [200, 201, 202, 204]) {
   const out = execFileSync('curl', ['-k', '-sS', '-w', '\n%{http_code}', ...args], {
@@ -134,6 +135,7 @@ function importStreamingApi({
   asyncapiPath,
   endpointUrl,
   type = 'SSE',
+  governanceLabels = [],
   deleteExisting = true,
   deploy = false,
   publish = false,
@@ -184,6 +186,15 @@ function importStreamingApi({
   if (!api?.id) {
     throw new Error(`Streaming import: APIM did not return an API id: ${JSON.stringify(created)}`);
   }
+
+  attachGovernanceLabels({
+    apimUrl,
+    token,
+    apiId: api.id,
+    apiName: name,
+    labels: governanceLabels,
+    log
+  });
 
   if (api.type && String(api.type).toUpperCase() !== normalizedType) {
     throw new Error(`Streaming import: created API type is ${api.type}; expected ${normalizedType}. Response: ${JSON.stringify(api)}`);
