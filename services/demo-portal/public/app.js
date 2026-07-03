@@ -91,7 +91,7 @@ async function init() {
 
 function renderMetadata(metadata) {
   qs('#marketsCount').textContent = metadata.countries.length;
-  qs('#productsCount').textContent = metadata.apiProducts.length;
+  qs('#productsCount').textContent = (metadata.apiProductBundles || metadata.apiProducts).length;
 
   qs('#marketsTable').innerHTML = `
     <table>
@@ -110,7 +110,7 @@ function renderMetadata(metadata) {
 
   qs('#partnerSelect').innerHTML = metadata.partners.map(p => `<option value="${p.id}">${p.name} · ${p.segment}</option>`).join('');
 
-  qs('#products').innerHTML = metadata.apiProducts.map(product => `
+  qs('#products').innerHTML = (metadata.apiProductBundles || metadata.apiProducts).map(product => `
     <article class="product-card">
       <div class="product-topline">
         <strong>${product.name}</strong>

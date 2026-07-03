@@ -1,0 +1,435 @@
+{
+  "artifactType": "moesif.billing_catalog.export",
+  "schemaVersion": "telco-demo/v1",
+  "generatedAt": "2026-07-03T17:00:31.646757+00:00",
+  "source": {
+    "system": "WSO2 API Manager",
+    "description": "API product bundle metadata, subscription plan references and billing dimensions prepared for Moesif."
+  },
+  "destination": {
+    "system": "Moesif",
+    "purpose": "Usage metering, billing catalog alignment, revenue share and partner settlement export."
+  },
+  "products": [
+    {
+      "productId": "open-gateway-fraud-defense",
+      "productKey": "moesif_prod_open_gateway_fraud_defense",
+      "name": "Open Gateway Fraud Defense Bundle",
+      "description": "CAMARA-style network trust APIs packaged for banks, wallets and marketplaces to reduce fraud during onboarding, checkout and account recovery.",
+      "businessStory": "A digital bank uses telco network signals to decide whether to approve, step up, hold or block a transaction.",
+      "businessOutcome": "Lower fraud losses, fewer false positives and a premium telco data product for financial partners.",
+      "buyer": "Banks, wallets, marketplaces, super apps and fraud platforms",
+      "companyId": "regional-telco-group",
+      "billingCatalogReference": "billing.catalog.open-gateway.fraud-defense.v1",
+      "revenueShareModel": "OPEN_GATEWAY_REVENUE_SHARE",
+      "settlementOwner": "Telco Marketplace Finance",
+      "productLine": "Open Gateway Fraud Prevention APIs",
+      "markets": [
+        "MX",
+        "BR",
+        "CO",
+        "AR",
+        "PE",
+        "CL"
+      ],
+      "plans": [
+        "TelcoOpenGatewayTrustStarter",
+        "TelcoOpenGatewayTrustPremium"
+      ],
+      "apim": {
+        "apiProductName": "OpenGatewayFraudDefenseProduct",
+        "context": "/products/open-gateway-fraud-defense/v1",
+        "version": "1.0.0",
+        "visibility": "PUBLIC",
+        "governanceLabel": "Telco Commercial APIs"
+      },
+      "apis": [
+        {
+          "apiName": "OpenGatewayNumberVerificationAPI",
+          "capability": "Number Verification",
+          "method": "POST",
+          "path": "/api/v1/open-gateway/number-verification/verify",
+          "meter": "number_verification"
+        },
+        {
+          "apiName": "OpenGatewaySimSwapRiskAPI",
+          "capability": "SIM Swap Risk",
+          "method": "GET",
+          "path": "/api/v1/open-gateway/sim-swap/{msisdn}/risk",
+          "meter": "sim_swap_risk_check"
+        },
+        {
+          "apiName": "OpenGatewayDeviceLocationVerificationAPI",
+          "capability": "Device Location Verification",
+          "method": "POST",
+          "path": "/api/v1/open-gateway/device-location/verify",
+          "meter": "device_location_verification"
+        }
+      ],
+      "metadata": {
+        "wso2_api_product_name": "OpenGatewayFraudDefenseProduct",
+        "wso2_context": "/products/open-gateway-fraud-defense/v1",
+        "wso2_governance_label": "Telco Commercial APIs",
+        "demo_storyline": "A digital bank uses telco network signals to decide whether to approve, step up, hold or block a transaction."
+      }
+    },
+    {
+      "productId": "digital-customer-bss-experience",
+      "productKey": "moesif_prod_digital_customer_bss",
+      "name": "Digital Customer & BSS Experience Bundle",
+      "description": "Customer, subscriber lifecycle and charging APIs bundled for partner onboarding, care, eligibility and digital experience journeys.",
+      "businessStory": "A strategic partner launches a telco-powered journey where consented customer data, eligibility and charging are consumed as a single commercial product.",
+      "businessOutcome": "Faster partner onboarding, reusable BSS exposure and country-by-country rollout through one commercial API package.",
+      "buyer": "Super apps, digital care partners, fintechs and loyalty ecosystems",
+      "companyId": "regional-telco-group",
+      "billingCatalogReference": "billing.catalog.digital-customer-bss.v1",
+      "revenueShareModel": "PARTNER_API_REVENUE_SHARE",
+      "settlementOwner": "Telco Marketplace Finance",
+      "productLine": "Customer and BSS Exposure APIs",
+      "markets": [
+        "MX",
+        "BR",
+        "CO",
+        "AR",
+        "PE"
+      ],
+      "plans": [
+        "TelcoPartnerStandard",
+        "TelcoPartnerPremium"
+      ],
+      "apim": {
+        "apiProductName": "DigitalCustomerBSSExperienceProduct",
+        "context": "/products/digital-customer-bss/v1",
+        "version": "1.0.0",
+        "visibility": "PUBLIC",
+        "governanceLabel": "Telco Commercial APIs"
+      },
+      "apis": [
+        {
+          "apiName": "Customer360API",
+          "capability": "Consent-aware customer profile",
+          "method": "GET",
+          "path": "/api/v1/customers/{msisdn}/profile",
+          "meter": "customer_profile_lookup"
+        },
+        {
+          "apiName": "NumberLifecycleAPI",
+          "capability": "Subscriber eligibility",
+          "method": "GET",
+          "path": "/api/v1/subscribers/{msisdn}/eligibility",
+          "meter": "eligibility_check"
+        },
+        {
+          "apiName": "PartnerChargingAPI",
+          "capability": "Usage and settlement",
+          "method": "GET",
+          "path": "/api/v1/partners/{partnerId}/settlement",
+          "meter": "settlement_preview"
+        }
+      ],
+      "metadata": {
+        "wso2_api_product_name": "DigitalCustomerBSSExperienceProduct",
+        "wso2_context": "/products/digital-customer-bss/v1",
+        "wso2_governance_label": "Telco Commercial APIs",
+        "demo_storyline": "A strategic partner launches a telco-powered journey where consented customer data, eligibility and charging are consumed as a single commercial product."
+      }
+    },
+    {
+      "productId": "5g-network-monetization",
+      "productKey": "moesif_prod_5g_network_monetization",
+      "name": "5G Network Monetization Bundle",
+      "description": "Network slice, QoD telemetry, event streaming and partner charging packaged for premium network exposure and SLA-backed enterprise services.",
+      "businessStory": "An enterprise or mobility partner buys premium network capabilities, monitors SLA signals and gets usage-based settlement in one product.",
+      "businessOutcome": "Transforms network capabilities into sellable API products with observable usage, event-driven SLA proof and commercial settlement.",
+      "buyer": "Mobility platforms, enterprise private 5G customers, IoT providers and event operators",
+      "companyId": "regional-telco-group",
+      "billingCatalogReference": "billing.catalog.5g-network-monetization.v1",
+      "revenueShareModel": "NETWORK_EXPOSURE_REVENUE_SHARE",
+      "settlementOwner": "Telco Network Monetization Office",
+      "productLine": "5G Network Exposure APIs",
+      "markets": [
+        "BR",
+        "MX",
+        "CO",
+        "CL"
+      ],
+      "plans": [
+        "TelcoPartnerPremium",
+        "TelcoEventStreamPremium"
+      ],
+      "apim": {
+        "apiProductName": "FiveGNetworkMonetizationProduct",
+        "context": "/products/5g-network-monetization/v1",
+        "version": "1.0.0",
+        "visibility": "PUBLIC",
+        "governanceLabel": "Telco Commercial Streaming APIs"
+      },
+      "apis": [
+        {
+          "apiName": "NetworkSliceAPI",
+          "capability": "Premium slice reservation",
+          "method": "POST",
+          "path": "/api/v1/network/slices/reservations",
+          "meter": "slice_reservation"
+        },
+        {
+          "apiName": "NetworkEventsStreamAPI",
+          "capability": "Live network event stream",
+          "method": "SSE",
+          "path": "/events/network-events",
+          "meter": "network_event"
+        },
+        {
+          "apiName": "PartnerChargingAPI",
+          "capability": "Usage and revenue settlement",
+          "method": "GET",
+          "path": "/api/v1/usage/summary",
+          "meter": "usage_summary"
+        }
+      ],
+      "metadata": {
+        "wso2_api_product_name": "FiveGNetworkMonetizationProduct",
+        "wso2_context": "/products/5g-network-monetization/v1",
+        "wso2_governance_label": "Telco Commercial Streaming APIs",
+        "demo_storyline": "An enterprise or mobility partner buys premium network capabilities, monitors SLA signals and gets usage-based settlement in one product."
+      }
+    },
+    {
+      "productId": "legacy-bss-modernization",
+      "productKey": "moesif_prod_legacy_bss_modernization",
+      "name": "Legacy BSS Modernization Bundle",
+      "description": "SOAP billing adjustment and partner settlement capabilities wrapped into a governed product for modernization without replacing the legacy BSS.",
+      "businessStory": "The telco exposes selected legacy BSS functions safely to digital channels while keeping governance, throttling and monetization centralized.",
+      "businessOutcome": "Modernize legacy revenue operations through API governance instead of a risky backend replacement program.",
+      "buyer": "Internal digital channels, care platforms, settlement teams and strategic partners",
+      "companyId": "regional-telco-group",
+      "billingCatalogReference": "billing.catalog.legacy-bss-modernization.v1",
+      "revenueShareModel": "LEGACY_BSS_REVENUE_SHARE",
+      "settlementOwner": "Telco BSS Finance",
+      "productLine": "Legacy BSS Modernization APIs",
+      "markets": [
+        "MX",
+        "BR",
+        "AR",
+        "CO",
+        "PE"
+      ],
+      "plans": [
+        "TelcoFreeTrial",
+        "TelcoPartnerStandard"
+      ],
+      "apim": {
+        "apiProductName": "LegacyBSSModernizationProduct",
+        "context": "/products/legacy-bss-modernization/v1",
+        "version": "1.0.0",
+        "visibility": "PUBLIC",
+        "governanceLabel": "Telco Commercial APIs"
+      },
+      "apis": [
+        {
+          "apiName": "BillingAdjustmentSOAP",
+          "capability": "Legacy billing adjustment",
+          "method": "SOAP",
+          "path": "/soap/billing-adjustment",
+          "meter": "billing_adjustment"
+        },
+        {
+          "apiName": "PartnerChargingAPI",
+          "capability": "Commercial reconciliation",
+          "method": "GET",
+          "path": "/api/v1/partners/{partnerId}/settlement",
+          "meter": "settlement_preview"
+        }
+      ],
+      "metadata": {
+        "wso2_api_product_name": "LegacyBSSModernizationProduct",
+        "wso2_context": "/products/legacy-bss-modernization/v1",
+        "wso2_governance_label": "Telco Commercial APIs",
+        "demo_storyline": "The telco exposes selected legacy BSS functions safely to digital channels while keeping governance, throttling and monetization centralized."
+      }
+    }
+  ],
+  "billingMeters": [
+    {
+      "meterId": "open-gateway-fraud-defense.api_call",
+      "productId": "open-gateway-fraud-defense",
+      "productKey": "moesif_prod_open_gateway_fraud_defense",
+      "eventName": "api_call",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "OPEN_GATEWAY_REVENUE_SHARE"
+    },
+    {
+      "meterId": "open-gateway-fraud-defense.number_verification",
+      "productId": "open-gateway-fraud-defense",
+      "productKey": "moesif_prod_open_gateway_fraud_defense",
+      "eventName": "number_verification",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "OPEN_GATEWAY_REVENUE_SHARE"
+    },
+    {
+      "meterId": "open-gateway-fraud-defense.sim_swap_risk_check",
+      "productId": "open-gateway-fraud-defense",
+      "productKey": "moesif_prod_open_gateway_fraud_defense",
+      "eventName": "sim_swap_risk_check",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "OPEN_GATEWAY_REVENUE_SHARE"
+    },
+    {
+      "meterId": "open-gateway-fraud-defense.device_location_verification",
+      "productId": "open-gateway-fraud-defense",
+      "productKey": "moesif_prod_open_gateway_fraud_defense",
+      "eventName": "device_location_verification",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "OPEN_GATEWAY_REVENUE_SHARE"
+    },
+    {
+      "meterId": "digital-customer-bss-experience.api_call",
+      "productId": "digital-customer-bss-experience",
+      "productKey": "moesif_prod_digital_customer_bss",
+      "eventName": "api_call",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "PARTNER_API_REVENUE_SHARE"
+    },
+    {
+      "meterId": "digital-customer-bss-experience.customer_profile_lookup",
+      "productId": "digital-customer-bss-experience",
+      "productKey": "moesif_prod_digital_customer_bss",
+      "eventName": "customer_profile_lookup",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "PARTNER_API_REVENUE_SHARE"
+    },
+    {
+      "meterId": "digital-customer-bss-experience.eligibility_check",
+      "productId": "digital-customer-bss-experience",
+      "productKey": "moesif_prod_digital_customer_bss",
+      "eventName": "eligibility_check",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "PARTNER_API_REVENUE_SHARE"
+    },
+    {
+      "meterId": "digital-customer-bss-experience.settlement_preview",
+      "productId": "digital-customer-bss-experience",
+      "productKey": "moesif_prod_digital_customer_bss",
+      "eventName": "settlement_preview",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "PARTNER_API_REVENUE_SHARE"
+    },
+    {
+      "meterId": "5g-network-monetization.api_call",
+      "productId": "5g-network-monetization",
+      "productKey": "moesif_prod_5g_network_monetization",
+      "eventName": "api_call",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "NETWORK_EXPOSURE_REVENUE_SHARE"
+    },
+    {
+      "meterId": "5g-network-monetization.slice_reservation",
+      "productId": "5g-network-monetization",
+      "productKey": "moesif_prod_5g_network_monetization",
+      "eventName": "slice_reservation",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "NETWORK_EXPOSURE_REVENUE_SHARE"
+    },
+    {
+      "meterId": "5g-network-monetization.network_event",
+      "productId": "5g-network-monetization",
+      "productKey": "moesif_prod_5g_network_monetization",
+      "eventName": "network_event",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "NETWORK_EXPOSURE_REVENUE_SHARE"
+    },
+    {
+      "meterId": "5g-network-monetization.usage_summary",
+      "productId": "5g-network-monetization",
+      "productKey": "moesif_prod_5g_network_monetization",
+      "eventName": "usage_summary",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "NETWORK_EXPOSURE_REVENUE_SHARE"
+    },
+    {
+      "meterId": "legacy-bss-modernization.api_call",
+      "productId": "legacy-bss-modernization",
+      "productKey": "moesif_prod_legacy_bss_modernization",
+      "eventName": "api_call",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "LEGACY_BSS_REVENUE_SHARE"
+    },
+    {
+      "meterId": "legacy-bss-modernization.billing_adjustment",
+      "productId": "legacy-bss-modernization",
+      "productKey": "moesif_prod_legacy_bss_modernization",
+      "eventName": "billing_adjustment",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "LEGACY_BSS_REVENUE_SHARE"
+    },
+    {
+      "meterId": "legacy-bss-modernization.settlement_preview",
+      "productId": "legacy-bss-modernization",
+      "productKey": "moesif_prod_legacy_bss_modernization",
+      "eventName": "settlement_preview",
+      "aggregation": "count",
+      "billable": true,
+      "revenueShareModel": "LEGACY_BSS_REVENUE_SHARE"
+    }
+  ],
+  "usageEventExamples": [
+    {
+      "eventName": "api_call",
+      "companyId": "regional-telco-group",
+      "productKey": "moesif_prod_open_gateway_fraud_defense",
+      "billingCatalogReference": "billing.catalog.open-gateway.fraud-defense.v1",
+      "metadata": {
+        "api_product_bundle": "Open Gateway Fraud Defense Bundle",
+        "business_outcome": "Lower fraud losses, fewer false positives and a premium telco data product for financial partners.",
+        "settlement_owner": "Telco Marketplace Finance"
+      }
+    },
+    {
+      "eventName": "api_call",
+      "companyId": "regional-telco-group",
+      "productKey": "moesif_prod_digital_customer_bss",
+      "billingCatalogReference": "billing.catalog.digital-customer-bss.v1",
+      "metadata": {
+        "api_product_bundle": "Digital Customer & BSS Experience Bundle",
+        "business_outcome": "Faster partner onboarding, reusable BSS exposure and country-by-country rollout through one commercial API package.",
+        "settlement_owner": "Telco Marketplace Finance"
+      }
+    },
+    {
+      "eventName": "api_call",
+      "companyId": "regional-telco-group",
+      "productKey": "moesif_prod_5g_network_monetization",
+      "billingCatalogReference": "billing.catalog.5g-network-monetization.v1",
+      "metadata": {
+        "api_product_bundle": "5G Network Monetization Bundle",
+        "business_outcome": "Transforms network capabilities into sellable API products with observable usage, event-driven SLA proof and commercial settlement.",
+        "settlement_owner": "Telco Network Monetization Office"
+      }
+    },
+    {
+      "eventName": "api_call",
+      "companyId": "regional-telco-group",
+      "productKey": "moesif_prod_legacy_bss_modernization",
+      "billingCatalogReference": "billing.catalog.legacy-bss-modernization.v1",
+      "metadata": {
+        "api_product_bundle": "Legacy BSS Modernization Bundle",
+        "business_outcome": "Modernize legacy revenue operations through API governance instead of a risky backend replacement program.",
+        "settlement_owner": "Telco BSS Finance"
+      }
+    }
+  ]
+}

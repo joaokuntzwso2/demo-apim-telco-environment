@@ -116,12 +116,12 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/metadata', (req, res) => {
-  res.json({ brand, countries, partners, apiProducts, monetizationPlans });
+  res.json({ brand, countries, partners, apiProducts, apiProductBundles: apiProducts, monetizationPlans, moesifExport: { artifact: '/api/v1/moesif/export', staticArtifact: '/exports/moesif-api-product-export.json', format: 'moesif.billing_catalog.export' } });
 });
 
 app.get('/api/v1/countries', (req, res) => res.json({ countries }));
 app.get('/api/v1/partners', (req, res) => res.json({ partners }));
-app.get('/api/v1/products', (req, res) => res.json({ apiProducts }));
+app.get('/api/v1/products', (req, res) => res.json({ apiProducts })); app.get('/api/v1/api-product-bundles', (req, res) => res.json({ apiProductBundles: apiProducts })); app.get('/api/v1/moesif/export', (req, res) => res.json(buildMoesifExportArtifact()));
 app.get('/api/v1/monetization/plans', (req, res) => res.json({ plans: monetizationPlans }));
 
 app.get('/api/v1/customers/:msisdn/profile', (req, res) => {

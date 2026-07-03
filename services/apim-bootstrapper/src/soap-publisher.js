@@ -354,7 +354,7 @@ function createSoapPassThroughApi({
     }
 
     if (deploy) {
-      createAndDeployRevision(apimUrl, token, existingSoapApi.id, log);
+      log(`Skipping revision creation for reused SOAP API ${name}:${version}; existing deployment is kept to avoid APIM revision-limit churn.`);
     }
 
     if (publish) {
