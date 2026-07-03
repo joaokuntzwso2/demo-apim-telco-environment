@@ -169,6 +169,119 @@ app.get('/api/v1/network/slices', (req, res) => {
   res.json({ slices: ['urllc-qod-gold', 'iot-massive-bronze', 'consumer-video-silver', 'enterprise-private-5g'].map((id, i) => ({ id, status: i === 0 ? 'RESERVED' : 'AVAILABLE', maxLatencyMs: [12, 80, 35, 20][i], maxThroughputMbps: [500, 20, 250, 1000][i], monetizationPlan: i === 0 ? 'network-premium' : 'enterprise-latam' })) });
 });
 
+
+// BEGIN OPEN GATEWAY / CAMARA DEMO ROUTES
+function normalizeOpenGatewayMsisdn(value) {
+  return decodeURIComponent(String(value || '+525512340001')).replace(/\s+/g, '');
+}
+
+function openGatewayCustomer(msisdn) {
+  return customers[msisdn] || randomOf(Object.values(customers));
+}
+
+function openGatewayDecision(score) {
+  if (score >= 80) return 'ALLOW';
+  if (score >= 55) return 'STEP_UP';
+  return 'BLOCK';
+}
+
+function openGatewayPartner(req) {
+  return req.headers['x-partner-id'] || req.body?.partnerId || req.query.partnerId || 'digital-bank-demo';
+}
+
+app.post('/api/v1/open-gateway/number-verification/verify', (req, res) => {
+  const msisdn = normalizeOpenGatewayMsisdn(req.body?.phoneNumber || req.body?.msisdn);
+  const customer = openGatewayCustomer(msisdn);
+  const country = countries.find(c => c.code === customer.country) || randomOf(countries);
+  const verified = customer.msisdn === msisdn || customer.lifecycle === 'Active';
+  const confidence = verified ? Number((0.88 + Math.random() * 0.11).toFixed(2)) : Number((0.25 + Math.random() * 0.35).toFixed(2));
+  const trustScore = Math.round(confidence * 100) - (customer.riskScore > 20 ? 8 : 0);
+
+  res.json({
+    apiFamily: 'GSMA Open Gateway / CAMARA-style',
+    capability: 'Number Verification',
+    partnerId: openGatewayPartner(req),
+    transactionId: req.body?.transactionId || `txn-${Date.now()}`,
+    msisdn,
+    country: country.code,
+    operatorBrand: country.brand,
+    subscriberStatus: customer.lifecycle?.toUpperCase?.() || 'UNKNOWN',
+    verified,
+    confidence,
+    trustScore,
+    riskSignals: verified ? ['NETWORK_NUMBER_MATCH', 'SUBSCRIBER_ACTIVE'] : ['NETWORK_NUMBER_MISMATCH'],
+    decision: openGatewayDecision(trustScore),
+    correlationId: req.headers['x-correlation-id'] || `corr-og-${Date.now()}`,
+    timestamp: nowIso()
+  });
+});
+
+app.get('/api/v1/open-gateway/sim-swap/:msisdn/risk', (req, res) => {
+  const msisdn = normalizeOpenGatewayMsisdn(req.params.msisdn);
+  const customer = openGatewayCustomer(msisdn);
+  const country = countries.find(c => c.code === customer.country) || randomOf(countries);
+  const lookbackHours = Math.max(Number(req.query.lookbackHours || 168), 1);
+
+  const simulatedHours = customer.riskScore > 20
+    ? Math.floor(2 + Math.random() * 36)
+    : Math.floor(120 + Math.random() * 1200);
+
+  const lastSimChangeAt = new Date(Date.now() - simulatedHours * 60 * 60 * 1000).toISOString();
+  const riskScore = simulatedHours <= 24 ? 92 : simulatedHours <= 168 ? 63 : 18;
+  const riskLevel = riskScore >= 85 ? 'CRITICAL' : riskScore >= 65 ? 'HIGH' : riskScore >= 40 ? 'MEDIUM' : 'LOW';
+
+  res.json({
+    apiFamily: 'GSMA Open Gateway / CAMARA-style',
+    capability: 'SIM Swap',
+    partnerId: openGatewayPartner(req),
+    msisdn,
+    country: country.code,
+    lookbackHours,
+    lastSimChangeAt,
+    hoursSinceLastSimChange: simulatedHours,
+    riskLevel,
+    riskScore,
+    coolingOffRecommended: riskScore >= 65,
+    recommendedAction: riskScore >= 85 ? 'BLOCK' : riskScore >= 65 ? 'HOLD_TRANSACTION' : riskScore >= 40 ? 'STEP_UP' : 'ALLOW',
+    correlationId: req.headers['x-correlation-id'] || `corr-og-${Date.now()}`,
+    timestamp: nowIso()
+  });
+});
+
+app.post('/api/v1/open-gateway/device-location/verify', (req, res) => {
+  const msisdn = normalizeOpenGatewayMsisdn(req.body?.msisdn);
+  const customer = openGatewayCustomer(msisdn);
+  const expectedCountry = String(req.body?.expectedCountry || customer.country || 'MX').toUpperCase();
+  const networkCountry = customer.country || randomOf(countries).code;
+  const radiusKm = Number(req.body?.radiusKm || 25);
+  const countryMatch = expectedCountry === networkCountry;
+  const approximateDistanceKm = countryMatch
+    ? Number((Math.random() * Math.max(radiusKm, 1)).toFixed(2))
+    : Number((120 + Math.random() * 900).toFixed(2));
+
+  const confidence = countryMatch ? Number((0.82 + Math.random() * 0.16).toFixed(2)) : Number((0.20 + Math.random() * 0.35).toFixed(2));
+  const verificationResult = countryMatch ? 'MATCH' : 'NO_MATCH';
+  const spoofingRisk = confidence >= 0.8 ? 'LOW' : confidence >= 0.5 ? 'MEDIUM' : 'HIGH';
+
+  res.json({
+    apiFamily: 'GSMA Open Gateway / CAMARA-style',
+    capability: 'Location Verification',
+    partnerId: openGatewayPartner(req),
+    msisdn,
+    expectedCountry,
+    networkCountry,
+    verificationResult,
+    confidence,
+    approximateDistanceKm,
+    radiusKm,
+    spoofingRisk,
+    recommendedAction: verificationResult === 'MATCH' ? 'ALLOW' : 'STEP_UP',
+    correlationId: req.headers['x-correlation-id'] || `corr-og-${Date.now()}`,
+    timestamp: nowIso()
+  });
+});
+// END OPEN GATEWAY / CAMARA DEMO ROUTES
+
 app.post('/api/v1/network/slices/reservations', (req, res) => {
   res.status(201).json({ reservationId: `slice-res-${Date.now()}`, status: 'PENDING_ACTIVATION', requested: req.body, activationEtaSeconds: 45, chargePreviewUsd: 128.4 });
 });

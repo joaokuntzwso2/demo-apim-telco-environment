@@ -1,0 +1,144 @@
+openapi: 3.0.3
+info:
+  title: OpenGatewayNumberVerificationAPI
+  version: 1.0.0
+  description: >
+    Open Gateway / CAMARA-style Number Verification API for checkout fraud prevention.
+    It helps a partner verify whether the phone number presented during a digital transaction
+    is consistent with the mobile network subscriber context.
+  contact:
+    name: Open Gateway Product Office
+    email: open-gateway-product@example.com
+servers:
+  - url: /
+tags:
+  - name: Number Verification
+    description: Open Gateway trust signal for mobile identity verification.
+x-wso2-basePath: /open-gateway/number-verification/v1
+x-telco-api-product: Open Gateway Fraud Prevention Pack
+x-telco-domain: Open Gateway / Fraud Prevention
+x-telco-owner: Open Gateway Product Office
+x-telco-country-scope:
+  - MX
+  - BR
+  - CO
+  - CL
+x-telco-monetization-model: PAY_PER_VERIFICATION
+x-telco-health-path: /health
+x-camara-style-capability: Number Verification
+paths:
+  /api/v1/open-gateway/number-verification/verify:
+    post:
+      tags:
+        - Number Verification
+      operationId: verifyNumberOwnership
+      summary: Verify subscriber phone-number ownership
+      description: >
+        Validates whether the MSISDN used in a partner transaction is consistent with
+        the network subscriber context. Designed for checkout, onboarding and account
+        takeover prevention scenarios.
+      security:
+        - OAuth2:
+            - opengateway_number_verification
+      parameters:
+        - name: X-Partner-Id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Partner or marketplace identifier.
+        - name: X-Correlation-Id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: End-to-end transaction correlation identifier.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phoneNumber
+                - transactionId
+              properties:
+                phoneNumber:
+                  type: string
+                  example: "+525512340001"
+                transactionId:
+                  type: string
+                  example: "checkout-987654"
+                channel:
+                  type: string
+                  enum:
+                    - WEB
+                    - MOBILE_APP
+                    - POS
+                  example: MOBILE_APP
+      responses:
+        "200":
+          description: Number verification result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NumberVerificationResult"
+        "400":
+          description: Invalid request.
+        "401":
+          description: Missing or invalid access token.
+        "403":
+          description: Partner is not authorized for this Open Gateway product.
+        "429":
+          description: Commercial plan quota exceeded.
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9443/oauth2/token
+          scopes:
+            opengateway_number_verification: Verify number ownership for fraud-prevention use cases.
+  schemas:
+    NumberVerificationResult:
+      type: object
+      required:
+        - verified
+        - confidence
+        - transactionId
+      properties:
+        verified:
+          type: boolean
+        confidence:
+          type: number
+          format: float
+          example: 0.96
+        transactionId:
+          type: string
+        msisdn:
+          type: string
+        country:
+          type: string
+        operatorBrand:
+          type: string
+        subscriberStatus:
+          type: string
+          enum:
+            - ACTIVE
+            - SUSPENDED
+            - UNKNOWN
+        trustScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        riskSignals:
+          type: array
+          items:
+            type: string
+        decision:
+          type: string
+          enum:
+            - ALLOW
+            - STEP_UP
+            - BLOCK

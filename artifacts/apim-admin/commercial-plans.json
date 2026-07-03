@@ -97,5 +97,43 @@
       "includedQuota": "2000 GraphQL calls/min",
       "commercialSummary": "USD 899/month + USD 0.002 per extra GraphQL request"
     }
+  },
+  {
+    "policyName": "TelcoOpenGatewayTrustStarter",
+    "displayName": "Telco Open Gateway Trust Starter",
+    "description": "Commercial starter plan for Open Gateway fraud-prevention trust signals.",
+    "requestCount": 1000,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "COMMERCIAL",
+    "stopOnQuotaReach": true,
+    "pricing": {
+      "billingType": "FIXED_RATE",
+      "billingCycle": "month",
+      "currencyType": "USD",
+      "fixedPrice": "999.00",
+      "pricePerRequest": "0.0150",
+      "includedQuota": "1000 trust checks/min",
+      "commercialSummary": "USD 999/month + USD 0.015 per extra Open Gateway trust check"
+    }
+  },
+  {
+    "policyName": "TelcoOpenGatewayTrustPremium",
+    "displayName": "Telco Open Gateway Trust Premium",
+    "description": "High-volume commercial plan for Open Gateway fraud-prevention API products.",
+    "requestCount": 5000,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "COMMERCIAL",
+    "stopOnQuotaReach": true,
+    "pricing": {
+      "billingType": "FIXED_RATE",
+      "billingCycle": "month",
+      "currencyType": "USD",
+      "fixedPrice": "4999.00",
+      "pricePerRequest": "0.0080",
+      "includedQuota": "5000 trust checks/min",
+      "commercialSummary": "USD 4,999/month + USD 0.008 per extra Open Gateway trust check"
+    }
   }
 ]

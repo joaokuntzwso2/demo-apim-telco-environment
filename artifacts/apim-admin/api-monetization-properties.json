@@ -68,5 +68,35 @@
       "ProductLine": "Legacy BSS/OSS SOAP APIs",
       "BillingCatalogReference": "moesif_product=billing-adjustment-soap;plans=TelcoFreeTrial,TelcoPartnerStandard"
     }
+  },
+  {
+    "apiName": "OpenGatewayNumberVerificationAPI",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_open_gateway_trust_demo",
+      "RevenueShareModel": "OPEN_GATEWAY_TRUST_REVENUE_SHARE_70_30",
+      "SettlementOwner": "Open Gateway Marketplace Finance",
+      "ProductLine": "Open Gateway Fraud Prevention APIs",
+      "BillingCatalogReference": "moesif_product=open-gateway-number-verification;plans=TelcoOpenGatewayTrustStarter,TelcoOpenGatewayTrustPremium"
+    }
+  },
+  {
+    "apiName": "OpenGatewaySimSwapRiskAPI",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_open_gateway_trust_demo",
+      "RevenueShareModel": "OPEN_GATEWAY_TRUST_REVENUE_SHARE_70_30",
+      "SettlementOwner": "Open Gateway Marketplace Finance",
+      "ProductLine": "Open Gateway Fraud Prevention APIs",
+      "BillingCatalogReference": "moesif_product=open-gateway-sim-swap-risk;plans=TelcoOpenGatewayTrustStarter,TelcoOpenGatewayTrustPremium"
+    }
+  },
+  {
+    "apiName": "OpenGatewayDeviceLocationVerificationAPI",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_open_gateway_trust_demo",
+      "RevenueShareModel": "OPEN_GATEWAY_LOCATION_REVENUE_SHARE_70_30",
+      "SettlementOwner": "Open Gateway Marketplace Finance",
+      "ProductLine": "Open Gateway Fraud Prevention APIs",
+      "BillingCatalogReference": "moesif_product=open-gateway-device-location-verification;plans=TelcoOpenGatewayTrustStarter,TelcoOpenGatewayTrustPremium"
+    }
   }
 ]

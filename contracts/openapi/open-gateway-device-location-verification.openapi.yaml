@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: OpenGatewayDeviceLocationVerificationAPI
+  version: 1.0.0
+  description: >
+    Open Gateway / CAMARA-style Device Location Verification API.
+    It validates whether a SIM-based device is inside an expected country or geographic area,
+    helping partners reduce location spoofing and transaction fraud.
+  contact:
+    name: Open Gateway Product Office
+    email: open-gateway-product@example.com
+servers:
+  - url: /
+tags:
+  - name: Device Location
+    description: Open Gateway location verification signal.
+x-wso2-basePath: /open-gateway/device-location/v1
+x-telco-api-product: Open Gateway Fraud Prevention Pack
+x-telco-domain: Open Gateway / Fraud Prevention
+x-telco-owner: Open Gateway Product Office
+x-telco-country-scope:
+  - MX
+  - BR
+  - CO
+  - CL
+x-telco-monetization-model: PAY_PER_LOCATION_CHECK
+x-telco-health-path: /health
+x-camara-style-capability: Location Verification
+paths:
+  /api/v1/open-gateway/device-location/verify:
+    post:
+      tags:
+        - Device Location
+      operationId: verifyDeviceLocation
+      summary: Verify device location against an expected area
+      description: >
+        Confirms whether the subscriber device is within an expected country or geographic radius
+        using network-side location confidence, not GPS-only signals.
+      security:
+        - OAuth2:
+            - opengateway_device_location
+      parameters:
+        - name: X-Partner-Id
+          in: header
+          required: false
+          schema:
+            type: string
+        - name: X-Correlation-Id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - msisdn
+                - expectedCountry
+              properties:
+                msisdn:
+                  type: string
+                  example: "+551199990001"
+                expectedCountry:
+                  type: string
+                  example: "BR"
+                latitude:
+                  type: number
+                  format: double
+                  example: -23.5505
+                longitude:
+                  type: number
+                  format: double
+                  example: -46.6333
+                radiusKm:
+                  type: number
+                  format: double
+                  default: 25
+      responses:
+        "200":
+          description: Device location verification result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceLocationVerificationResult"
+        "400":
+          description: Invalid request.
+        "401":
+          description: Missing or invalid access token.
+        "403":
+          description: Partner is not authorized for this Open Gateway product.
+        "429":
+          description: Commercial plan quota exceeded.
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9443/oauth2/token
+          scopes:
+            opengateway_device_location: Verify network-side device location.
+  schemas:
+    DeviceLocationVerificationResult:
+      type: object
+      required:
+        - msisdn
+        - verificationResult
+        - confidence
+      properties:
+        msisdn:
+          type: string
+        expectedCountry:
+          type: string
+        networkCountry:
+          type: string
+        verificationResult:
+          type: string
+          enum:
+            - MATCH
+            - NO_MATCH
+            - INCONCLUSIVE
+        confidence:
+          type: number
+          format: float
+          example: 0.91
+        approximateDistanceKm:
+          type: number
+          format: double
+        spoofingRisk:
+          type: string
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+        recommendedAction:
+          type: string
+          enum:
+            - ALLOW
+            - STEP_UP
+            - BLOCK

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Open Gateway APIs | Telco API Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/open-gateway-trust-pack.css" />
+</head>
+<body class="og-portal-page">
+  <header class="og-portal-header">
+    <div class="og-portal-header-inner">
+      <a class="og-brand" href="/">Telco API Portal</a>
+
+      <nav class="og-portal-nav">
+        <a href="/">Overview</a>
+        <a href="/open-gateway.html" class="active">Open Gateway</a>
+        <a href="/open-gateway.html#live">Live Results</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="og-portal-main">
+    <section class="og-page-title">
+      <div>
+        <div class="og-eyebrow">Commercial API product pack</div>
+        <h1>Open Gateway Fraud Prevention Pack</h1>
+        <p>
+          CAMARA-style telco APIs exposed as commercial products through WSO2 API Manager.
+          Use this flow to show how network trust signals support fraud prevention for banks,
+          wallets and marketplaces.
+        </p>
+      </div>
+
+      <div class="og-status-card">
+        <span class="og-status-dot"></span>
+        Published in WSO2 APIM
+      </div>
+    </section>
+
+    <nav class="og-tabs">
+      <button class="og-tab active" data-tab="story">Story</button>
+      <button class="og-tab" data-tab="live">Live API Results</button>
+      <button class="og-tab" data-tab="commercial">Commercialization</button>
+    </nav>
+
+    <section class="og-panel active" data-panel="story">
+      <div class="og-flow">
+        <div class="og-flow-step">
+          <strong>1. Checkout starts</strong>
+          <span>Partner submits phone number and transaction context.</span>
+        </div>
+        <div class="og-flow-step">
+          <strong>2. Network trust signals</strong>
+          <span>WSO2 exposes telco capabilities as secure APIs.</span>
+        </div>
+        <div class="og-flow-step">
+          <strong>3. Risk decision</strong>
+          <span>Approve, step-up, hold or block the transaction.</span>
+        </div>
+      </div>
+
+      <div class="og-grid">
+        <article class="og-card">
+          <div class="og-card-label">Identity confidence</div>
+          <h3>Number Verification</h3>
+          <p>Confirms whether the presented phone number is consistent with the mobile network subscriber context.</p>
+          <div class="og-api-name">OpenGatewayNumberVerificationAPI</div>
+          <code class="og-code">POST /open-gateway/number-verification/v1</code>
+        </article>
+
+        <article class="og-card">
+          <div class="og-card-label">Account takeover risk</div>
+          <h3>SIM Swap Risk</h3>
+          <p>Checks recent SIM swap activity before wallet recovery, payments or onboarding.</p>
+          <div class="og-api-name">OpenGatewaySimSwapRiskAPI</div>
+          <code class="og-code">GET /open-gateway/sim-swap/v1</code>
+        </article>
+
+        <article class="og-card">
+          <div class="og-card-label">Location trust</div>
+          <h3>Device Location Verification</h3>
+          <p>Verifies whether the SIM-based device is inside an expected country or geographic area.</p>
+          <div class="og-api-name">OpenGatewayDeviceLocationVerificationAPI</div>
+          <code class="og-code">POST /open-gateway/device-location/v1</code>
+        </article>
+      </div>
+    </section>
+
+    <section class="og-panel" data-panel="live">
+      <div class="og-live-header">
+        <div>
+          <h2>Live API Results</h2>
+          <p>
+            Run the local mock telco APIs and show the API payloads used to build a fraud decision.
+          </p>
+        </div>
+        <button class="og-run-all" id="og-run-all">Run full fraud check</button>
+      </div>
+
+      <div class="og-result-grid">
+        <article class="og-result-card">
+          <div>
+            <h3>1. Number Verification</h3>
+            <p>Checks whether the phone number matches the expected customer/subscriber context.</p>
+            <button data-run="number">Run Number Verification</button>
+          </div>
+          <pre class="og-json" id="og-result-number">Click “Run Number Verification” to call the API.</pre>
+        </article>
+
+        <article class="og-result-card">
+          <div>
+            <h3>2. SIM Swap Risk</h3>
+            <p>Returns risk level and timing information for recent SIM changes.</p>
+            <button data-run="sim">Run SIM Swap Risk</button>
+          </div>
+          <pre class="og-json" id="og-result-sim">Click “Run SIM Swap Risk” to call the API.</pre>
+        </article>
+
+        <article class="og-result-card">
+          <div>
+            <h3>3. Device Location Verification</h3>
+            <p>Validates whether the device location is consistent with the expected transaction geography.</p>
+            <button data-run="location">Run Device Location Verification</button>
+          </div>
+          <pre class="og-json" id="og-result-location">Click “Run Device Location Verification” to call the API.</pre>
+        </article>
+
+        <article class="og-result-card">
+          <div>
+            <h3>Final Decision</h3>
+            <p>Combines the three network signals into a simple fraud decision for the demo flow.</p>
+          </div>
+          <pre class="og-json" id="og-result-decision">Run the full fraud check to generate a decision.</pre>
+        </article>
+      </div>
+    </section>
+
+    <section class="og-panel" data-panel="commercial">
+      <div class="og-commercial-grid">
+        <article class="og-commercial-card">
+          <h3>Commercial API product</h3>
+          <p>
+            The three APIs are packaged as a fraud-prevention product pack. In WSO2 API Manager,
+            they can be published, subscribed to, throttled and governed like commercial products.
+          </p>
+          <div class="og-pill-row">
+            <span>TelcoOpenGatewayTrustStarter</span>
+            <span>TelcoOpenGatewayTrustPremium</span>
+            <span>Telco Commercial APIs</span>
+          </div>
+        </article>
+
+        <article class="og-commercial-card">
+          <h3>Moesif billing metadata</h3>
+          <ul>
+            <li><strong>ConnectedAccountKey</strong> maps the API to the marketplace account.</li>
+            <li><strong>RevenueShareModel</strong> defines the settlement model.</li>
+            <li><strong>ProductLine</strong> groups the APIs as Open Gateway fraud-prevention products.</li>
+            <li><strong>BillingCatalogReference</strong> connects WSO2 products and plans to billing.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="/open-gateway-page.js"></script>
+</body>
+</html>

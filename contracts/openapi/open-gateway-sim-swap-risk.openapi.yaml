@@ -1,0 +1,120 @@
+openapi: 3.0.3
+info:
+  title: OpenGatewaySimSwapRiskAPI
+  version: 1.0.0
+  description: >
+    Open Gateway / CAMARA-style SIM Swap risk API for fraud prevention, digital banking,
+    lending, wallet recovery and account-takeover protection.
+  contact:
+    name: Open Gateway Product Office
+    email: open-gateway-product@example.com
+servers:
+  - url: /
+tags:
+  - name: SIM Swap
+    description: Open Gateway trust signal for recent SIM changes.
+x-wso2-basePath: /open-gateway/sim-swap/v1
+x-telco-api-product: Open Gateway Fraud Prevention Pack
+x-telco-domain: Open Gateway / Fraud Prevention
+x-telco-owner: Open Gateway Product Office
+x-telco-country-scope:
+  - MX
+  - BR
+  - CO
+  - CL
+x-telco-monetization-model: PAY_PER_RISK_CHECK
+x-telco-health-path: /health
+x-camara-style-capability: SIM Swap
+paths:
+  /api/v1/open-gateway/sim-swap/{msisdn}/risk:
+    get:
+      tags:
+        - SIM Swap
+      operationId: getSimSwapRisk
+      summary: Get recent SIM swap risk for an MSISDN
+      description: >
+        Returns a fraud risk signal based on recent SIM change activity.
+        Designed for checkout, high-value transfer, device binding and account recovery flows.
+      security:
+        - OAuth2:
+            - opengateway_sim_swap
+      parameters:
+        - name: msisdn
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "+525512340001"
+        - name: lookbackHours
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 168
+          description: Lookback window in hours.
+        - name: X-Partner-Id
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: SIM swap risk result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimSwapRiskResult"
+        "400":
+          description: Invalid request.
+        "401":
+          description: Missing or invalid access token.
+        "403":
+          description: Partner is not authorized for this Open Gateway product.
+        "429":
+          description: Commercial plan quota exceeded.
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9443/oauth2/token
+          scopes:
+            opengateway_sim_swap: Read SIM swap risk signals for fraud-prevention use cases.
+  schemas:
+    SimSwapRiskResult:
+      type: object
+      required:
+        - msisdn
+        - riskLevel
+        - riskScore
+      properties:
+        msisdn:
+          type: string
+        country:
+          type: string
+        lastSimChangeAt:
+          type: string
+          format: date-time
+        hoursSinceLastSimChange:
+          type: integer
+        riskLevel:
+          type: string
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+            - CRITICAL
+        riskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        coolingOffRecommended:
+          type: boolean
+        recommendedAction:
+          type: string
+          enum:
+            - ALLOW
+            - STEP_UP
+            - HOLD_TRANSACTION
+            - BLOCK

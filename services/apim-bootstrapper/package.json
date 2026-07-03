@@ -8,6 +8,7 @@
   "dependencies": {
     "adm-zip": "^0.5.16",
     "undici": "^6.21.1",
-    "yaml": "^2.8.0"
+    "yaml": "^2.8.0",
+    "js-yaml": "^4.1.0"
   }
 }

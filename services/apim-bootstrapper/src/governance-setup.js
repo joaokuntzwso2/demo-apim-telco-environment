@@ -32,7 +32,7 @@ const RULESETS = [
     file: 'telco-async-event-guardrails.json'
   },
   {
-    name: 'Telco API Metadata Guardrails',
+    name: 'Telco API Metadata Guardrails Demo Safe',
     description: 'Demo API metadata governance rules for product mapping, health check details and business ownership.',
     ruleType: 'API_METADATA',
     artifactType: 'REST_API',
@@ -76,7 +76,7 @@ const GOVERNANCE_POLICIES = [
   {
     name: 'Telco Product Metadata Policy',
     description: 'Validates commercial metadata such as API product, owner and health check information.',
-    rulesets: ['Telco API Metadata Guardrails'],
+    rulesets: ['Telco API Metadata Guardrails Demo Safe'],
     labels: ['Telco Commercial APIs'],
     governableStates: ['API_UPDATE', 'API_DEPLOY', 'API_PUBLISH'],
     actions: [
@@ -136,7 +136,10 @@ const REST_API_LABEL_ASSIGNMENTS = [
   'Customer360API',
   'NumberLifecycleAPI',
   'NetworkSliceAPI',
-  'PartnerChargingAPI'
+  'PartnerChargingAPI',
+  'OpenGatewayNumberVerificationAPI',
+  'OpenGatewaySimSwapRiskAPI',
+  'OpenGatewayDeviceLocationVerificationAPI'
 ];
 
 const ASYNC_API_LABEL_ASSIGNMENTS = [

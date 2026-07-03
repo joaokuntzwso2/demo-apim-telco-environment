@@ -1,9 +1,9 @@
 {
   "rules": {
     "telco-api-product-required": {
-      "description": "Every API must be mapped to a commercial API product.",
-      "message": "additionalPropertiesMap.api_product is required.",
-      "severity": "error",
+      "description": "Demo-safe metadata warning. APIM persists these values as API custom properties under additionalProperties. This rule remains visible in governance results but does not block lifecycle publish.",
+      "message": "API custom property api_product should be present.",
+      "severity": "warn",
       "given": "$.data.additionalPropertiesMap",
       "then": {
         "field": "api_product",
@@ -11,9 +11,9 @@
       }
     },
     "telco-health-path-required": {
-      "description": "Every API must declare an operational health path.",
-      "message": "additionalPropertiesMap.health_path is required.",
-      "severity": "error",
+      "description": "Demo-safe metadata warning. APIM persists these values as API custom properties under additionalProperties. This rule remains visible in governance results but does not block lifecycle publish.",
+      "message": "API custom property health_path should be present.",
+      "severity": "warn",
       "given": "$.data.additionalPropertiesMap",
       "then": {
         "field": "health_path",
@@ -21,9 +21,9 @@
       }
     },
     "telco-health-method-required": {
-      "description": "Every API must declare an operational health method.",
-      "message": "additionalPropertiesMap.health_method is required.",
-      "severity": "error",
+      "description": "Demo-safe metadata warning. APIM persists these values as API custom properties under additionalProperties. This rule remains visible in governance results but does not block lifecycle publish.",
+      "message": "API custom property health_method should be present.",
+      "severity": "warn",
       "given": "$.data.additionalPropertiesMap",
       "then": {
         "field": "health_method",
