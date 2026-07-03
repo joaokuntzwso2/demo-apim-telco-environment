@@ -1,0 +1,72 @@
+[
+  {
+    "apiName": "TelcoBusinessCatalogAPI",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_telco_marketplace_demo",
+      "RevenueShareModel": "CONSUMPTION_REVENUE_SHARE_70_30",
+      "SettlementOwner": "Telco Marketplace Finance",
+      "ProductLine": "Commercial Telco APIs",
+      "BillingCatalogReference": "moesif_product=telco-commercial-apis;plans=TelcoFreeTrial,TelcoPartnerStandard,TelcoPartnerPremium"
+    }
+  },
+  {
+    "apiName": "Customer360API",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_telco_marketplace_demo",
+      "RevenueShareModel": "CONSUMPTION_REVENUE_SHARE_70_30",
+      "SettlementOwner": "Telco Marketplace Finance",
+      "ProductLine": "Customer Experience APIs",
+      "BillingCatalogReference": "moesif_product=customer-360;plans=TelcoFreeTrial,TelcoPartnerStandard,TelcoPartnerPremium"
+    }
+  },
+  {
+    "apiName": "NumberLifecycleAPI",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_telco_marketplace_demo",
+      "RevenueShareModel": "CONSUMPTION_REVENUE_SHARE_70_30",
+      "SettlementOwner": "Telco Marketplace Finance",
+      "ProductLine": "Number Management APIs",
+      "BillingCatalogReference": "moesif_product=number-lifecycle;plans=TelcoFreeTrial,TelcoPartnerStandard,TelcoPartnerPremium"
+    }
+  },
+  {
+    "apiName": "NetworkSliceAPI",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_telco_enterprise_demo",
+      "RevenueShareModel": "ENTERPRISE_API_REVENUE_SHARE_80_20",
+      "SettlementOwner": "Telco Enterprise Finance",
+      "ProductLine": "5G Network APIs",
+      "BillingCatalogReference": "moesif_product=network-slicing;plans=TelcoPartnerStandard,TelcoPartnerPremium"
+    }
+  },
+  {
+    "apiName": "PartnerChargingAPI",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_telco_marketplace_demo",
+      "RevenueShareModel": "PARTNER_SETTLEMENT_REVENUE_SHARE_70_30",
+      "SettlementOwner": "Telco Marketplace Finance",
+      "ProductLine": "Partner Charging APIs",
+      "BillingCatalogReference": "moesif_product=partner-charging;plans=TelcoPartnerStandard,TelcoPartnerPremium"
+    }
+  },
+  {
+    "apiName": "NetworkEventsStreamAPI",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_telco_event_streams_demo",
+      "RevenueShareModel": "EVENT_STREAM_REVENUE_SHARE_70_30",
+      "SettlementOwner": "Telco Marketplace Finance",
+      "ProductLine": "Streaming Event APIs",
+      "BillingCatalogReference": "moesif_product=telco-event-streams;plans=TelcoEventStreamPremium"
+    }
+  },
+  {
+    "apiName": "BillingAdjustmentSOAP",
+    "properties": {
+      "ConnectedAccountKey": "acct_moesif_telco_billing_ops_demo",
+      "RevenueShareModel": "LEGACY_SOAP_REVENUE_SHARE_70_30",
+      "SettlementOwner": "Telco Billing Operations Finance",
+      "ProductLine": "Legacy BSS/OSS SOAP APIs",
+      "BillingCatalogReference": "moesif_product=billing-adjustment-soap;plans=TelcoFreeTrial,TelcoPartnerStandard"
+    }
+  }
+]

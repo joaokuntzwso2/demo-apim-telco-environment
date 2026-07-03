@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node src/bootstrap.js && node src/admin-setup.js && node src/governance-setup.js"
+    "start": "node src/bootstrap.js && node src/admin-setup.js && node src/governance-setup.js && node src/moesif-monetization-setup.js"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",

@@ -7,7 +7,16 @@
     "timeUnit": "min",
     "unitTime": 1,
     "billingPlan": "FREE",
-    "stopOnQuotaReach": true
+    "stopOnQuotaReach": true,
+    "pricing": {
+      "billingType": "FREE",
+      "billingCycle": "month",
+      "currencyType": "USD",
+      "fixedPrice": "0.00",
+      "pricePerRequest": "0.0000",
+      "includedQuota": "100 req/min",
+      "commercialSummary": "Free trial"
+    }
   },
   {
     "policyName": "TelcoPartnerStandard",
@@ -17,7 +26,16 @@
     "timeUnit": "min",
     "unitTime": 1,
     "billingPlan": "COMMERCIAL",
-    "stopOnQuotaReach": true
+    "stopOnQuotaReach": true,
+    "pricing": {
+      "billingType": "FIXED_RATE",
+      "billingCycle": "month",
+      "currencyType": "USD",
+      "fixedPrice": "499.00",
+      "pricePerRequest": "0.0010",
+      "includedQuota": "1000 req/min",
+      "commercialSummary": "USD 499/month + USD 0.001 per extra request"
+    }
   },
   {
     "policyName": "TelcoPartnerPremium",
@@ -27,17 +45,37 @@
     "timeUnit": "min",
     "unitTime": 1,
     "billingPlan": "COMMERCIAL",
-    "stopOnQuotaReach": true
+    "stopOnQuotaReach": true,
+    "pricing": {
+      "billingType": "FIXED_RATE",
+      "billingCycle": "month",
+      "currencyType": "USD",
+      "fixedPrice": "1999.00",
+      "pricePerRequest": "0.0005",
+      "includedQuota": "5000 req/min",
+      "commercialSummary": "USD 1,999/month + USD 0.0005 per extra request"
+    }
   },
   {
     "policyName": "TelcoEventStreamPremium",
     "displayName": "Telco Event Stream Premium",
     "description": "Paid event-stream plan for SSE/AsyncAPI products: 10000 events per minute.",
-    "requestCount": 10000,
+    "limitType": "EVENTCOUNTLIMIT",
+    "eventCount": 10000,
     "timeUnit": "min",
     "unitTime": 1,
     "billingPlan": "COMMERCIAL",
-    "stopOnQuotaReach": true
+    "stopOnQuotaReach": true,
+    "pricing": {
+      "billingType": "FIXED_RATE",
+      "billingCycle": "month",
+      "currencyType": "USD",
+      "fixedPrice": "2999.00",
+      "pricePerEvent": "0.00025",
+      "pricePerRequest": "0.00025",
+      "includedQuota": "10000 events/min",
+      "commercialSummary": "USD 2,999/month + USD 0.00025 per extra event"
+    }
   },
   {
     "policyName": "TelcoGraphQLPartner",
@@ -49,6 +87,15 @@
     "billingPlan": "COMMERCIAL",
     "stopOnQuotaReach": true,
     "graphQLMaxDepth": 6,
-    "graphQLMaxComplexity": 120
+    "graphQLMaxComplexity": 120,
+    "pricing": {
+      "billingType": "FIXED_RATE",
+      "billingCycle": "month",
+      "currencyType": "USD",
+      "fixedPrice": "899.00",
+      "pricePerRequest": "0.0020",
+      "includedQuota": "2000 GraphQL calls/min",
+      "commercialSummary": "USD 899/month + USD 0.002 per extra GraphQL request"
+    }
   }
 ]

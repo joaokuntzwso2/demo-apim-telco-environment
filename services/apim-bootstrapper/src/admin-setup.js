@@ -116,27 +116,115 @@ async function getAdminToken() {
   return token.access_token;
 }
 
-function toSubscriptionPolicy(plan) {
+
+function normalizeBillingCycle(value) {
+  const normalized = String(value || 'month').trim();
+
+  const map = {
+    MONTHLY: 'month',
+    YEARLY: 'year',
+    WEEKLY: 'week',
+    DAILY: 'day',
+    monthly: 'month',
+    yearly: 'year',
+    weekly: 'week',
+    daily: 'day',
+    month: 'month',
+    year: 'year',
+    week: 'week',
+    day: 'day'
+  };
+
+  return map[normalized] || 'month';
+}
+
+function pricingAttributes(plan) {
+  const pricing = Object.assign({}, plan.pricing || {});
+  pricing.billingCycle = normalizeBillingCycle(pricing.billingCycle);
+  const attrs = [];
+
+  for (const [name, value] of Object.entries(pricing)) {
+    if (value !== undefined && value !== null) {
+      attrs.push({ name, value: String(value) });
+    }
+  }
+
+  return attrs;
+}
+
+function monetizationInfo(plan) {
+  const pricing = Object.assign({}, plan.pricing || {});
+  pricing.billingCycle = normalizeBillingCycle(pricing.billingCycle);
+
+  if (plan.billingPlan !== 'COMMERCIAL') {
+    return {
+      monetizationPlan: 'FIXEDRATE',
+      properties: {
+        billingType: pricing.billingType || 'FREE',
+        billingCycle: normalizeBillingCycle(pricing.billingCycle),
+        fixedPrice: pricing.fixedPrice || '0.00',
+        pricePerRequest: pricing.pricePerRequest || '0.0000',
+        currencyType: pricing.currencyType || 'USD'
+      }
+    };
+  }
+
   return {
+    monetizationPlan: 'FIXEDRATE',
+    properties: {
+      billingType: pricing.billingType || 'FIXED_RATE',
+      billingCycle: normalizeBillingCycle(pricing.billingCycle),
+      fixedPrice: pricing.fixedPrice || '0.00',
+      pricePerRequest: pricing.pricePerRequest || pricing.pricePerEvent || '0.0000',
+      pricePerEvent: pricing.pricePerEvent || pricing.pricePerRequest || '0.0000',
+      currencyType: pricing.currencyType || 'USD',
+      includedQuota: pricing.includedQuota || '',
+      commercialSummary: pricing.commercialSummary || ''
+    }
+  };
+}
+
+function defaultLimit(plan) {
+  const limitType = plan.limitType || 'REQUESTCOUNTLIMIT';
+
+  if (limitType === 'EVENTCOUNTLIMIT') {
+    return {
+      type: 'EVENTCOUNTLIMIT',
+      eventCount: {
+        timeUnit: plan.timeUnit || 'min',
+        unitTime: plan.unitTime || 1,
+        eventCount: plan.eventCount || plan.requestCount || 1000
+      }
+    };
+  }
+
+  return {
+    type: 'REQUESTCOUNTLIMIT',
+    requestCount: {
+      timeUnit: plan.timeUnit || 'min',
+      unitTime: plan.unitTime || 1,
+      requestCount: plan.requestCount || 1000
+    }
+  };
+}
+
+function toSubscriptionPolicy(plan, existing = {}) {
+  return Object.assign({}, existing, {
     policyName: plan.policyName,
     displayName: plan.displayName || plan.policyName,
     description: plan.description || `${plan.displayName || plan.policyName} demo business plan`,
     isDeployed: true,
     graphQLMaxComplexity: plan.graphQLMaxComplexity || 0,
     graphQLMaxDepth: plan.graphQLMaxDepth || 0,
-    defaultLimit: {
-      type: 'REQUESTCOUNTLIMIT',
-      requestCount: {
-        timeUnit: plan.timeUnit || 'min',
-        unitTime: plan.unitTime || 1,
-        requestCount: plan.requestCount || 1000
-      }
-    },
-    rateLimitCount: 0,
-    customAttributes: [],
+    defaultLimit: defaultLimit(plan),
+    rateLimitCount: plan.rateLimitCount || 0,
+    rateLimitTimeUnit: plan.rateLimitTimeUnit || 'min',
+    customAttributes: pricingAttributes(plan),
+    monetization: monetizationInfo(plan),
     stopOnQuotaReach: plan.stopOnQuotaReach !== false,
-    billingPlan: plan.billingPlan || 'FREE'
-  };
+    billingPlan: plan.billingPlan || 'FREE',
+    permissions: plan.permissions || existing.permissions
+  });
 }
 
 async function loadExistingSubscriptionPolicies(token) {
@@ -148,7 +236,7 @@ async function loadExistingSubscriptionPolicies(token) {
   return result.list || result.data || [];
 }
 
-async function createCommercialPlans(token) {
+async function createOrUpdateCommercialPlans(token) {
   if (!fs.existsSync(COMMERCIAL_PLANS_FILE)) {
     log(`commercial plans file not found: ${COMMERCIAL_PLANS_FILE}`);
     return [];
@@ -156,15 +244,32 @@ async function createCommercialPlans(token) {
 
   const plans = JSON.parse(fs.readFileSync(COMMERCIAL_PLANS_FILE, 'utf8'));
   const existing = await loadExistingSubscriptionPolicies(token);
-  const existingNames = new Set(existing.map(p => p.policyName || p.name));
+
+  const existingByName = new Map(
+    existing.map(policy => [policy.policyName || policy.name, policy])
+  );
 
   for (const plan of plans) {
-    if (existingNames.has(plan.policyName)) {
-      log(`subscription policy already exists: ${plan.policyName}`);
+    const existingPolicy = existingByName.get(plan.policyName);
+    const payload = toSubscriptionPolicy(plan, existingPolicy || {});
+
+    if (existingPolicy) {
+      const policyId = existingPolicy.policyId || existingPolicy.id;
+
+      if (!policyId) {
+        log(`subscription policy exists but has no policyId, skipping update: ${plan.policyName}`);
+        continue;
+      }
+
+      await http(`${APIM_URL}/api/am/admin/v4/throttling/policies/subscription/${policyId}`, {
+        method: 'PUT',
+        bearer: token,
+        json: payload
+      });
+
+      log(`updated subscription policy pricing: ${plan.policyName}`);
       continue;
     }
-
-    const payload = toSubscriptionPolicy(plan);
 
     await http(`${APIM_URL}/api/am/admin/v4/throttling/policies/subscription`, {
       method: 'POST',
@@ -219,10 +324,77 @@ async function attachPlansToPublishedApis(token) {
   }
 }
 
+
+function apiMonetizationProperties(apiName, planNames) {
+  const isStreaming = apiName.includes('NetworkEvents') || apiName.includes('Stream');
+
+  return {
+    ConnectedAccountKey: 'acct_telco_demo_admin',
+    RevenueShareModel: isStreaming ? 'EVENT_STREAM_REVENUE_SHARE' : 'API_PRODUCT_REVENUE_SHARE',
+    SettlementOwner: 'Telco Marketplace Finance',
+    ProductLine: isStreaming ? 'Streaming Event APIs' : 'Commercial Telco APIs',
+    BillingCatalogReference: planNames.join(',')
+  };
+}
+
+async function enablePublisherMonetizationProperties(token) {
+  const apis = await listPublisherApis(token);
+
+  for (const apiSummary of apis) {
+    const planNames = API_PLAN_ASSIGNMENTS[apiSummary.name];
+
+    if (!planNames || !apiSummary.id) {
+      continue;
+    }
+
+    const hasCommercialPlan = planNames.some(plan => plan !== 'TelcoFreeTrial');
+
+    if (!hasCommercialPlan) {
+      continue;
+    }
+
+    const properties = apiMonetizationProperties(apiSummary.name, planNames);
+
+    try {
+      await http(`${APIM_URL}/api/am/publisher/v4/apis/${apiSummary.id}/monetize`, {
+        method: 'POST',
+        bearer: token,
+        json: {
+          enabled: true,
+          properties
+        }
+      }, [200, 201, 202, 204]);
+
+      log(`enabled API-level monetization properties for ${apiSummary.name}`);
+    } catch (e) {
+      log(`monetize endpoint failed for ${apiSummary.name}; falling back to API update: ${e.message}`);
+
+      try {
+        const api = await http(`${APIM_URL}/api/am/publisher/v4/apis/${apiSummary.id}`, {
+          bearer: token
+        });
+
+        api.monetization = {
+          enabled: true,
+          properties
+        };
+
+        await http(`${APIM_URL}/api/am/publisher/v4/apis/${apiSummary.id}`, {
+          method: 'PUT',
+          bearer: token,
+          json: api
+        }, [200, 201, 202]);
+
+        log(`updated API monetization object for ${apiSummary.name}`);
+      } catch (fallbackError) {
+        log(`could not update API-level monetization for ${apiSummary.name}: ${fallbackError.message}`);
+      }
+    }
+  }
+}
+
+
 async function bestEffortEnableMonetizationLabels(token) {
-  // This is intentionally best-effort because the tenant advanced-settings API
-  // has varied across APIM versions. Commercial plans are created even if this
-  // endpoint is unavailable.
   const candidates = [
     `${APIM_URL}/api/am/admin/v4/settings`,
     `${APIM_URL}/api/am/admin/v4/settings/advanced`
@@ -231,6 +403,7 @@ async function bestEffortEnableMonetizationLabels(token) {
   for (const url of candidates) {
     try {
       const settings = await http(url, { bearer: token }, [200]);
+
       if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
         continue;
       }
@@ -238,11 +411,7 @@ async function bestEffortEnableMonetizationLabels(token) {
       settings.EnableMonetization = true;
       settings.IsUnlimitedTierPaid = false;
 
-      await http(url, {
-        method: 'PUT',
-        bearer: token,
-        json: settings
-      }, [200, 201, 202, 204]);
+      await http(url, { method: 'PUT', bearer: token, json: settings }, [200, 201, 202, 204]);
 
       log(`enabled monetization labels through ${url}`);
       return;
@@ -251,18 +420,17 @@ async function bestEffortEnableMonetizationLabels(token) {
     }
   }
 
-  log('commercial plans are available; enable monetization labels manually in Admin → Settings → Advanced if needed.');
+  log('commercial pricing attributes are configured; enable monetization labels manually in Admin → Settings → Advanced if needed.');
 }
 
 async function main() {
-  // APIM is already up by the time bootstrap.js finishes, but give the indexers
-  // and admin APIs a small grace period.
   await sleep(3000);
 
   const token = await getAdminToken();
 
-  await createCommercialPlans(token);
+  await createOrUpdateCommercialPlans(token);
   await attachPlansToPublishedApis(token);
+  await enablePublisherMonetizationProperties(token);
   await bestEffortEnableMonetizationLabels(token);
 
   log('completed.');

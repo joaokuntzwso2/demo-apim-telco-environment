@@ -42,7 +42,41 @@ RUN set -eux; \
       '' \
       '[monitoring.jmx]' \
       'rmi_server_start = false' \
-      >> "$TMP"; \
+       \
+  '' \
+  '# BEGIN TELCO DEMO MONETIZATION PROPERTIES' \
+  '# Demo-only API-level monetization attributes shown in Publisher → Monetization.' \
+  '[[apim.monetization.additional_attributes]]' \
+  'name = "ConnectedAccountKey"' \
+  'display_name = "Connected Account Key"' \
+  'required = "false"' \
+  'description = "Demo billing or settlement account reference for the API publisher."' \
+  '' \
+  '[[apim.monetization.additional_attributes]]' \
+  'name = "RevenueShareModel"' \
+  'display_name = "Revenue Share Model"' \
+  'required = "false"' \
+  'description = "Commercial revenue model used for this API product."' \
+  '' \
+  '[[apim.monetization.additional_attributes]]' \
+  'name = "SettlementOwner"' \
+  'display_name = "Settlement Owner"' \
+  'required = "false"' \
+  'description = "Internal owner responsible for settlement and reconciliation."' \
+  '' \
+  '[[apim.monetization.additional_attributes]]' \
+  'name = "ProductLine"' \
+  'display_name = "Product Line"' \
+  'required = "false"' \
+  'description = "Commercial product family for reporting and catalog grouping."' \
+  '' \
+  '[[apim.monetization.additional_attributes]]' \
+  'name = "BillingCatalogReference"' \
+  'display_name = "Billing Catalog Reference"' \
+  'required = "false"' \
+  'description = "External catalog, SKU, or pricing reference used for billing."' \
+  '# END TELCO DEMO MONETIZATION PROPERTIES' \
+  >> "$TMP"; \
     mv "$TMP" "$CONF"; \
     chown wso2carbon "$CONF"
 
