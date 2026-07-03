@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Demo Commander | Telco API Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/open-gateway-trust-pack.css" />
+</head>
+<body class="og-portal-page">
+  <header class="og-portal-header">
+    <div class="og-portal-header-inner">
+      <a class="og-brand" href="/">Regional Telco Group</a>
+      <nav class="og-portal-nav">
+        <a href="/">Overview</a>
+        <a href="/open-gateway.html">Open Gateway</a>
+        <a href="/governance-scorecard.html">Governance Scorecard</a>
+        <a href="/demo-commander.html" class="active">Demo Commander</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="og-portal-main">
+    <section class="og-page-title">
+      <div>
+        <div class="og-eyebrow">Presenter control room</div>
+        <h1>Demo Commander</h1>
+        <p>
+          A polished runbook for the full telco API platform demo. Use it to drive the story,
+          open the right screens, run live API checks and keep the narrative consistent.
+        </p>
+      </div>
+
+      <div class="og-status-card">
+        <span class="og-status-dot"></span>
+        Demo-ready
+      </div>
+    </section>
+
+    <section class="commander-toolbar">
+      <a href="https://localhost:9443/publisher" target="_blank">Open Publisher</a>
+      <a href="https://localhost:9443/devportal" target="_blank">Open DevPortal</a>
+      <a href="http://localhost:8090" target="_blank">Open APIOps Pipeline</a>
+      <a href="/open-gateway.html#live">Open Gateway live results</a>
+      <button id="commander-run-health">Run platform check</button>
+    </section>
+
+    <section class="commander-grid">
+      <aside class="commander-agenda">
+        <h2>Demo flow</h2>
+        <ol id="commander-steps"></ol>
+      </aside>
+
+      <section class="commander-stage">
+        <div class="commander-stage-header">
+          <div>
+            <div class="og-eyebrow" id="commander-kicker">Step 1</div>
+            <h2 id="commander-title">Opening</h2>
+          </div>
+          <div class="commander-time" id="commander-time">2 min</div>
+        </div>
+
+        <p id="commander-summary"></p>
+
+        <div class="commander-script-box">
+          <h3>Talk track</h3>
+          <p id="commander-talktrack"></p>
+        </div>
+
+        <div class="commander-actions" id="commander-actions"></div>
+
+        <div class="commander-proof-box">
+          <h3>Proof points</h3>
+          <ul id="commander-proof"></ul>
+        </div>
+      </section>
+    </section>
+
+    <section class="score-panel">
+      <div class="score-panel-header">
+        <div>
+          <h2>Live demo checks</h2>
+          <p>Use this to verify the environment before or during the presentation.</p>
+        </div>
+      </div>
+      <pre class="og-json" id="commander-output">Click “Run platform check” to validate the local demo services.</pre>
+    </section>
+  </main>
+
+  <script src="/demo-commander.js"></script>
+</body>
+</html>

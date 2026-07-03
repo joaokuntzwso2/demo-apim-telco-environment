@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Governance Scorecard | Telco API Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/open-gateway-trust-pack.css" />
+</head>
+<body class="og-portal-page">
+  <header class="og-portal-header">
+    <div class="og-portal-header-inner">
+      <a class="og-brand" href="/">Regional Telco Group</a>
+      <nav class="og-portal-nav">
+        <a href="/">Overview</a>
+        <a href="/open-gateway.html">Open Gateway</a>
+        <a href="/governance-scorecard.html" class="active">Governance Scorecard</a>
+        <a href="/demo-commander.html">Demo Commander</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="og-portal-main">
+    <section class="og-page-title">
+      <div>
+        <div class="og-eyebrow">Governance proof</div>
+        <h1>API Governance Scorecard</h1>
+        <p>
+          A demo-ready governance dashboard showing how WSO2 API Manager can turn standards
+          into measurable controls across REST, streaming, SOAP, GraphQL and Open Gateway APIs.
+        </p>
+      </div>
+
+      <div class="og-status-card">
+        <span class="og-status-dot"></span>
+        Policies active
+      </div>
+    </section>
+
+    <section class="score-summary-grid">
+      <article class="score-summary-card">
+        <span>Overall readiness</span>
+        <strong id="score-overall">--</strong>
+        <small>Across demo API portfolio</small>
+      </article>
+      <article class="score-summary-card">
+        <span>Blocking issues</span>
+        <strong id="score-blocking">--</strong>
+        <small>Should remain zero for the demo path</small>
+      </article>
+      <article class="score-summary-card">
+        <span>Governed API products</span>
+        <strong id="score-products">--</strong>
+        <small>Commercial and technical product packs</small>
+      </article>
+      <article class="score-summary-card">
+        <span>Policy coverage</span>
+        <strong id="score-coverage">--</strong>
+        <small>Security, metadata, lifecycle and monetization</small>
+      </article>
+    </section>
+
+    <section class="score-panel">
+      <div class="score-panel-header">
+        <div>
+          <h2>Portfolio scorecard</h2>
+          <p>Use this as the governance proof during the demo: every API is scored against product-readiness criteria.</p>
+        </div>
+        <button id="score-run">Run scorecard</button>
+      </div>
+
+      <div class="score-table-wrap">
+        <table class="score-table">
+          <thead>
+            <tr>
+              <th>API / Product pack</th>
+              <th>Type</th>
+              <th>Lifecycle</th>
+              <th>Security</th>
+              <th>Commercial metadata</th>
+              <th>Plans</th>
+              <th>Score</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="score-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="score-panel">
+      <div class="score-panel-header">
+        <div>
+          <h2>What this proves</h2>
+          <p>The scorecard is intentionally business-readable while still mapping to technical governance controls.</p>
+        </div>
+      </div>
+
+      <div class="score-proof-grid">
+        <article>
+          <h3>Rule-to-pipeline governance</h3>
+          <p>Design-time rules surface issues before APIs are published or promoted.</p>
+        </article>
+        <article>
+          <h3>Commercial API readiness</h3>
+          <p>APIs are treated as products with plans, owners, metadata and monetization references.</p>
+        </article>
+        <article>
+          <h3>Runtime enforcement</h3>
+          <p>Security, subscriptions and throttling are enforced through the gateway.</p>
+        </article>
+        <article>
+          <h3>Multi-style API governance</h3>
+          <p>The same operating model covers REST, event APIs, SOAP, GraphQL and Open Gateway APIs.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="/governance-scorecard.js"></script>
+</body>
+</html>
