@@ -10,6 +10,10 @@ if [ -f docker-compose.kafka.yml ]; then
   COMPOSE_FILES+=(-f docker-compose.kafka.yml)
 fi
 
+if [ -f docker-compose.opa.yml ]; then
+  COMPOSE_FILES+=(-f docker-compose.opa.yml)
+fi
+
 compose() {
   docker-compose "${COMPOSE_FILES[@]}" "$@"
 }
@@ -34,6 +38,29 @@ wait_for_http() {
 
   echo "[wait] ERROR: ${name} did not become ready."
   return 1
+}
+
+
+wait_for_opa() {
+  if ! docker ps --format '{{.Names}}' | grep -qx 'telco-opa'; then
+    echo "[opa] OPA container not running. Skipping OPA readiness."
+    return 0
+  fi
+
+  echo "[opa] Waiting for OPA policy engine..."
+
+  for attempt in $(seq 1 60); do
+    if curl -s http://localhost:8181/health >/dev/null 2>&1; then
+      echo "[opa] OPA is ready."
+      return 0
+    fi
+
+    echo "[opa] OPA not ready yet (${attempt}/60)..."
+    sleep 3
+  done
+
+  echo "[opa] WARNING: OPA did not become ready. Continuing demo startup."
+  return 0
 }
 
 wait_for_redpanda() {

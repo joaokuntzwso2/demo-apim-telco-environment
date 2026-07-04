@@ -672,6 +672,47 @@ function patchProject(projectDir, api, openapi, context) {
 }
 
 
+
+function isAlreadyPublishedLifecycleError(error) {
+  const message = String((error && error.message) || error || '');
+  const lower = message.toLowerCase();
+
+  return (
+    message.includes('903234') &&
+    lower.includes('unsupported state change action') &&
+    lower.includes('publish') &&
+    (
+      lower.includes('demote to created') ||
+      lower.includes('deprecate') ||
+      lower.includes('block')
+    )
+  );
+}
+
+async function safePublishLifecycleChange(apimUrl, token, apiId, log) {
+  try {
+    await safePublishLifecycleChange(apimUrl, token, apiId, log);
+
+    return {
+      published: true,
+      skipped: false
+    };
+  } catch (error) {
+    if (isAlreadyPublishedLifecycleError(error)) {
+      log(`Publish lifecycle action is not available for API ${apiId}; treating it as already published/deployed and continuing.`);
+
+      return {
+        published: false,
+        skipped: true,
+        reason: 'PUBLISH_ACTION_NOT_AVAILABLE'
+      };
+    }
+
+    throw error;
+  }
+}
+
+
 async function publisherRestRequest(method, url, token, body = null, okStatuses = [200, 201, 202, 204]) {
   const res = await fetch(url, {
     method,

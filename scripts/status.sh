@@ -27,3 +27,8 @@ curl -s http://localhost:8081/api/v1/kafka/status | python3 -m json.tool || true
 echo
 echo "== Regional gateway dashboard =="
 curl -s http://localhost:8081/api/v1/regional-gateways/dashboard | python3 -m json.tool | head -120 || true
+
+
+echo
+echo "== OPA governance =="
+curl -s http://localhost:8081/api/v1/opa/governance/evaluate | python3 -m json.tool | head -160 || true

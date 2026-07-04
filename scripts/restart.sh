@@ -18,6 +18,7 @@ compose up -d --force-recreate
 
 wait_for_http "Telco backend" "http://localhost:8081/health" 80 5
 wait_for_redpanda
+wait_for_opa
 create_kafka_topics
 
 wait_for_http "WSO2 APIM" "https://localhost:9443/services/Version" 100 10

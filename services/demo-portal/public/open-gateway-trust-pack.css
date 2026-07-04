@@ -1822,3 +1822,125 @@ body.og-portal-page {
   }
 }
 /* END REGIONAL FEDERATED GATEWAY DASHBOARD */
+
+/* BEGIN OPA GOVERNANCE UI */
+.opa-governance-card {
+  margin-top: 18px;
+}
+
+.opa-policy-grid,
+.opa-validation-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.opa-policy-grid div,
+.opa-validation-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.opa-policy-grid strong {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.opa-policy-grid span {
+  display: block;
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.opa-action {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.opa-validation-card {
+  border-top: 5px solid #16a34a;
+}
+
+.opa-validation-card.deny {
+  border-top-color: #dc2626;
+}
+
+.opa-validation-card span {
+  color: #64748b;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 900;
+}
+
+.opa-validation-card h3 {
+  margin: 6px 0 10px;
+  color: #0f172a;
+}
+
+.opa-validation-card strong {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 12px;
+}
+
+.opa-validation-card.deny strong {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.opa-warning {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.opa-deny {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.opa-output {
+  min-height: 240px;
+  max-height: 440px;
+  overflow: auto;
+  border-radius: 16px;
+  padding: 16px;
+  background: #0f172a;
+  color: #bbf7d0;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1000px) {
+  .opa-policy-grid,
+  .opa-validation-summary {
+    grid-template-columns: 1fr;
+  }
+}
+/* END OPA GOVERNANCE UI */

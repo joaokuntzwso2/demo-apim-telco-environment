@@ -1,0 +1,29 @@
+services:
+  opa:
+    image: openpolicyagent/opa:latest
+    container_name: telco-opa
+    command:
+      - run
+      - --server
+      - --addr=0.0.0.0:8181
+      - --log-level=info
+      - /policies
+    volumes:
+      - ./artifacts/opa:/policies:ro
+    ports:
+      - "8181:8181"
+
+  telco-backend:
+    environment:
+      OPA_ENABLED: "true"
+      OPA_URL: http://opa:8181
+    depends_on:
+      - opa
+
+  apim-bootstrapper:
+    environment:
+      OPA_ENABLED: "true"
+      OPA_URL: http://opa:8181
+      OPA_FAIL_ON_DENY: "false"
+    depends_on:
+      - opa

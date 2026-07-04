@@ -1,0 +1,40 @@
+{
+  "rules": {
+    "telco-opa-commercial-product-evidence": {
+      "description": "OPA governance evidence should be present for commercial API products.",
+      "message": "Commercial APIs should carry OPA validation evidence for API Product, Moesif billing and settlement governance.",
+      "severity": "warn",
+      "given": "$",
+      "then": [
+        {
+          "field": "x-wso2-opa-commercial-product-validation",
+          "function": "truthy"
+        }
+      ]
+    },
+    "telco-opa-open-gateway-risk-evidence": {
+      "description": "High-risk Open Gateway APIs should have OPA validation evidence.",
+      "message": "Open Gateway fraud, SIM swap and location APIs should carry OPA evidence for premium controls and billable meters.",
+      "severity": "warn",
+      "given": "$",
+      "then": [
+        {
+          "field": "x-wso2-opa-open-gateway-risk-validation",
+          "function": "truthy"
+        }
+      ]
+    },
+    "telco-opa-regional-gateway-evidence": {
+      "description": "Regional and federated gateway readiness should be validated by OPA.",
+      "message": "Federated gateway and regional failover readiness should be validated by OPA and visible as APIM governance evidence.",
+      "severity": "warn",
+      "given": "$",
+      "then": [
+        {
+          "field": "x-wso2-opa-regional-gateway-validation",
+          "function": "truthy"
+        }
+      ]
+    }
+  }
+}
