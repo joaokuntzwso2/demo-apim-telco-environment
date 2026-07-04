@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node src/bootstrap.js && node src/admin-setup.js && node src/governance-setup.js && node src/opa-governance-setup.js && node src/opa-admin-governance-upload.js && node src/api-product-bundles-setup.js && node src/moesif-monetization-setup.js && node src/moesif-export-artifact.js"
+    "start": "node src/bootstrap.js && node src/admin-setup.js && node src/governance-setup.js && node src/opa-governance-setup.js && node src/siddhi-admin-governance-upload.js && node src/siddhi-governance-setup.js && node src/siddhi-custom-throttling-policies-upload.js && node src/opa-admin-governance-upload.js && node src/api-product-bundles-setup.js && node src/moesif-monetization-setup.js && node src/moesif-export-artifact.js"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",

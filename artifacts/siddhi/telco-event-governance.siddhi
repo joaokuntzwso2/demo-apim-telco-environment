@@ -1,0 +1,158 @@
+@App:name('TelcoEventGovernanceApp')
+@App:description('Validates telco event-native API product logic for QoD SLA degradation, SIM swap fraud risk and partner settlement metering.')
+
+@source(
+  type='kafka',
+  topic.list='telco.network.qod.events',
+  threading.option='single.thread',
+  group.id='siddhi-qod-governance',
+  bootstrap.servers='redpanda:9092',
+  @map(type='json')
+)
+define stream NetworkQoDEvents (
+  eventId string,
+  partnerId string,
+  country string,
+  region string,
+  sliceId string,
+  latencyMs double,
+  packetLossPct double,
+  jitterMs double,
+  severity string,
+  timestamp long
+);
+
+@sink(
+  type='kafka',
+  topic='telco.network.qod.sla.alerts',
+  bootstrap.servers='redpanda:9092',
+  @map(type='json')
+)
+define stream QoDSlaAlerts (
+  eventId string,
+  partnerId string,
+  country string,
+  region string,
+  sliceId string,
+  alertType string,
+  severity string,
+  latencyMs double,
+  packetLossPct double,
+  businessAction string
+);
+
+@info(name='qodSlaDegradationValidation')
+from NetworkQoDEvents[
+  latencyMs > 120.0 or packetLossPct > 1.5 or severity == 'CRITICAL'
+]#window.timeBatch(1 min)
+select
+  eventId,
+  partnerId,
+  country,
+  region,
+  sliceId,
+  'NETWORK_SLA_DEGRADATION' as alertType,
+  severity,
+  latencyMs,
+  packetLossPct,
+  'Notify NOC, protect enterprise SLA, and create billable assurance event' as businessAction
+insert into QoDSlaAlerts;
+
+
+@source(
+  type='kafka',
+  topic.list='telco.fraud.sim-swap.events',
+  threading.option='single.thread',
+  group.id='siddhi-sim-swap-governance',
+  bootstrap.servers='redpanda:9092',
+  @map(type='json')
+)
+define stream SimSwapRiskEvents (
+  eventId string,
+  msisdn string,
+  partnerId string,
+  country string,
+  simSwapAgeHours double,
+  riskScore double,
+  verificationContext string,
+  timestamp long
+);
+
+@sink(
+  type='kafka',
+  topic='telco.fraud.sim-swap.alerts',
+  bootstrap.servers='redpanda:9092',
+  @map(type='json')
+)
+define stream SimSwapFraudAlerts (
+  eventId string,
+  msisdn string,
+  partnerId string,
+  country string,
+  fraudSignal string,
+  riskScore double,
+  requiredAction string
+);
+
+@info(name='simSwapFraudGuardValidation')
+from SimSwapRiskEvents[
+  simSwapAgeHours < 24.0 and riskScore >= 80.0
+]#window.time(5 min)
+select
+  eventId,
+  msisdn,
+  partnerId,
+  country,
+  'RECENT_SIM_SWAP_HIGH_RISK' as fraudSignal,
+  riskScore,
+  'Step-up authentication or deny transaction through Open Gateway fraud policy' as requiredAction
+insert into SimSwapFraudAlerts;
+
+
+@source(
+  type='kafka',
+  topic.list='telco.partner.settlement.events',
+  threading.option='single.thread',
+  group.id='siddhi-settlement-governance',
+  bootstrap.servers='redpanda:9092',
+  @map(type='json')
+)
+define stream PartnerSettlementEvents (
+  eventId string,
+  partnerId string,
+  productKey string,
+  apiProduct string,
+  country string,
+  billableUnits double,
+  unitPrice double,
+  timestamp long
+);
+
+@sink(
+  type='kafka',
+  topic='telco.partner.settlement.aggregates',
+  bootstrap.servers='redpanda:9092',
+  @map(type='json')
+)
+define stream PartnerSettlementAggregates (
+  partnerId string,
+  productKey string,
+  apiProduct string,
+  country string,
+  totalBillableUnits double,
+  estimatedRevenue double,
+  settlementWindow string
+);
+
+@info(name='partnerSettlementMeterValidation')
+from PartnerSettlementEvents#window.timeBatch(15 min)
+select
+  partnerId,
+  productKey,
+  apiProduct,
+  country,
+  sum(billableUnits) as totalBillableUnits,
+  sum(billableUnits * unitPrice) as estimatedRevenue,
+  'FIFTEEN_MINUTE_PARTNER_SETTLEMENT_WINDOW' as settlementWindow
+group by partnerId, productKey, apiProduct, country
+insert into PartnerSettlementAggregates;

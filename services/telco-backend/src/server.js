@@ -1,4 +1,5 @@
 const express = require('express');
+const { registerSiddhiGovernanceRoutes } = require('./siddhi-governance-routes');
 const { registerOpaGovernanceRoutes } = require('./opa-governance-routes');
 const { registerDemoArtifactRoutes } = require('./demo-artifact-routes');
 const { registerRegionalGatewayRoutes } = require('./regional-gateway-routes');
@@ -9,6 +10,7 @@ const http = require('http');
 const { WebSocketServer } = require('ws');
 
 const app = express();
+registerSiddhiGovernanceRoutes(app);
 registerOpaGovernanceRoutes(app);
 registerDemoArtifactRoutes(app);
 const port = Number(process.env.PORT || 8081);

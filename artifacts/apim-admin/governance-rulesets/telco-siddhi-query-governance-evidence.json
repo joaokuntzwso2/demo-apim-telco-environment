@@ -1,0 +1,40 @@
+{
+  "rules": {
+    "telco-siddhi-qod-validation-evidence": {
+      "description": "QoD SLA event products should carry Siddhi query validation evidence.",
+      "message": "Network QoD APIs and event products should show validated Siddhi logic for SLA degradation detection.",
+      "severity": "warn",
+      "given": "$",
+      "then": [
+        {
+          "field": "x-wso2-siddhi-qod-validation",
+          "function": "truthy"
+        }
+      ]
+    },
+    "telco-siddhi-fraud-validation-evidence": {
+      "description": "Fraud and SIM swap event products should carry Siddhi query validation evidence.",
+      "message": "SIM swap and fraud APIs should show validated Siddhi logic for high-risk event detection.",
+      "severity": "warn",
+      "given": "$",
+      "then": [
+        {
+          "field": "x-wso2-siddhi-fraud-validation",
+          "function": "truthy"
+        }
+      ]
+    },
+    "telco-siddhi-settlement-validation-evidence": {
+      "description": "Partner settlement event products should carry Siddhi query validation evidence.",
+      "message": "Partner settlement APIs should show validated Siddhi logic for billable event aggregation.",
+      "severity": "warn",
+      "given": "$",
+      "then": [
+        {
+          "field": "x-wso2-siddhi-settlement-validation",
+          "function": "truthy"
+        }
+      ]
+    }
+  }
+}

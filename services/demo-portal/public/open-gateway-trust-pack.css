@@ -1944,3 +1944,114 @@ body.og-portal-page {
   }
 }
 /* END OPA GOVERNANCE UI */
+
+/* BEGIN SIDDHI GOVERNANCE UI */
+.siddhi-governance-card {
+  margin-top: 18px;
+}
+
+.siddhi-policy-grid,
+.siddhi-validation-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.siddhi-policy-grid div,
+.siddhi-validation-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.siddhi-policy-grid strong {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #7c3aed;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.siddhi-policy-grid span {
+  display: block;
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.siddhi-action {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  background: #7c3aed;
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.siddhi-validation-card {
+  border-top: 5px solid #16a34a;
+}
+
+.siddhi-validation-card.deny {
+  border-top-color: #dc2626;
+}
+
+.siddhi-validation-card span {
+  color: #64748b;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 900;
+}
+
+.siddhi-validation-card h3 {
+  margin: 6px 0 10px;
+  color: #0f172a;
+}
+
+.siddhi-validation-card strong {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 12px;
+}
+
+.siddhi-validation-card.deny strong {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.siddhi-validation-card p {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.siddhi-output {
+  min-height: 240px;
+  max-height: 440px;
+  overflow: auto;
+  border-radius: 16px;
+  padding: 16px;
+  background: #1e1b4b;
+  color: #ddd6fe;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1000px) {
+  .siddhi-policy-grid,
+  .siddhi-validation-summary {
+    grid-template-columns: 1fr;
+  }
+}
+/* END SIDDHI GOVERNANCE UI */

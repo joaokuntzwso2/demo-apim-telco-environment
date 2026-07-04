@@ -32,3 +32,13 @@ curl -s http://localhost:8081/api/v1/regional-gateways/dashboard | python3 -m js
 echo
 echo "== OPA governance =="
 curl -s http://localhost:8081/api/v1/opa/governance/evaluate | python3 -m json.tool | head -160 || true
+
+
+echo
+echo "== Siddhi governance =="
+curl -s http://localhost:8081/api/v1/siddhi/governance/evaluate | python3 -m json.tool | head -180 || true
+
+
+echo
+echo "== APIM Admin Siddhi Custom Policies =="
+docker-compose -f docker-compose.yml -f docker-compose.kafka.yml -f docker-compose.opa.yml run --rm apim-bootstrapper node src/siddhi-custom-throttling-policies-upload.js --validate-only || true
