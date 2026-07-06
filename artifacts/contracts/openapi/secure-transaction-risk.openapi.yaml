@@ -1,0 +1,230 @@
+openapi: 3.0.3
+info:
+  title: Secure Transaction Risk Assessment API
+  version: 1.0.0
+  description: >
+    Managed partner API backed by WSO2 Integrator: MI. It orchestrates CRM,
+    SIM Swap, Device Location and OSS evidence, then returns a normalized
+    transaction risk decision.
+  contact:
+    name: Telco API Platform Team
+    email: telco-api-platform@example.com
+x-wso2-basePath: /secure-transaction-risk/v1
+x-telco-health-path: /health
+x-telco-health-method: GET
+x-telco-api-product: Fraud Prevention and Trust Pack
+x-telco-architecture-layer: enterprise-integration
+tags:
+  - name: Transaction Risk
+paths:
+  /health:
+    get:
+      operationId: getRiskAssessmentHealth
+      summary: Check the MI orchestration service
+      tags: [Transaction Risk]
+      responses:
+        '200':
+          description: Runtime is available
+          headers:
+            X-Correlation-ID:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /assessments:
+    post:
+      operationId: assessSecureTransactionRisk
+      summary: Assess transaction risk using multiple telco evidence sources
+      tags: [Transaction Risk]
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/DemoFailService'
+        - $ref: '#/components/parameters/DemoFailMode'
+        - $ref: '#/components/parameters/DemoDelayService'
+        - $ref: '#/components/parameters/DemoDelayMs'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskAssessmentRequest'
+            examples:
+              standard:
+                value:
+                  transactionId: txn-2026-0001
+                  partnerId: partner-fintech-mx
+                  msisdn: '+525512340001'
+                  amount: 249.90
+                  currency: MXN
+                  expectedCountry: MX
+                  device:
+                    latitude: 19.4326
+                    longitude: -99.1332
+                  partialResponsePolicy: ALLOW_DEGRADED
+      responses:
+        '200':
+          description: Risk decision, including degraded/partial decisions
+          headers:
+            X-Correlation-ID:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessmentResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Evidence unavailable while FAIL_CLOSED is active
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  parameters:
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      description: Existing correlation identifier; MI creates one when omitted.
+      schema: { type: string, maxLength: 128 }
+    DemoFailService:
+      name: X-Demo-Fail-Service
+      in: header
+      required: false
+      description: 'Demo-only chaos switch: crm, sim-swap, device-location, oss, or all.'
+      schema:
+        type: string
+        enum: [crm, sim-swap, device-location, oss, all]
+    DemoFailMode:
+      name: X-Demo-Fail-Mode
+      in: header
+      required: false
+      description: Demo-only failure mode. Transport exercises retry/circuit breaking; HTTP exercises response normalization.
+      schema:
+        type: string
+        default: transport
+        enum: [transport, http]
+    DemoDelayService:
+      name: X-Demo-Delay-Service
+      in: header
+      required: false
+      description: Demo-only latency switch for a named downstream service.
+      schema:
+        type: string
+        enum: [crm, sim-swap, device-location, oss, all]
+    DemoDelayMs:
+      name: X-Demo-Delay-Ms
+      in: header
+      required: false
+      description: Demo-only delay in milliseconds.
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 30000
+  schemas:
+    RiskAssessmentRequest:
+      type: object
+      required:
+        - transactionId
+        - partnerId
+        - msisdn
+        - amount
+        - currency
+        - expectedCountry
+        - device
+      properties:
+        transactionId: { type: string, minLength: 1, maxLength: 128 }
+        partnerId: { type: string, minLength: 1, maxLength: 128 }
+        msisdn:
+          type: string
+          pattern: '^\+[1-9][0-9]{7,14}$'
+        amount:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        expectedCountry:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        device:
+          type: object
+          required: [latitude, longitude]
+          properties:
+            latitude: { type: number, format: double, minimum: -90, maximum: 90 }
+            longitude: { type: number, format: double, minimum: -180, maximum: 180 }
+        partialResponsePolicy:
+          type: string
+          default: ALLOW_DEGRADED
+          enum: [ALLOW_DEGRADED, FAIL_CLOSED]
+    RiskAssessmentResponse:
+      type: object
+      required:
+        - transactionId
+        - decision
+        - riskScore
+        - partialResponse
+        - correlationId
+      properties:
+        transactionId: { type: string }
+        partnerId: { type: string }
+        decision:
+          type: string
+          enum: [ALLOW, CHALLENGE, DENY]
+        riskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        reasons:
+          type: array
+          items: { type: string }
+        partialResponse: { type: boolean }
+        partialResponsePolicy:
+          type: string
+          enum: [ALLOW_DEGRADED, FAIL_CLOSED]
+        unavailableServices:
+          type: array
+          items: { type: string }
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evidence'
+        correlationId: { type: string }
+        processingTimeMs: { type: integer, format: int64 }
+    Evidence:
+      type: object
+      required: [service, status]
+      properties:
+        service: { type: string }
+        status:
+          type: string
+          enum: [SUCCESS, UNAVAILABLE]
+        data:
+          type: object
+          additionalProperties: true
+        error:
+          type: object
+          additionalProperties: true
+        correlationId: { type: string }
+    Health:
+      type: object
+      properties:
+        status: { type: string, example: UP }
+        service: { type: string }
+        runtime: { type: string }
+        correlationId: { type: string }
+    Problem:
+      type: object
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        correlationId: { type: string }

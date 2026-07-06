@@ -14,7 +14,7 @@ const APIM_GATEWAY_URL = process.env.WSO2_APIM_GATEWAY_URL || 'https://wso2-apim
 const APIM_TOKEN_URL = process.env.WSO2_APIM_TOKEN_URL || `${APIM_URL}/oauth2/token`;
 const APIM_USER = process.env.APIM_USERNAME || 'admin';
 const APIM_PASS = process.env.APIM_PASSWORD || 'admin';
-const BACKEND_URL = process.env.TELCO_BACKEND_URL || 'http://telco-backend:8081';
+const BACKEND_URL = process.env.TELCO_BACKEND_URL || 'http://telco-backend:8081'; const MI_BACKEND_URL = process.env.WSO2_MI_URL || 'http://wso2-mi:8290';
 const STATE_FILE = process.env.APIM_PORTAL_STATE_FILE || '/workspace/state/runtime.json';
 const APP_NAME = process.env.PORTAL_APP_NAME || 'Regional Portal';
 
@@ -111,7 +111,7 @@ const portalApis = [
     soapBackendPath: '/soap/billing-adjustment',
     routes: ['/soap/billing-adjustment']
   },
-  { id: 'network-events', name: 'NetworkEventsStreamAPI', version: '1.0.0', protocol: 'ASYNC', type: 'SSE', asyncapiSpecCandidates: [ 'contracts/asyncapi/network-events.asyncapi.yaml', 'contracts/network-events.asyncapi.yaml', 'network-events.asyncapi.yaml' ], context: '/network-events/v1', routes: ['/events/network-events'] }
+  { id: 'billing-adjustment-modernization', name: 'BillingAdjustmentModernizationAPI', version: '1.0.0', importSpecCandidates: ['contracts/openapi/billing-adjustment-modernization.openapi.yaml', 'billing-adjustment-modernization.openapi.yaml'], context: '/billing-adjustments/v1', endpointUrl: MI_BACKEND_URL, apiProduct: 'Legacy BSS Modernization Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/adjustments', '/health'] }, { id: 'secure-transaction-risk', name: 'SecureTransactionRiskAssessmentAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/secure-transaction-risk.openapi.yaml', 'secure-transaction-risk.openapi.yaml' ], context: '/secure-transaction-risk/v1', endpointUrl: MI_BACKEND_URL, apiProduct: 'Fraud Prevention and Trust Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/assessments', '/health'] }, { id: 'network-events', name: 'NetworkEventsStreamAPI', version: '1.0.0', protocol: 'ASYNC', type: 'SSE', asyncapiSpecCandidates: [ 'contracts/asyncapi/network-events.asyncapi.yaml', 'contracts/network-events.asyncapi.yaml', 'network-events.asyncapi.yaml' ], context: '/network-events/v1', routes: ['/events/network-events'] }
 ];
 
 function log(message) {
@@ -305,10 +305,10 @@ function createProject(api) {
       endpointConfig: {
         endpoint_type: 'http',
         production_endpoints: {
-          url: BACKEND_URL
+          url: api.endpointUrl || BACKEND_URL
         },
         sandbox_endpoints: {
-          url: BACKEND_URL
+          url: api.endpointUrl || BACKEND_URL
         }
       }
     }
@@ -618,8 +618,8 @@ function patchProject(projectDir, api, openapi, context) {
     doc.data.endpointImplementationType = 'ENDPOINT';
     doc.data.endpointConfig = {
       endpoint_type: 'http',
-      production_endpoints: { url: BACKEND_URL },
-      sandbox_endpoints: { url: BACKEND_URL }
+      production_endpoints: { url: api.endpointUrl || BACKEND_URL },
+      sandbox_endpoints: { url: api.endpointUrl || BACKEND_URL }
     };
 
     // APIM 4.7 import expects additionalPropertiesMap to be a JSON object.

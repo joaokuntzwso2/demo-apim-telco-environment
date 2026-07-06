@@ -1,0 +1,72 @@
+services:
+  legacy-billing-primary:
+    build:
+      context: services/legacy-soap-billing
+      dockerfile: Dockerfile
+    image: local/telco-legacy-billing-soap:1.0.0
+    container_name: telco-legacy-billing-primary
+    environment:
+      PORT: "8080"
+      BACKEND_NODE: PRIMARY
+      WSSE_USERNAME: ${LEGACY_BILLING_WSSE_USERNAME:-mi-modernization}
+      WSSE_PASSWORD: ${LEGACY_BILLING_WSSE_PASSWORD:-change-me-demo-only}
+      DEMO_ADMIN_KEY: ${LEGACY_BILLING_DEMO_ADMIN_KEY:-demo-admin-key}
+      PUBLIC_SERVICE_URL: http://legacy-billing-primary:8080/LegacyBillingAdjustmentService
+    ports:
+      - "18091:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  legacy-billing-dr:
+    image: local/telco-legacy-billing-soap:1.0.0
+    container_name: telco-legacy-billing-dr
+    environment:
+      PORT: "8080"
+      BACKEND_NODE: DR
+      WSSE_USERNAME: ${LEGACY_BILLING_WSSE_USERNAME:-mi-modernization}
+      WSSE_PASSWORD: ${LEGACY_BILLING_WSSE_PASSWORD:-change-me-demo-only}
+      DEMO_ADMIN_KEY: ${LEGACY_BILLING_DEMO_ADMIN_KEY:-demo-admin-key}
+      PUBLIC_SERVICE_URL: http://legacy-billing-dr:8080/LegacyBillingAdjustmentService
+    ports:
+      - "18092:8080"
+    depends_on:
+      legacy-billing-primary:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  wso2-mi:
+    environment:
+      legacy_billing_primary_url: http://legacy-billing-primary:8080/LegacyBillingAdjustmentService
+      legacy_billing_dr_url: http://legacy-billing-dr:8080/LegacyBillingAdjustmentService
+      legacy_billing_wsse_username: ${LEGACY_BILLING_WSSE_USERNAME:-mi-modernization}
+      legacy_billing_wsse_password: ${LEGACY_BILLING_WSSE_PASSWORD:-change-me-demo-only}
+    depends_on:
+      legacy-billing-primary:
+        condition: service_healthy
+      legacy-billing-dr:
+        condition: service_healthy
+
+  apim-bootstrapper:
+    environment:
+      WSO2_MI_URL: http://wso2-mi:8290

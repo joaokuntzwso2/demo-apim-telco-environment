@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoint xmlns="http://ws.apache.org/ns/synapse" name="SimSwapFailoverEndpoint">
+    <failover>
+        <endpoint name="SimSwapFailoverEndpointAttempt1">
+            <http method="post" uri-template="$SYSTEM:sim_swap_base_url">
+                <timeout>
+                    <duration>{get-property('backend.timeout.ms')}</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <suspendOnFailure>
+                    <errorCodes>101500,101501,101503,101506,101507,101508,101509,101510</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+                <markForSuspension>
+                    <errorCodes>101504,101505</errorCodes>
+                    <retriesBeforeSuspension>0</retriesBeforeSuspension>
+                    <retryDelay>0</retryDelay>
+                </markForSuspension>
+            </http>
+        </endpoint>
+        <endpoint name="SimSwapFailoverEndpointAttempt2">
+            <http method="post" uri-template="$SYSTEM:sim_swap_base_url">
+                <timeout>
+                    <duration>{get-property('backend.timeout.ms')}</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <suspendOnFailure>
+                    <errorCodes>101500,101501,101503,101506,101507,101508,101509,101510</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+                <markForSuspension>
+                    <errorCodes>101504,101505</errorCodes>
+                    <retriesBeforeSuspension>0</retriesBeforeSuspension>
+                    <retryDelay>0</retryDelay>
+                </markForSuspension>
+                <retryConfig>
+                    <disabledErrorCodes>101500,101501,101503,101504,101505,101506,101507,101508,101509,101510</disabledErrorCodes>
+                </retryConfig>
+            </http>
+        </endpoint>
+    </failover>
+</endpoint>

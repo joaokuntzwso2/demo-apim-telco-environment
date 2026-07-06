@@ -1,0 +1,5 @@
+[[service_catalog]]
+apim_host = "https://wso2-apim:9443"
+enable = true
+username = "admin"
+password = "admin"

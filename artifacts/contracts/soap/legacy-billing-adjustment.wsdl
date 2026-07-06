@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+                  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+                  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                  xmlns:tns="urn:americamovil:bss:billing:v1"
+                  targetNamespace="urn:americamovil:bss:billing:v1"
+                  name="LegacyBillingAdjustmentService">
+  <wsdl:documentation>Legacy BSS SOAP service protected by a WS-Security UsernameToken.</wsdl:documentation>
+  <wsdl:types>
+    <xsd:schema targetNamespace="urn:americamovil:bss:billing:v1" elementFormDefault="qualified">
+      <xsd:element name="AdjustBillingRequest">
+        <xsd:complexType><xsd:sequence>
+          <xsd:element name="transactionId" type="xsd:string"/>
+          <xsd:element name="subscriberId" type="xsd:string"/>
+          <xsd:element name="amount" type="xsd:decimal"/>
+          <xsd:element name="currency" type="xsd:string"/>
+          <xsd:element name="reasonCode" type="xsd:string"/>
+          <xsd:element name="requestedBy" type="xsd:string"/>
+          <xsd:element name="correlationId" type="xsd:string"/>
+        </xsd:sequence></xsd:complexType>
+      </xsd:element>
+      <xsd:element name="AdjustBillingResponse">
+        <xsd:complexType><xsd:sequence>
+          <xsd:element name="transactionId" type="xsd:string"/>
+          <xsd:element name="adjustmentId" type="xsd:string"/>
+          <xsd:element name="status" type="xsd:string"/>
+          <xsd:element name="subscriberId" type="xsd:string"/>
+          <xsd:element name="amount" type="xsd:decimal"/>
+          <xsd:element name="currency" type="xsd:string"/>
+          <xsd:element name="previousBalance" type="xsd:decimal"/>
+          <xsd:element name="newBalance" type="xsd:decimal"/>
+          <xsd:element name="backendNode" type="xsd:string"/>
+          <xsd:element name="processedAt" type="xsd:dateTime"/>
+          <xsd:element name="idempotentReplay" type="xsd:boolean"/>
+          <xsd:element name="correlationId" type="xsd:string"/>
+        </xsd:sequence></xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="AdjustBillingInput"><wsdl:part name="parameters" element="tns:AdjustBillingRequest"/></wsdl:message>
+  <wsdl:message name="AdjustBillingOutput"><wsdl:part name="parameters" element="tns:AdjustBillingResponse"/></wsdl:message>
+  <wsdl:portType name="LegacyBillingAdjustmentPortType">
+    <wsdl:operation name="AdjustBilling"><wsdl:input message="tns:AdjustBillingInput"/><wsdl:output message="tns:AdjustBillingOutput"/></wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="LegacyBillingAdjustmentSoapBinding" type="tns:LegacyBillingAdjustmentPortType">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    <wsdl:operation name="AdjustBilling">
+      <soap:operation soapAction="urn:AdjustBilling"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="LegacyBillingAdjustmentService">
+    <wsdl:port name="LegacyBillingAdjustmentSoapPort" binding="tns:LegacyBillingAdjustmentSoapBinding">
+      <soap:address location="http://legacy-billing-primary:8080/LegacyBillingAdjustmentService"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

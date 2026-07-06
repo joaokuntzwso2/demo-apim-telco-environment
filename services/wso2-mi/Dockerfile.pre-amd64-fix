@@ -1,0 +1,20 @@
+FROM wso2/wso2mi:4.6.0-alpine
+
+USER root
+
+COPY synapse-configs/default/ ${WSO2_SERVER_HOME}/repository/deployment/server/synapse-configs/default/
+COPY conf/file.properties ${WSO2_SERVER_HOME}/conf/file.properties
+COPY conf/service-catalog.toml /tmp/service-catalog.toml
+COPY wait-for-apim.sh /home/wso2carbon/wait-for-apim.sh
+
+RUN cat /tmp/service-catalog.toml >> ${WSO2_SERVER_HOME}/conf/deployment.toml \
+    && rm -f /tmp/service-catalog.toml \
+    && chmod 0755 /home/wso2carbon/wait-for-apim.sh \
+    && chmod -R a+rX ${WSO2_SERVER_HOME}/repository/deployment/server/synapse-configs/default \
+    && chmod a+r ${WSO2_SERVER_HOME}/conf/deployment.toml ${WSO2_SERVER_HOME}/conf/file.properties
+
+USER 10802
+
+EXPOSE 8290 8253 9164
+
+ENTRYPOINT ["/home/wso2carbon/wait-for-apim.sh"]

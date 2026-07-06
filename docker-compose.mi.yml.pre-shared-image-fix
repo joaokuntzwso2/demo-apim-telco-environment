@@ -1,0 +1,155 @@
+services:
+  subscriber-crm:
+    build:
+      context: services/mi-demo-backends
+      dockerfile: Dockerfile
+    image: local/telco-mi-demo-backend:1.0.0
+    container_name: telco-subscriber-crm
+    environment:
+      SERVICE_KIND: crm
+      PORT: "8080"
+      CRM_LEGACY_KEY: crm-demo-key
+    ports:
+      - "18081:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const http=require('http');const r=http.get('http://127.0.0.1:8080/health',res=>{res.resume();process.exit(res.statusCode===200?0:1)});r.on('error',()=>process.exit(1));r.setTimeout(2000,()=>{r.destroy();process.exit(1)})"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  sim-swap-service:
+    build:
+      context: services/mi-demo-backends
+      dockerfile: Dockerfile
+    image: local/telco-mi-demo-backend:1.0.0
+    container_name: telco-sim-swap-service
+    environment:
+      SERVICE_KIND: sim-swap
+      PORT: "8080"
+    ports:
+      - "18082:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const http=require('http');const r=http.get('http://127.0.0.1:8080/health',res=>{res.resume();process.exit(res.statusCode===200?0:1)});r.on('error',()=>process.exit(1));r.setTimeout(2000,()=>{r.destroy();process.exit(1)})"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  device-location-service:
+    build:
+      context: services/mi-demo-backends
+      dockerfile: Dockerfile
+    image: local/telco-mi-demo-backend:1.0.0
+    container_name: telco-device-location-service
+    environment:
+      SERVICE_KIND: device-location
+      PORT: "8080"
+    ports:
+      - "18083:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const http=require('http');const r=http.get('http://127.0.0.1:8080/health',res=>{res.resume();process.exit(res.statusCode===200?0:1)});r.on('error',()=>process.exit(1));r.setTimeout(2000,()=>{r.destroy();process.exit(1)})"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  oss-network-service:
+    build:
+      context: services/mi-demo-backends
+      dockerfile: Dockerfile
+    image: local/telco-mi-demo-backend:1.0.0
+    container_name: telco-oss-network-service
+    environment:
+      SERVICE_KIND: oss
+      PORT: "8080"
+      OSS_LEGACY_KEY: oss-demo-key
+    ports:
+      - "18084:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const http=require('http');const r=http.get('http://127.0.0.1:8080/health',res=>{res.resume();process.exit(res.statusCode===200?0:1)});r.on('error',()=>process.exit(1));r.setTimeout(2000,()=>{r.destroy();process.exit(1)})"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  wso2-mi:
+    platform: linux/amd64
+    build:
+      context: services/wso2-mi
+      dockerfile: Dockerfile
+    image: local/wso2mi-telco-demo:4.6.0
+    container_name: wso2-mi-4-6
+    environment:
+      WSO2_APIM_URL: https://wso2-apim:9443
+      APIM_USERNAME: admin
+      APIM_PASSWORD: admin
+      MI_HOST: wso2-mi
+      MI_PORT: "8253"
+      APIM_WAIT_ATTEMPTS: "120"
+      APIM_WAIT_INTERVAL_SECONDS: "5"
+      # Demo-only: APIM uses its default self-signed certificate, whose hostname does not match the Docker DNS name.
+      # Production: import the correct CA/SAN certificate and keep strict hostname verification.
+      JAVA_OPTS: "-Xms256m -Xmx1024m -XX:+UseG1GC -Dhttpclient.hostnameVerifier=AllowAll"
+      crm_base_url: http://subscriber-crm:8080/legacy/account-status
+      sim_swap_base_url: http://sim-swap-service:8080/risk/sim-swap
+      device_location_base_url: http://device-location-service:8080/location/verify
+      oss_base_url: http://oss-network-service:8080/legacy/network-status
+      crm_legacy_key: crm-demo-key
+      oss_legacy_key: oss-demo-key
+      backend_timeout_ms: "1500"
+      backend_suspend_initial_ms: "5000"
+      backend_suspend_max_ms: "30000"
+    ports:
+      - "8290:8290"
+      - "8253:8253"
+      - "9164:9164"
+    depends_on:
+      subscriber-crm:
+        condition: service_healthy
+      sim-swap-service:
+        condition: service_healthy
+      device-location-service:
+        condition: service_healthy
+      oss-network-service:
+        condition: service_healthy
+      wso2-apim:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:9201/healthz >/dev/null 2>&1 || exit 1"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 90s
+
+  apim-bootstrapper:
+    environment:
+      WSO2_MI_URL: http://wso2-mi:8290

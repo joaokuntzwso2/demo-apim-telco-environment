@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="RiskAdapterFallbackSequence">
+    <log category="WARN" level="custom">
+        <property name="event" value="risk-adapter-fallback"/>
+        <property name="service" expression="get-property('adapter.name')"/>
+        <property name="correlationId" expression="get-property('correlation.id')"/>
+        <property name="errorCode" expression="get-property('ERROR_CODE')"/>
+        <property name="errorMessage" expression="get-property('ERROR_MESSAGE')"/>
+        <property name="errorDetail" expression="get-property('ERROR_DETAIL')"/>
+    </log>
+    <script language="js"><![CDATA[
+        function value(name, fallback) {
+            var current = mc.getProperty(name);
+            return current == null || String(current).length === 0
+                ? fallback
+                : String(current);
+        }
+
+        mc.setPayloadJSON({
+            service: value('adapter.name', 'unknown'),
+            status: 'UNAVAILABLE',
+            error: {
+                code: value('ERROR_CODE', value('adapter.error.code', 'DOWNSTREAM_UNAVAILABLE')),
+                message: value('ERROR_MESSAGE', value('adapter.error.message', 'Downstream service unavailable')),
+                detail: value('ERROR_DETAIL', 'The integration continued according to the partial-response policy.')
+            },
+            correlationId: value('correlation.id', '')
+        });
+    ]]></script>
+    <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+    <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+    <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+    <property name="X-Correlation-ID"
+              expression="get-property('correlation.id')"
+              scope="transport"
+              type="STRING"/>
+    <respond/>
+</sequence>

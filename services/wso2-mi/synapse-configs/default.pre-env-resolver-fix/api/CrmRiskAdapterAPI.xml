@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse"
+     name="CrmRiskAdapterAPI"
+     context="/internal/risk/crm/v1">
+    <resource methods="POST" uri-template="/account-status">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+            <property name="adapter.name" value="crm" scope="default" type="STRING"/>
+            <property name="backend.timeout.ms"
+                      expression="${configs.backend_timeout_ms}"
+                      scope="default"
+                      type="INTEGER"/>
+            <script language="js"><![CDATA[
+                var request = mc.getPayloadJSON();
+                mc.setProperty('input.msisdn', String(request.msisdn || ''));
+                mc.setProperty('input.partnerId', String(request.partnerId || ''));
+                mc.setProperty('input.transactionId', String(request.transactionId || ''));
+            ]]></script>
+
+            <!-- Canonical JSON -> namespaced legacy CRM XML -->
+            <payloadFactory media-type="xml" template-type="default">
+                <format>
+                    <crm:AccountStatusRequest xmlns:crm="urn:telco:crm:legacy">
+                        <crm:Msisdn>$1</crm:Msisdn>
+                        <crm:PartnerId>$2</crm:PartnerId>
+                        <crm:TransactionId>$3</crm:TransactionId>
+                        <crm:CorrelationId>$4</crm:CorrelationId>
+                    </crm:AccountStatusRequest>
+                </format>
+                <args>
+                    <arg expression="get-property('input.msisdn')"/>
+                    <arg expression="get-property('input.partnerId')"/>
+                    <arg expression="get-property('input.transactionId')"/>
+                    <arg expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <property name="messageType" value="application/xml" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/xml" scope="axis2" type="STRING"/>
+            <property name="X-Legacy-System-Key"
+                      expression="${configs.crm_legacy_key}"
+                      scope="transport"
+                      type="STRING"/>
+
+            <call>
+                <endpoint key="CrmLegacyFailoverEndpoint"/>
+            </call>
+
+            <filter source="$axis2:HTTP_SC" regex="^[45][0-9][0-9]$">
+                <then>
+                    <property name="adapter.error.code"
+                              expression="concat('CRM-HTTP-', $axis2:HTTP_SC)"
+                              scope="default"
+                              type="STRING"/>
+                    <property name="adapter.error.message"
+                              value="Legacy CRM returned an error response"
+                              scope="default"
+                              type="STRING"/>
+                    <sequence key="RiskAdapterFallbackSequence"/>
+                </then>
+            </filter>
+
+            <!-- Legacy XML -> canonical JSON -->
+            <property name="crm.accountStatus"
+                      expression="string(//*[local-name()='AccountStatus'])"
+                      scope="default"
+                      type="STRING"/>
+            <property name="crm.fraudWatch"
+                      expression="string(//*[local-name()='FraudWatch'])"
+                      scope="default"
+                      type="STRING"/>
+            <property name="crm.tenureMonths"
+                      expression="string(//*[local-name()='TenureMonths'])"
+                      scope="default"
+                      type="STRING"/>
+            <property name="crm.segment"
+                      expression="string(//*[local-name()='Segment'])"
+                      scope="default"
+                      type="STRING"/>
+            <script language="js"><![CDATA[
+                mc.setPayloadJSON({
+                    service: 'crm',
+                    status: 'SUCCESS',
+                    data: {
+                        accountStatus: String(mc.getProperty('crm.accountStatus') || 'UNKNOWN'),
+                        fraudWatch: String(mc.getProperty('crm.fraudWatch') || 'false') === 'true',
+                        tenureMonths: Number(mc.getProperty('crm.tenureMonths') || 0),
+                        segment: String(mc.getProperty('crm.segment') || 'UNKNOWN')
+                    },
+                    correlationId: String(mc.getProperty('correlation.id') || '')
+                });
+            ]]></script>
+            <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="RiskAdapterFallbackSequence"/>
+        </faultSequence>
+    </resource>
+</api>

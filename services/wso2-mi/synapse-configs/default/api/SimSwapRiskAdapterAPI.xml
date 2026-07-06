@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse"
+     name="SimSwapRiskAdapterAPI"
+     context="/internal/risk/sim-swap/v1">
+    <resource methods="POST" uri-template="/check">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+            <property name="adapter.name" value="sim-swap" scope="default" type="STRING"/>
+            <property name="backend.timeout.ms"
+                      expression="get-property('env','backend_timeout_ms')"
+                      scope="default"
+                      type="INTEGER"/>
+
+            <!-- Canonical JSON -> downstream SIM Swap JSON -->
+            <script language="js"><![CDATA[
+                var request = mc.getPayloadJSON();
+                mc.setPayloadJSON({
+                    msisdn: String(request.msisdn || ''),
+                    transactionId: String(request.transactionId || ''),
+                    partnerId: String(request.partnerId || '')
+                });
+            ]]></script>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+
+            <call>
+                <endpoint key="SimSwapFailoverEndpoint"/>
+            </call>
+
+            <filter source="$axis2:HTTP_SC" regex="^[45][0-9][0-9]$">
+                <then>
+                    <property name="adapter.error.code"
+                              expression="concat('SIM-SWAP-HTTP-', $axis2:HTTP_SC)"
+                              scope="default"
+                              type="STRING"/>
+                    <property name="adapter.error.message"
+                              value="SIM Swap service returned an error response"
+                              scope="default"
+                              type="STRING"/>
+                    <sequence key="RiskAdapterFallbackSequence"/>
+                </then>
+            </filter>
+
+            <!-- Downstream JSON -> canonical result -->
+            <script language="js"><![CDATA[
+                var response = mc.getPayloadJSON();
+                mc.setPayloadJSON({
+                    service: 'sim-swap',
+                    status: 'SUCCESS',
+                    data: {
+                        swapDetected: response.swapDetected === true,
+                        lastSwapAgeHours: Number(response.lastSwapAgeHours),
+                        confidence: Number(response.confidence || 0),
+                        source: String(response.source || 'UNKNOWN')
+                    },
+                    correlationId: String(mc.getProperty('correlation.id') || '')
+                });
+            ]]></script>
+            <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="RiskAdapterFallbackSequence"/>
+        </faultSequence>
+    </resource>
+</api>

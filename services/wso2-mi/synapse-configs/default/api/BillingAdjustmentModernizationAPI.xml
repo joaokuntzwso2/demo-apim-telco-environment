@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse"
+     name="BillingAdjustmentModernizationAPI"
+     context="/billing-adjustments/v1">
+    <resource methods="GET" uri-template="/health">
+        <inSequence>
+            <property name="incomingCorrelationId"
+                      expression="get-property('transport','X-Correlation-ID')"
+                      scope="default"
+                      type="STRING"/>
+            <filter xpath="string-length(normalize-space(get-property('incomingCorrelationId'))) = 0">
+                <then>
+                    <property name="correlation.id"
+                              expression="concat('mi-', get-property('SYSTEM_TIME'))"
+                              scope="default"
+                              type="STRING"/>
+                </then>
+                <else>
+                    <property name="correlation.id"
+                              expression="get-property('incomingCorrelationId')"
+                              scope="default"
+                              type="STRING"/>
+                </else>
+            </filter>
+            <payloadFactory media-type="json" template-type="default">
+                <format>{
+                    "status": "UP",
+                    "service": "BillingAdjustmentModernizationAPI",
+                    "runtime": "WSO2 Integrator: MI 4.6.0",
+                    "pattern": "REST/JSON to SOAP/XML with WS-Security and failover",
+                    "correlationId": "$1"
+                }</format>
+                <args>
+                    <arg expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport" type="STRING"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="BillingModernizationTransportFaultSequence"/>
+        </faultSequence>
+    </resource>
+
+    <resource methods="POST" uri-template="/adjustments">
+        <inSequence>
+            <property name="incomingCorrelationId"
+                      expression="get-property('transport','X-Correlation-ID')"
+                      scope="default"
+                      type="STRING"/>
+            <filter xpath="string-length(normalize-space(get-property('incomingCorrelationId'))) = 0">
+                <then>
+                    <property name="correlation.id"
+                              expression="concat('mi-', get-property('SYSTEM_TIME'))"
+                              scope="default"
+                              type="STRING"/>
+                </then>
+                <else>
+                    <property name="correlation.id"
+                              expression="get-property('incomingCorrelationId')"
+                              scope="default"
+                              type="STRING"/>
+                </else>
+            </filter>
+
+            <script language="js"><![CDATA[
+                var request = mc.getPayloadJSON() || {};
+                var transactionId = String(request.transactionId || '').trim();
+                var subscriberId = String(request.subscriberId || '').trim();
+                var amount = Number(request.amount);
+                var currency = String(request.currency || '').trim().toUpperCase();
+                var reasonCode = String(request.reasonCode || '').trim().toUpperCase();
+                var requestedBy = String(request.requestedBy || '').trim();
+                var errors = [];
+
+                if (!transactionId) errors.push('transactionId is required');
+                if (!subscriberId) errors.push('subscriberId is required');
+                if (!isFinite(amount) || amount <= 0) errors.push('amount must be greater than zero');
+                if (!/^[A-Z]{3}$/.test(currency)) errors.push('currency must be a three-letter ISO code');
+                if (!reasonCode) errors.push('reasonCode is required');
+                if (!requestedBy) errors.push('requestedBy is required');
+
+                mc.setProperty('input.transactionId', transactionId);
+                mc.setProperty('input.subscriberId', subscriberId);
+                mc.setProperty('input.amount', isFinite(amount) ? amount.toFixed(2) : '0.00');
+                mc.setProperty('input.currency', currency);
+                mc.setProperty('input.reasonCode', reasonCode);
+                mc.setProperty('input.requestedBy', requestedBy);
+                mc.setProperty('validation.failed', errors.length ? 'true' : 'false');
+                mc.setProperty('validation.message', errors.join('; '));
+            ]]></script>
+
+            <filter source="get-property('validation.failed')" regex="true">
+                <then>
+                    <script language="js"><![CDATA[
+                        mc.setPayloadJSON({
+                            type: 'https://demo.americamovil.com/errors/invalid-billing-adjustment',
+                            title: 'Invalid billing adjustment request',
+                            status: 400,
+                            code: 'INVALID_BILLING_ADJUSTMENT_REQUEST',
+                            detail: String(mc.getProperty('validation.message') || 'Request validation failed'),
+                            correlationId: String(mc.getProperty('correlation.id') || '')
+                        });
+                    ]]></script>
+                    <property name="HTTP_SC" value="400" scope="axis2" type="STRING"/>
+                    <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <property name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport" type="STRING"/>
+                    <respond/>
+                </then>
+            </filter>
+
+            <log category="INFO" level="custom">
+                <property name="event" value="billing-modernization-request"/>
+                <property name="transactionId" expression="get-property('input.transactionId')"/>
+                <property name="subscriberId" expression="get-property('input.subscriberId')"/>
+                <property name="correlationId" expression="get-property('correlation.id')"/>
+            </log>
+
+            <!-- Canonical REST/JSON -> complete SOAP 1.1 envelope with WS-Security UsernameToken. -->
+            <payloadFactory media-type="xml" template-type="default">
+                <format>
+                    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                                      xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+                                      xmlns:leg="urn:americamovil:bss:billing:v1">
+                        <soapenv:Header>
+                            <wsse:Security soapenv:mustUnderstand="1">
+                                <wsse:UsernameToken>
+                                    <wsse:Username>$7</wsse:Username>
+                                    <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">$8</wsse:Password>
+                                </wsse:UsernameToken>
+                            </wsse:Security>
+                            <leg:CorrelationId>$6</leg:CorrelationId>
+                        </soapenv:Header>
+                        <soapenv:Body>
+                            <leg:AdjustBillingRequest>
+                                <leg:transactionId>$1</leg:transactionId>
+                                <leg:subscriberId>$2</leg:subscriberId>
+                                <leg:amount>$3</leg:amount>
+                                <leg:currency>$4</leg:currency>
+                                <leg:reasonCode>$5</leg:reasonCode>
+                                <leg:requestedBy>$9</leg:requestedBy>
+                                <leg:correlationId>$6</leg:correlationId>
+                            </leg:AdjustBillingRequest>
+                        </soapenv:Body>
+                    </soapenv:Envelope>
+                </format>
+                <args>
+                    <arg expression="get-property('input.transactionId')"/>
+                    <arg expression="get-property('input.subscriberId')"/>
+                    <arg expression="get-property('input.amount')"/>
+                    <arg expression="get-property('input.currency')"/>
+                    <arg expression="get-property('input.reasonCode')"/>
+                    <arg expression="get-property('correlation.id')"/>
+                    <arg expression="get-property('env','legacy_billing_wsse_username')"/>
+                    <arg expression="get-property('env','legacy_billing_wsse_password')"/>
+                    <arg expression="get-property('input.requestedBy')"/>
+                </args>
+            </payloadFactory>
+
+            <header name="Action" value="urn:AdjustBilling" scope="default"/>
+            <property name="SOAPAction" value="urn:AdjustBilling" scope="transport" type="STRING"/>
+            <property name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport" type="STRING"/>
+            <property name="X-Idempotency-Key" expression="get-property('input.transactionId')" scope="transport" type="STRING"/>
+            <property name="messageType" value="text/xml" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="text/xml; charset=UTF-8" scope="axis2" type="STRING"/>
+            <property name="DISABLE_CHUNKING" value="true" scope="axis2" type="STRING"/>
+            <property name="HTTP_METHOD" value="POST" scope="axis2" type="STRING"/>
+            <!-- Prevent the REST resource path (/adjustments) from being appended to the SOAP endpoint URL. -->
+            <property name="REST_URL_POSTFIX" scope="axis2" action="remove"/>
+
+            <!-- Business SOAP faults remain normal responses and are normalized below.
+                 Transport failures alone activate failover/circuit-breaking. -->
+            <property name="FORCE_ERROR_ON_SOAP_FAULT" value="false" scope="default" type="STRING"/>
+
+            <call blocking="false">
+                <endpoint key="LegacyBillingSoapFailoverEndpoint"/>
+            </call>
+
+            <filter xpath="boolean(//*[local-name()='Fault'])">
+                <then>
+                    <sequence key="BillingModernizationSoapFaultSequence"/>
+                </then>
+            </filter>
+
+            <!-- SOAP/XML -> canonical JSON. -->
+            <property name="result.transactionId" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='transactionId'])" scope="default" type="STRING"/>
+            <property name="result.adjustmentId" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='adjustmentId'])" scope="default" type="STRING"/>
+            <property name="result.status" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='status'])" scope="default" type="STRING"/>
+            <property name="result.subscriberId" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='subscriberId'])" scope="default" type="STRING"/>
+            <property name="result.amount" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='amount'])" scope="default" type="STRING"/>
+            <property name="result.currency" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='currency'])" scope="default" type="STRING"/>
+            <property name="result.previousBalance" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='previousBalance'])" scope="default" type="STRING"/>
+            <property name="result.newBalance" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='newBalance'])" scope="default" type="STRING"/>
+            <property name="result.backendNode" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='backendNode'])" scope="default" type="STRING"/>
+            <property name="result.processedAt" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='processedAt'])" scope="default" type="STRING"/>
+            <property name="result.idempotentReplay" expression="string(//*[local-name()='AdjustBillingResponse']/*[local-name()='idempotentReplay'])" scope="default" type="STRING"/>
+
+            <script language="js"><![CDATA[
+                function value(name, fallback) {
+                    var current = mc.getProperty(name);
+                    return current == null || String(current).length === 0 ? fallback : String(current);
+                }
+                mc.setPayloadJSON({
+                    transactionId: value('result.transactionId', value('input.transactionId', '')),
+                    adjustmentId: value('result.adjustmentId', ''),
+                    status: value('result.status', 'UNKNOWN'),
+                    subscriberId: value('result.subscriberId', value('input.subscriberId', '')),
+                    amount: Number(value('result.amount', '0')),
+                    currency: value('result.currency', value('input.currency', '')),
+                    previousBalance: Number(value('result.previousBalance', '0')),
+                    newBalance: Number(value('result.newBalance', '0')),
+                    backendNode: value('result.backendNode', 'UNKNOWN'),
+                    processedAt: value('result.processedAt', ''),
+                    idempotentReplay: value('result.idempotentReplay', 'false') === 'true',
+                    correlationId: value('correlation.id', '')
+                });
+            ]]></script>
+
+            <log category="INFO" level="custom">
+                <property name="event" value="billing-modernization-response"/>
+                <property name="transactionId" expression="get-property('result.transactionId')"/>
+                <property name="adjustmentId" expression="get-property('result.adjustmentId')"/>
+                <property name="backendNode" expression="get-property('result.backendNode')"/>
+                <property name="correlationId" expression="get-property('correlation.id')"/>
+            </log>
+
+            <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport" type="STRING"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="BillingModernizationTransportFaultSequence"/>
+        </faultSequence>
+    </resource>
+</api>

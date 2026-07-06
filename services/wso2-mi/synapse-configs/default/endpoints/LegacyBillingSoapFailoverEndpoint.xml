@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoint xmlns="http://ws.apache.org/ns/synapse" name="LegacyBillingSoapFailoverEndpoint">
+    <failover>
+        <endpoint name="LegacyBillingPrimaryEndpoint">
+            <address uri="$SYSTEM:legacy_billing_primary_url" format="soap11">
+                <timeout>
+                    <duration>2500</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <!-- Transport and timeout failures open the circuit immediately. -->
+                <suspendOnFailure>
+                    <errorCodes>101500,101501,101503,101504,101505,101506,101507,101508,101509,101510</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+            </address>
+        </endpoint>
+        <endpoint name="LegacyBillingDisasterRecoveryEndpoint">
+            <address uri="$SYSTEM:legacy_billing_dr_url" format="soap11">
+                <timeout>
+                    <duration>2500</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <suspendOnFailure>
+                    <errorCodes>101500,101501,101503,101504,101505,101506,101507,101508,101509,101510</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+                <!-- The DR node is the last child. End the retry loop when it also fails. -->
+                <retryConfig>
+                    <disabledErrorCodes>101500,101501,101503,101504,101505,101506,101507,101508,101509,101510</disabledErrorCodes>
+                </retryConfig>
+            </address>
+        </endpoint>
+    </failover>
+</endpoint>
