@@ -69,63 +69,6 @@ echo "Registering the Legacy SOAP Modernization services in the APIM Service Cat
 # Recreate the one-shot bootstrapper only after MI is healthy. It imports,
 # deploys, publishes and subscribes the managed APIM façade whose endpoint is MI.
 "${COMPOSE[@]}" rm -sf apim-bootstrapper >/dev/null 2>&1 || true
-
-# BEGIN APIM BOOTSTRAPPER COMPLETION CHECK
-echo "Waiting for the APIM bootstrapper to finish..."
-
-for bootstrap_attempt in $(seq 1 180); do
-  if ! docker inspect telco-apim-bootstrapper >/dev/null 2>&1; then
-    echo \
-      "  APIM bootstrapper container not created yet " \
-      "(${bootstrap_attempt}/180)"
-    sleep 2
-    continue
-  fi
-
-  bootstrap_running="$(
-    docker inspect telco-apim-bootstrapper \
-      --format '{{.State.Running}}'
-  )"
-
-  bootstrap_status="$(
-    docker inspect telco-apim-bootstrapper \
-      --format '{{.State.Status}}'
-  )"
-
-  bootstrap_exit_code="$(
-    docker inspect telco-apim-bootstrapper \
-      --format '{{.State.ExitCode}}'
-  )"
-
-  echo \
-    "  APIM bootstrapper: status=${bootstrap_status} " \
-    "running=${bootstrap_running} " \
-    "exit=${bootstrap_exit_code}"
-
-  if [[ "$bootstrap_running" == "false" ]]; then
-    if [[ "$bootstrap_exit_code" != "0" ]]; then
-      echo \
-        "ERROR: APIM bootstrapper failed with exit code " \
-        "${bootstrap_exit_code}." >&2
-
-      docker logs telco-apim-bootstrapper >&2 || true
-      exit 1
-    fi
-
-    echo "APIM APIs, policies and governance artifacts were bootstrapped."
-    break
-  fi
-
-  sleep 2
-done
-
-if [[ "${bootstrap_running:-true}" != "false" ]]; then
-  echo "ERROR: APIM bootstrapper did not finish." >&2
-  docker logs --tail=300 telco-apim-bootstrapper >&2 || true
-  exit 1
-fi
-# END APIM BOOTSTRAPPER COMPLETION CHECK
-
 "${COMPOSE[@]}" up -d --build --force-recreate apim-bootstrapper
 
 echo "Waiting for APIM bootstrapper to finish..."

@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info:
+  title: Legacy Billing Adjustment SOAP Service
+  version: 1.0.0
+  description: |
+    Service Catalog descriptor for the legacy SOAP 1.1 billing-adjustment
+    backend used by the WSO2 Integrator modernization demonstration.
+
+    The authoritative SOAP contract remains:
+    contracts/soap/legacy-billing-adjustment.wsdl
+
+    This OpenAPI document is intentionally used only as an APIM Service
+    Catalog-compatible service descriptor. Requests and responses use XML.
+servers:
+  - url: http://legacy-billing-primary:8080
+    description: Primary legacy billing node
+  - url: http://legacy-billing-dr:8080
+    description: Disaster-recovery legacy billing node
+paths:
+  /LegacyBillingAdjustmentService:
+    post:
+      operationId: adjustBillingSoap
+      summary: Submit a SOAP 1.1 billing-adjustment message
+      description: |
+        Accepts the AdjustBilling SOAP operation. WSO2 Integrator supplies
+        WS-Security UsernameToken credentials, correlation propagation,
+        primary/DR failover, timeout handling and normalized faults.
+      parameters:
+        - name: SOAPAction
+          in: header
+          required: true
+          schema:
+            type: string
+            example: urn:AdjustBilling
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          text/xml:
+            schema:
+              type: string
+            example: |
+              <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                                xmlns:bil="urn:americamovil:bss:billing:v1">
+                <soapenv:Header/>
+                <soapenv:Body>
+                  <bil:AdjustBillingRequest>
+                    <bil:transactionId>TXN-10001</bil:transactionId>
+                    <bil:subscriberId>SUB-10001</bil:subscriberId>
+                    <bil:amount>15.50</bil:amount>
+                    <bil:currency>USD</bil:currency>
+                    <bil:reasonCode>SERVICE_CREDIT</bil:reasonCode>
+                    <bil:requestedBy>partner-sandbox-001</bil:requestedBy>
+                    <bil:correlationId>demo-correlation-0001</bil:correlationId>
+                  </bil:AdjustBillingRequest>
+                </soapenv:Body>
+              </soapenv:Envelope>
+      responses:
+        "200":
+          description: SOAP AdjustBilling response
+          content:
+            text/xml:
+              schema:
+                type: string
+        "500":
+          description: SOAP fault
+          content:
+            text/xml:
+              schema:
+                type: string
+    get:
+      operationId: getLegacyBillingWsdl
+      summary: Retrieve the legacy service WSDL
+      parameters:
+        - name: wsdl
+          in: query
+          required: false
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: WSDL document
+          content:
+            text/xml:
+              schema:
+                type: string
