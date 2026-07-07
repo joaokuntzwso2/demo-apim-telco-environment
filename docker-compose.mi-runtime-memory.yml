@@ -1,0 +1,22 @@
+services:
+  wso2-mi:
+    environment:
+      runtime_policy_kafka_url: http://telco-backend:8081/api/v1/kafka/topics/telco.runtime.policy.alerts/events
+      JAVA_OPTS: >-
+        -Xms512m
+        -Xmx2048m
+        -XX:+UseG1GC
+        -XX:+HeapDumpOnOutOfMemoryError
+        -Dhttpclient.hostnameVerifier=AllowAll
+    mem_limit: 3g
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wget -qO- --timeout=5
+          http://127.0.0.1:8290/internal/runtime-policy-alerts/v1/health
+          | grep -q '"status":"UP"' || exit 1
+      interval: 15s
+      timeout: 8s
+      retries: 20
+      start_period: 90s

@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="_throttle_out_handler_" trace="disable">
+    <!-- Preserve the standard APIM throttle analytics/CORS behavior. -->
+    <property name="X-JWT-Assertion" scope="transport" action="remove"/>
+<sequence key="_cors_request_handler_"/>
+
+    <!-- Resolve correlation, partner, API and application identity before responding. -->
+    <property name="telco.errorCode" expression="get-property('ERROR_CODE')" type="STRING"/>
+    <filter xpath="not(string-length(normalize-space($ctx:telco.errorCode)) &gt; 0)">
+        <then><property name="telco.errorCode" value="900800" type="STRING"/></then>
+    </filter>
+    <property name="telco.correlationId" expression="get-property('transport','X-Correlation-ID')" type="STRING"/>
+    <filter xpath="not(string-length(normalize-space($ctx:telco.correlationId)) &gt; 0)">
+        <then><property name="telco.correlationId" expression="get-property('MessageID')" type="STRING"/></then>
+    </filter>
+    <property name="telco.partnerId" expression="get-property('transport','X-Partner-Id')" type="STRING"/>
+    <filter xpath="not(string-length(normalize-space($ctx:telco.partnerId)) &gt; 0)">
+        <then><property name="telco.partnerId" value="unknown-partner" type="STRING"/></then>
+    </filter>
+    <property name="telco.apiContext" expression="get-property('api.ut.context')" type="STRING"/>
+    <property name="telco.apiVersion" expression="get-property('api.ut.api_version')" type="STRING"/>
+    <property name="telco.apiName" expression="get-property('api.ut.api')" type="STRING"/>
+    <property name="telco.applicationId" expression="get-property('api.ut.application.id')" type="STRING"/>
+    <property name="telco.applicationName" expression="get-property('api.ut.application.name')" type="STRING"/>
+
+    <!-- Error 900806 is APIM's custom-policy throttle outcome. Other APIM
+         throttling failures retain a normalized generic response and do not
+         create a false telco business-control alert. -->
+    <filter source="$ctx:telco.errorCode" regex="^900806$">
+        <then>
+            <property name="telco.isRuntimePolicy" value="false" type="STRING"/>
+            <property name="telco.policyName" value="APIMCustomThrottlePolicy" type="STRING"/>
+            <property name="telco.rateLimit" value="0" type="STRING"/>
+            <property name="telco.retryAfter" value="1" type="STRING"/>
+            <property name="telco.rateLimitReset" value="1" type="STRING"/>
+            <switch source="$ctx:telco.apiContext">
+                <case regex="^/open-gateway/sim-swap/v1(/1\\.0\\.0)?$">
+                    <property name="telco.isRuntimePolicy" value="true" type="STRING"/>
+                    <property name="telco.policyName" value="TelcoSiddhiSimSwapFraudFairUsePolicy" type="STRING"/>
+                    <property name="telco.rateLimit" value="6" type="STRING"/>
+                    <property name="telco.retryAfter" value="15" type="STRING"/>
+                    <property name="telco.rateLimitReset" value="15" type="STRING"/>
+                </case>
+                <case regex="^/network-slice/v1(/1\\.0\\.0)?$">
+                    <property name="telco.isRuntimePolicy" value="true" type="STRING"/>
+                    <property name="telco.policyName" value="TelcoSiddhiQoDAssuranceBurstPolicy" type="STRING"/>
+                    <property name="telco.rateLimit" value="9" type="STRING"/>
+                    <property name="telco.retryAfter" value="5" type="STRING"/>
+                    <property name="telco.rateLimitReset" value="5" type="STRING"/>
+                </case>
+                <default/>
+            </switch>
+
+            <filter source="$ctx:telco.isRuntimePolicy" regex="^true$">
+                <then>
+                    <!-- Publish the alert asynchronously through a genuine MI integration API.
+                         continueParent keeps alert delivery failure from replacing the client-facing 429. -->
+                    <clone continueParent="true">
+                        <target>
+                            <sequence>
+                                <property name="HTTP_METHOD" value="POST" scope="axis2" type="STRING"/>
+                                <property name="REST_URL_POSTFIX" scope="axis2" action="remove"/>
+                                <property name="NO_ENTITY_BODY" scope="axis2" action="remove"/>
+                                <!-- Fire-and-forget alert publication. Do not register a
+                                     response callback on the throttled client flow. -->
+                                <property name="OUT_ONLY" value="true" type="STRING"/>
+                                <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+                                <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+                                <property name="Authorization" scope="transport" action="remove"/>
+                                <property name="X-Correlation-ID" expression="$ctx:telco.correlationId" scope="transport" type="STRING"/>
+                                <payloadFactory media-type="json">
+                                    <format>{"eventType":"TELCO_RUNTIME_POLICY_THROTTLED","eventVersion":"1.0","occurredAt":"$1","policyName":"$2","partnerId":"$3","apiName":"$4","apiContext":"$5","apiVersion":"$6","applicationId":"$7","applicationName":"$8","correlationId":"$9","httpStatus":429,"errorCode":"900806","retryAfterSeconds":$10,"rateLimit":$11,"source":"WSO2-APIM-4.7-Classic-Gateway"}</format>
+                                    <args>
+                                        <arg evaluator="xml" expression="get-property('SYSTEM_DATE', &quot;yyyy-MM-dd'T'HH:mm:ss.SSSXXX&quot;)"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.policyName"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.partnerId"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.apiName"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.apiContext"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.apiVersion"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.applicationId"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.applicationName"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.correlationId"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.retryAfter"/>
+                                        <arg evaluator="xml" expression="$ctx:telco.rateLimit"/>
+                                    </args>
+                                </payloadFactory>
+                                <send>
+                                    <endpoint name="RuntimePolicyAlertMIEndpoint">
+                                        <http method="post" uri-template="http://wso2-mi:8290/internal/runtime-policy-alerts/v1/events">
+                                            <timeout><duration>1500</duration><responseAction>discard</responseAction></timeout>
+                                            <markForSuspension>
+                                                <errorCodes>101504,101505</errorCodes>
+                                                <retriesBeforeSuspension>1</retriesBeforeSuspension>
+                                                <retryDelay>200</retryDelay>
+                                            </markForSuspension>
+                                            <suspendOnFailure>
+                                                <errorCodes>101500,101501,101506,101507,101508</errorCodes>
+                                                <initialDuration>5000</initialDuration>
+                                                <progressionFactor>2.0</progressionFactor>
+                                                <maximumDuration>30000</maximumDuration>
+                                            </suspendOnFailure>
+                                        </http>
+                                    </endpoint>
+                                </send>
+                            </sequence>
+                        </target>
+                    </clone>
+
+                    <property name="Retry-After" expression="$ctx:telco.retryAfter" scope="transport" type="STRING"/>
+                    <property name="RateLimit-Limit" expression="$ctx:telco.rateLimit" scope="transport" type="STRING"/>
+                    <property name="RateLimit-Remaining" value="0" scope="transport" type="STRING"/>
+                    <property name="RateLimit-Reset" expression="$ctx:telco.rateLimitReset" scope="transport" type="STRING"/>
+                    <property name="RateLimit-Policy" expression="$ctx:telco.policyName" scope="transport" type="STRING"/>
+                    <property name="X-RateLimit-Limit" expression="$ctx:telco.rateLimit" scope="transport" type="STRING"/>
+                    <property name="X-RateLimit-Remaining" value="0" scope="transport" type="STRING"/>
+                    <property name="X-RateLimit-Reset" expression="$ctx:telco.rateLimitReset" scope="transport" type="STRING"/>
+                    <property name="X-WSO2-Throttled-Out-Reason" expression="$ctx:telco.policyName" scope="transport" type="STRING"/>
+                    <property name="X-Correlation-ID" expression="$ctx:telco.correlationId" scope="transport" type="STRING"/>
+
+                    <payloadFactory media-type="json">
+                        <format>{"type":"https://demo.telco.example/problems/rate-limit-exceeded","title":"Too Many Requests","status":429,"code":"900806","detail":"The request was rejected by a runtime telco business control.","policyName":"$1","partnerId":"$2","apiName":"$3","apiContext":"$4","apiVersion":"$5","applicationId":"$6","applicationName":"$7","correlationId":"$8","retryAfterSeconds":$9,"rateLimit":$10}</format>
+                        <args>
+                            <arg evaluator="xml" expression="$ctx:telco.policyName"/>
+                            <arg evaluator="xml" expression="$ctx:telco.partnerId"/>
+                            <arg evaluator="xml" expression="$ctx:telco.apiName"/>
+                            <arg evaluator="xml" expression="$ctx:telco.apiContext"/>
+                            <arg evaluator="xml" expression="$ctx:telco.apiVersion"/>
+                            <arg evaluator="xml" expression="$ctx:telco.applicationId"/>
+                            <arg evaluator="xml" expression="$ctx:telco.applicationName"/>
+                            <arg evaluator="xml" expression="$ctx:telco.correlationId"/>
+                            <arg evaluator="xml" expression="$ctx:telco.retryAfter"/>
+                            <arg evaluator="xml" expression="$ctx:telco.rateLimit"/>
+                        </args>
+                    </payloadFactory>
+                    <property name="HTTP_SC" value="429" scope="axis2" type="STRING"/>
+                    <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <property name="RESPONSE" value="true" scope="default" type="STRING"/>
+                    <property name="NO_ENTITY_BODY" scope="axis2" action="remove"/>
+                    <respond/>
+                </then>
+                <else>
+                    <payloadFactory media-type="json">
+                        <format>{"type":"https://demo.telco.example/problems/custom-policy-rate-limit","title":"Too Many Requests","status":429,"code":"900806","detail":"A custom APIM throttling policy rejected the request.","apiName":"$1","apiContext":"$2","apiVersion":"$3","applicationId":"$4","correlationId":"$5"}</format>
+                        <args>
+                            <arg evaluator="xml" expression="$ctx:telco.apiName"/>
+                            <arg evaluator="xml" expression="$ctx:telco.apiContext"/>
+                            <arg evaluator="xml" expression="$ctx:telco.apiVersion"/>
+                            <arg evaluator="xml" expression="$ctx:telco.applicationId"/>
+                            <arg evaluator="xml" expression="$ctx:telco.correlationId"/>
+                        </args>
+                    </payloadFactory>
+                    <property name="HTTP_SC" value="429" scope="axis2" type="STRING"/>
+                    <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <property name="X-Correlation-ID" expression="$ctx:telco.correlationId" scope="transport" type="STRING"/>
+                    <respond/>
+                </else>
+            </filter>
+        </then>
+        <else>
+            <payloadFactory media-type="json">
+                <format>{"type":"https://demo.telco.example/problems/apim-rate-limit","title":"Too Many Requests","status":429,"code":"$1","detail":"The request exceeded an API Manager throttling limit.","apiName":"$2","apiContext":"$3","apiVersion":"$4","applicationId":"$5","correlationId":"$6"}</format>
+                <args>
+                    <arg evaluator="xml" expression="$ctx:telco.errorCode"/>
+                    <arg evaluator="xml" expression="$ctx:telco.apiName"/>
+                    <arg evaluator="xml" expression="$ctx:telco.apiContext"/>
+                    <arg evaluator="xml" expression="$ctx:telco.apiVersion"/>
+                    <arg evaluator="xml" expression="$ctx:telco.applicationId"/>
+                    <arg evaluator="xml" expression="$ctx:telco.correlationId"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_SC" value="429" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+            <property name="X-Correlation-ID" expression="$ctx:telco.correlationId" scope="transport" type="STRING"/>
+            <respond/>
+        </else>
+    </filter>
+</sequence>

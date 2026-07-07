@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse" name="RuntimePolicyAlertAPI" context="/internal/runtime-policy-alerts/v1">
+    <resource methods="GET" uri-template="/health">
+        <inSequence>
+            <payloadFactory media-type="json">
+                <format>{"status":"UP","service":"RuntimePolicyAlertAPI","runtime":"WSO2 Integrator: MI","version":"1.0.0"}</format>
+                <args/>
+            </payloadFactory>
+            <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <respond/>
+        </inSequence>
+    </resource>
+    <resource methods="POST" uri-template="/events">
+        <inSequence>
+            <property name="runtime.correlationId" expression="json-eval($.correlationId)" type="STRING"/>
+            <property name="runtime.partnerId" expression="json-eval($.partnerId)" type="STRING"/>
+            <property name="runtime.apiContext" expression="json-eval($.apiContext)" type="STRING"/>
+            <property name="runtime.apiName" expression="json-eval($.apiName)" type="STRING"/>
+            <property name="runtime.applicationId" expression="json-eval($.applicationId)" type="STRING"/>
+            <property name="runtime.policyName" expression="json-eval($.policyName)" type="STRING"/>
+            <property name="runtime.originalPayload" expression="json-eval($)" type="STRING"/>
+
+            <filter xpath="not(string-length(normalize-space($ctx:runtime.correlationId)) &gt; 0) or not(string-length(normalize-space($ctx:runtime.partnerId)) &gt; 0) or not(string-length(normalize-space($ctx:runtime.apiContext)) &gt; 0) or not(string-length(normalize-space($ctx:runtime.applicationId)) &gt; 0) or not(string-length(normalize-space($ctx:runtime.policyName)) &gt; 0)">
+                <then>
+                    <payloadFactory media-type="json">
+                        <format>{"type":"https://demo.telco.example/problems/invalid-runtime-policy-alert","title":"Invalid runtime policy alert","status":400,"detail":"policyName, partnerId, apiContext, applicationId and correlationId are required.","correlationId":"$1"}</format>
+                        <args><arg evaluator="xml" expression="$ctx:runtime.correlationId"/></args>
+                    </payloadFactory>
+                    <property name="HTTP_SC" value="400" scope="axis2" type="STRING"/>
+                    <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <respond/>
+                </then>
+            </filter>
+
+            <property name="X-Correlation-ID" expression="$ctx:runtime.correlationId" scope="transport" type="STRING"/>
+            <property name="Content-Type" value="application/json" scope="transport" type="STRING"/>
+            <property name="Accept" value="application/json" scope="transport" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <call>
+                <endpoint key="RuntimePolicyKafkaEndpoint"/>
+            </call>
+
+            <payloadFactory media-type="json">
+                <format>{"accepted":true,"status":"PUBLISHED_TO_KAFKA","topic":"telco.runtime.policy.alerts","policyName":"$1","partnerId":"$2","apiName":"$3","apiContext":"$4","applicationId":"$5","correlationId":"$6"}</format>
+                <args>
+                    <arg evaluator="xml" expression="$ctx:runtime.policyName"/>
+                    <arg evaluator="xml" expression="$ctx:runtime.partnerId"/>
+                    <arg evaluator="xml" expression="$ctx:runtime.apiName"/>
+                    <arg evaluator="xml" expression="$ctx:runtime.apiContext"/>
+                    <arg evaluator="xml" expression="$ctx:runtime.applicationId"/>
+                    <arg evaluator="xml" expression="$ctx:runtime.correlationId"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_SC" value="202" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="X-Correlation-ID" expression="$ctx:runtime.correlationId" scope="transport" type="STRING"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <payloadFactory media-type="json">
+                <format>{"type":"https://demo.telco.example/problems/runtime-policy-alert-delivery","title":"Runtime policy alert delivery failed","status":503,"detail":"The Kafka alert endpoint was unavailable or suspended after bounded retries.","policyName":"$1","partnerId":"$2","apiContext":"$3","applicationId":"$4","correlationId":"$5"}</format>
+                <args>
+                    <arg evaluator="xml" expression="$ctx:runtime.policyName"/>
+                    <arg evaluator="xml" expression="$ctx:runtime.partnerId"/>
+                    <arg evaluator="xml" expression="$ctx:runtime.apiContext"/>
+                    <arg evaluator="xml" expression="$ctx:runtime.applicationId"/>
+                    <arg evaluator="xml" expression="$ctx:runtime.correlationId"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_SC" value="503" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+            <property name="X-Correlation-ID" expression="$ctx:runtime.correlationId" scope="transport" type="STRING"/>
+            <respond/>
+        </faultSequence>
+    </resource>
+</api>

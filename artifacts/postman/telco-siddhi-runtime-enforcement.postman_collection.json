@@ -1,0 +1,95 @@
+{
+  "info": {
+    "_postman_id": "0c66a5f0-4b32-4e47-8d0c-0f3a11e696aa",
+    "name": "Telco Siddhi Runtime Enforcement",
+    "description": "Live SIM Swap fair-use and QoD assurance burst examples. Repeat the requests rapidly to trigger APIM 429 responses and inspect Kafka alerts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "apimBaseUrl", "value": "https://localhost:9443" },
+    { "key": "gatewayBaseUrl", "value": "https://localhost:8243" },
+    { "key": "backendBaseUrl", "value": "http://localhost:8081" },
+    { "key": "clientId", "value": "" },
+    { "key": "clientSecret", "value": "" },
+    { "key": "accessToken", "value": "" },
+    { "key": "partnerId", "value": "digital-bank-demo" },
+    { "key": "correlationId", "value": "siddhi-postman-demo-001" }
+  ],
+  "item": [
+    {
+      "name": "1. OAuth token",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{clientId}}", "type": "string" },
+            { "key": "password", "value": "{{clientSecret}}", "type": "string" }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type", "value": "client_credentials", "type": "text" },
+            { "key": "scope", "value": "opengateway_sim_swap network.qod.request", "type": "text" }
+          ]
+        },
+        "url": "{{apimBaseUrl}}/oauth2/token"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('accessToken', body.access_token);",
+              "pm.test('Access token returned', () => pm.expect(body.access_token).to.be.a('string'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. SIM Swap fair-use request (repeat rapidly)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "X-Partner-Id", "value": "{{partnerId}}" },
+          { "key": "X-Correlation-ID", "value": "{{correlationId}}" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": "{{gatewayBaseUrl}}/open-gateway/sim-swap/v1/1.0.0/api/v1/open-gateway/sim-swap/%2B525512340001/risk?lookbackHours=168"
+      }
+    },
+    {
+      "name": "3. QoD assurance request (repeat rapidly)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "X-Partner-Id", "value": "enterprise-qod-demo" },
+          { "key": "X-Correlation-ID", "value": "{{correlationId}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"device\": { \"phoneNumber\": \"+525512340001\" },\n  \"area\": { \"type\": \"CELL_ID\", \"value\": \"MX-MEX-CELL-001\" },\n  \"profile\": \"QOD_GOLD\",\n  \"durationSeconds\": 120,\n  \"maxLatencyMs\": 20,\n  \"minThroughputMbps\": 100\n}"
+        },
+        "url": "{{gatewayBaseUrl}}/network-slice/v1/1.0.0/api/v1/network/qod/sessions"
+      }
+    },
+    {
+      "name": "4. Inspect runtime policy Kafka alerts",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{backendBaseUrl}}/api/v1/kafka/topics/telco.runtime.policy.alerts/events"
+      }
+    }
+  ]
+}

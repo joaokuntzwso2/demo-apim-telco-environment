@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoint xmlns="http://ws.apache.org/ns/synapse" name="RuntimePolicyKafkaEndpoint">
+    <!-- A failover group with three identical resilient leaves provides a bounded
+         primary attempt plus two retries without custom Java/Node/Python code. -->
+    <failover>
+        <endpoint name="RuntimePolicyKafkaPrimary">
+            <http method="post" uri-template="$SYSTEM:runtime_policy_kafka_url">
+                <timeout><duration>1500</duration><responseAction>fault</responseAction></timeout>
+                <markForSuspension>
+                    <errorCodes>101504,101505</errorCodes>
+                    <retriesBeforeSuspension>0</retriesBeforeSuspension>
+                    <retryDelay>0</retryDelay>
+                </markForSuspension>
+                <suspendOnFailure>
+                    <errorCodes>101500,101501,101506,101507,101508</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+            </http>
+        </endpoint>
+        <endpoint name="RuntimePolicyKafkaRetryOne">
+            <http method="post" uri-template="$SYSTEM:runtime_policy_kafka_url">
+                <timeout><duration>1500</duration><responseAction>fault</responseAction></timeout>
+                <markForSuspension>
+                    <errorCodes>101504,101505</errorCodes>
+                    <retriesBeforeSuspension>0</retriesBeforeSuspension>
+                    <retryDelay>250</retryDelay>
+                </markForSuspension>
+                <suspendOnFailure>
+                    <errorCodes>101500,101501,101506,101507,101508</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+            </http>
+        </endpoint>
+        <endpoint name="RuntimePolicyKafkaRetryTwo">
+            <http method="post" uri-template="$SYSTEM:runtime_policy_kafka_url">
+                <timeout><duration>1500</duration><responseAction>fault</responseAction></timeout>
+                <markForSuspension>
+                    <errorCodes>101504,101505</errorCodes>
+                    <retriesBeforeSuspension>0</retriesBeforeSuspension>
+                    <retryDelay>250</retryDelay>
+                </markForSuspension>
+                <suspendOnFailure>
+                    <errorCodes>101500,101501,101506,101507,101508</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+            </http>
+        </endpoint>
+    </failover>
+</endpoint>

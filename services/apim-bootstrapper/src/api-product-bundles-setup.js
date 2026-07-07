@@ -106,7 +106,7 @@ async function listApis(token) {
     bearer: token
   });
 
-  return result.list || result.data || [];
+  return Array.isArray(result) ? result : (result.list || result.data || []);
 }
 
 async function listApiProducts(token) {
@@ -115,7 +115,7 @@ async function listApiProducts(token) {
       bearer: token
     });
 
-    return result.list || result.data || [];
+    return Array.isArray(result) ? result : (result.list || result.data || []);
   } catch (e) {
     log(`could not list existing API Products yet: ${e.message}`);
     return [];

@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Runtime Policy Alert API
+  version: 1.0.0
+  description: >-
+    Internal WSO2 Integrator: MI service that validates APIM runtime throttling
+    alerts and publishes them to the telco.runtime.policy.alerts Kafka topic.
+servers:
+  - url: http://wso2-mi:8290/internal/runtime-policy-alerts/v1
+paths:
+  /health:
+    get:
+      operationId: getRuntimePolicyAlertHealth
+      summary: Check the runtime policy alert integration health
+      responses:
+        '200':
+          description: Service is running
+  /events:
+    post:
+      operationId: publishRuntimePolicyAlert
+      summary: Validate and publish a runtime policy alert
+      parameters:
+        - name: X-Correlation-ID
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimePolicyAlert'
+      responses:
+        '202':
+          description: Alert accepted and published to Kafka
+        '400':
+          description: Required identity/correlation field missing
+        '503':
+          description: Kafka endpoint unavailable, timed out or suspended
+components:
+  schemas:
+    RuntimePolicyAlert:
+      type: object
+      required: [eventType, policyName, partnerId, apiContext, applicationId, correlationId]
+      properties:
+        eventType: { type: string, example: TELCO_RUNTIME_POLICY_THROTTLED }
+        eventVersion: { type: string, example: '1.0' }
+        occurredAt: { type: string, format: date-time }
+        policyName: { type: string }
+        partnerId: { type: string }
+        apiName: { type: string }
+        apiContext: { type: string }
+        apiVersion: { type: string }
+        applicationId: { type: string }
+        applicationName: { type: string }
+        correlationId: { type: string }
+        httpStatus: { type: integer, example: 429 }
+        errorCode: { type: string, example: '900806' }
+        retryAfterSeconds: { type: integer }
+        rateLimit: { type: integer }
+        source: { type: string }

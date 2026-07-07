@@ -180,6 +180,35 @@ app.get('/api/v1/network/slices', (req, res) => {
 });
 
 
+// BEGIN SIDDHI RUNTIME QOD DEMO ROUTE
+app.post('/api/v1/network/qod/sessions', (req, res) => {
+  const partnerId = req.headers['x-partner-id'] || req.body?.partnerId || 'enterprise-qod-demo';
+  const correlationId = req.headers['x-correlation-id'] || `corr-qod-${Date.now()}`;
+  const durationSeconds = Math.max(30, Math.min(Number(req.body?.durationSeconds || 120), 3600));
+  const maxLatencyMs = Math.max(1, Number(req.body?.maxLatencyMs || 20));
+  const minThroughputMbps = Math.max(1, Number(req.body?.minThroughputMbps || 100));
+  const profile = req.body?.profile || 'QOD_GOLD';
+  const profileMultiplier = profile === 'QOD_GOLD' ? 1.8 : profile === 'QOD_SILVER' ? 1.25 : 1;
+  const chargePreviewUsd = Number((durationSeconds / 60 * profileMultiplier * 0.35).toFixed(2));
+
+  res.status(201).json({
+    qodSessionId: `qod-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+    status: 'REQUESTED',
+    partnerId,
+    correlationId,
+    profile,
+    device: req.body?.device || { phoneNumber: '+525512340001' },
+    area: req.body?.area || { type: 'CELL_ID', value: 'MX-MEX-CELL-001' },
+    durationSeconds,
+    maxLatencyMs,
+    minThroughputMbps,
+    activationEtaSeconds: 3,
+    chargePreviewUsd,
+    createdAt: new Date().toISOString()
+  });
+});
+// END SIDDHI RUNTIME QOD DEMO ROUTE
+
 // BEGIN OPEN GATEWAY / CAMARA DEMO ROUTES
 function normalizeOpenGatewayMsisdn(value) {
   return decodeURIComponent(String(value || '+525512340001')).replace(/\s+/g, '');

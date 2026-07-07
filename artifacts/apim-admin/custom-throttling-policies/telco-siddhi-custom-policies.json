@@ -2,19 +2,19 @@
   {
     "policyName": "TelcoSiddhiQoDAssuranceBurstPolicy",
     "displayName": "Telco Siddhi QoD Assurance Burst Policy",
-    "description": "Siddhi-based APIM custom policy that protects 5G network assurance and QoD APIs from event storms while keeping enterprise SLA traffic measurable.",
+    "description": "Runtime APIM custom throttling policy for the QoD operation exposed by NetworkSliceAPI. The demo threshold is intentionally small so the 429 and alert path can be verified deterministically.",
     "keyTemplate": "$apiContext:$apiVersion",
     "isDeployed": true,
-    "businessStory": "When enterprise 5G or QoD assurance traffic spikes, the telco must protect network assurance APIs without losing observability or monetization context.",
-    "siddhiQuery": "FROM RequestStream\nSELECT apiContext, apiVersion, (apiContext == '/products/5g-network-monetization/v1' or apiContext == '/network/slices/1.0.0' or apiContext == '/events/network-events/1.0.0') AS isEligible, str:concat(apiContext,':',apiVersion) as throttleKey\nINSERT INTO EligibilityStream;\n\nFROM EligibilityStream[isEligible==true]#throttler:timeBatch(1 min)\nSELECT throttleKey, (count(throttleKey) >= 120) as isThrottled, expiryTimeStamp group by throttleKey\nINSERT ALL EVENTS into ResultStream;"
+    "businessStory": "Protect shared 5G Quality-on-Demand assurance capacity from burst traffic while retaining API, application, partner and correlation evidence for operations and settlement review.",
+    "siddhiQuery": "FROM RequestStream\nSELECT apiContext, apiVersion,\n       ((apiContext == '/network-slice/v1'\n         or apiContext == '/network-slice/v1/1.0.0')\n        and apiVersion == '1.0.0') AS isEligible,\n       str:concat(apiContext,':',apiVersion) as throttleKey\nINSERT INTO EligibilityStream;\n\nFROM EligibilityStream[isEligible==true]#throttler:timeBatch(5 sec)\nSELECT throttleKey,\n       (count(throttleKey) >= 9) as isThrottled,\n       expiryTimeStamp\ngroup by throttleKey\nINSERT ALL EVENTS into ResultStream;"
   },
   {
     "policyName": "TelcoSiddhiSimSwapFraudFairUsePolicy",
     "displayName": "Telco Siddhi SIM Swap Fraud Fair Use Policy",
-    "description": "Siddhi-based APIM custom policy that protects high-risk SIM swap and Open Gateway fraud APIs with partner/app-level fair-use controls.",
+    "description": "Runtime APIM custom throttling policy for OpenGatewaySimSwapRiskAPI. Fair use is enforced per APIM application, API context and version.",
     "keyTemplate": "$appId:$apiContext:$apiVersion",
     "isDeployed": true,
-    "businessStory": "Fraud APIs such as SIM swap risk are valuable and sensitive. A bank, wallet or marketplace should be protected from abusive partner traffic while legitimate checks continue.",
-    "siddhiQuery": "FROM RequestStream\nSELECT appId, apiContext, apiVersion, (apiContext == '/products/open-gateway-fraud-defense/v1' or apiContext == '/open-gateway/sim-swap-risk/1.0.0' or apiContext == '/open-gateway/number-verification/1.0.0') AS isEligible, str:concat(appId,':',apiContext,':',apiVersion) as throttleKey\nINSERT INTO EligibilityStream;\n\nFROM EligibilityStream[isEligible==true]#throttler:timeBatch(1 min)\nSELECT throttleKey, (count(throttleKey) >= 60) as isThrottled, expiryTimeStamp group by throttleKey\nINSERT ALL EVENTS into ResultStream;"
+    "businessStory": "Prevent one bank, wallet or marketplace application from consuming disproportionate SIM Swap fraud capacity while preserving evidence needed for partner operations and commercial governance.",
+    "siddhiQuery": "FROM RequestStream\nSELECT appId, apiContext, apiVersion,\n       ((apiContext == '/open-gateway/sim-swap/v1'\n         or apiContext == '/open-gateway/sim-swap/v1/1.0.0')\n        and apiVersion == '1.0.0') AS isEligible,\n       str:concat(appId,':',apiContext,':',apiVersion) as throttleKey\nINSERT INTO EligibilityStream;\n\nFROM EligibilityStream[isEligible==true]#throttler:timeBatch(15 sec)\nSELECT throttleKey,\n       (count(throttleKey) >= 6) as isThrottled,\n       expiryTimeStamp\ngroup by throttleKey\nINSERT ALL EVENTS into ResultStream;"
   }
 ]

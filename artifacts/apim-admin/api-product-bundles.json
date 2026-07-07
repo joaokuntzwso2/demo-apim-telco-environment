@@ -182,6 +182,13 @@
         "method": "GET",
         "path": "/api/v1/usage/summary",
         "meter": "usage_summary"
+      },
+      {
+        "apiName": "NetworkSliceAPI",
+        "capability": "Quality on Demand session",
+        "method": "POST",
+        "path": "/api/v1/network/qod/sessions",
+        "meter": "qod_session_request"
       }
     ],
     "apim": {
@@ -202,7 +209,8 @@
         "api_call",
         "slice_reservation",
         "network_event",
-        "usage_summary"
+        "usage_summary",
+        "qod_session_request"
       ]
     }
   },

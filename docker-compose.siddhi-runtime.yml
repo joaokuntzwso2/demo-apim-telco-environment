@@ -1,0 +1,58 @@
+services:
+  redpanda:
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  telco-backend:
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          const http=require('http');const r=http.get('http://127.0.0.1:8081/health',res=>{res.resume();process.exit(res.statusCode===200?0:1)});r.on('error',()=>process.exit(1));r.setTimeout(3000,()=>{r.destroy();process.exit(1)})
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  wso2-apim:
+    healthcheck:
+      test: ["CMD-SHELL", "curl -ksSf https://127.0.0.1:9443/services/Version >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 60
+      start_period: 90s
+
+  wso2-mi:
+    environment:
+      runtime_policy_kafka_url: http://telco-backend:8081/api/v1/kafka/topics/telco.runtime.policy.alerts/events
+    depends_on:
+      wso2-apim:
+        condition: service_healthy
+      telco-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8290/internal/runtime-policy-alerts/v1/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 90s
+
+  apim-bootstrapper:
+    depends_on:
+      wso2-apim:
+        condition: service_healthy
+      wso2-mi:
+        condition: service_healthy
+      telco-backend:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy

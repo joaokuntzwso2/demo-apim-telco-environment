@@ -2,7 +2,10 @@ openapi: 3.0.3
 info:
   title: NetworkSliceAPI
   version: 1.0.0
-  description: 5G network slice catalog, reservation, and SLA status API for premium network monetization.
+  description: >-
+    5G network slice catalog, reservation, cell SLA status and Quality-on-Demand
+    session API for premium network monetization. Runtime QoD burst assurance is
+    enforced by TelcoSiddhiQoDAssuranceBurstPolicy.
 servers:
   - url: http://telco-backend:8081
 x-wso2-basePath: /network-slice/v1
@@ -24,6 +27,7 @@ security:
 tags:
   - name: Slices
   - name: Reservations
+  - name: Quality on Demand
   - name: Cell Status
 paths:
   /api/v1/network/slices:
@@ -61,6 +65,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SliceReservationResponse'
+  /api/v1/network/qod/sessions:
+    post:
+      tags: [Quality on Demand]
+      operationId: createQualityOnDemandSession
+      summary: Request an assured Quality-on-Demand session
+      description: >-
+        Creates a short-lived QoD session for the requested device and area. A
+        runtime Siddhi assurance policy protects shared network capacity. During
+        the demo, nine requests in a five-second time batch trigger HTTP 429 on
+        subsequent requests until the policy window clears.
+      security:
+        - OAuth2: [network.qod.request]
+      parameters:
+        - name: X-Partner-Id
+          in: header
+          required: true
+          description: Stable partner identity included in runtime control events.
+          schema:
+            type: string
+        - name: X-Correlation-ID
+          in: header
+          required: true
+          description: End-to-end correlation identifier returned in errors and alerts.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QoDSessionRequest'
+            example:
+              device:
+                phoneNumber: '+525512340001'
+              area:
+                type: CELL_ID
+                value: MX-MEX-CELL-001
+              profile: QOD_GOLD
+              durationSeconds: 120
+              maxLatencyMs: 20
+              minThroughputMbps: 100
+      responses:
+        '201':
+          description: QoD session accepted
+          headers:
+            X-Correlation-ID:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QoDSessionResponse'
+        '400':
+          description: Invalid QoD request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Runtime QoD assurance burst policy exceeded
+          headers:
+            Retry-After:
+              description: Seconds before the caller should retry.
+              schema: { type: integer, example: 5 }
+            RateLimit-Limit:
+              schema: { type: integer, example: 9 }
+            RateLimit-Remaining:
+              schema: { type: integer, example: 0 }
+            RateLimit-Reset:
+              schema: { type: integer, example: 5 }
+            RateLimit-Policy:
+              schema: { type: string, example: TelcoSiddhiQoDAssuranceBurstPolicy }
+            X-Correlation-ID:
+              schema: { type: string }
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /api/v1/network/cells/{cellId}/status:
     get:
       tags: [Cell Status]
@@ -88,6 +169,7 @@ components:
           scopes:
             network.slice.read: Read slice catalog and cell status
             network.slice.reserve: Reserve network slices
+            network.qod.request: Create assured Quality-on-Demand sessions
   schemas:
     NetworkSlice:
       type: object
@@ -113,6 +195,41 @@ components:
         status: { type: string }
         activationEtaSeconds: { type: integer }
         chargePreviewUsd: { type: number }
+    QoDSessionRequest:
+      type: object
+      required: [device, area, profile, durationSeconds]
+      properties:
+        device:
+          type: object
+          required: [phoneNumber]
+          properties:
+            phoneNumber: { type: string }
+        area:
+          type: object
+          required: [type, value]
+          properties:
+            type: { type: string, enum: [CELL_ID, CIRCLE, POLYGON] }
+            value: { type: string }
+        profile: { type: string, enum: [QOD_BRONZE, QOD_SILVER, QOD_GOLD] }
+        durationSeconds: { type: integer, minimum: 30, maximum: 3600 }
+        maxLatencyMs: { type: integer, minimum: 1 }
+        minThroughputMbps: { type: integer, minimum: 1 }
+    QoDSessionResponse:
+      type: object
+      properties:
+        qodSessionId: { type: string }
+        status: { type: string, enum: [REQUESTED, ACTIVE, REJECTED] }
+        partnerId: { type: string }
+        correlationId: { type: string }
+        profile: { type: string }
+        device: { type: object, additionalProperties: true }
+        area: { type: object, additionalProperties: true }
+        durationSeconds: { type: integer }
+        maxLatencyMs: { type: integer }
+        minThroughputMbps: { type: integer }
+        activationEtaSeconds: { type: integer }
+        chargePreviewUsd: { type: number }
+        createdAt: { type: string, format: date-time }
     CellStatus:
       type: object
       properties:
@@ -122,3 +239,22 @@ components:
         utilizationPct: { type: integer }
         avgLatencyMs: { type: integer }
         activeSessions: { type: integer }
+    Problem:
+      type: object
+      required: [title, status, correlationId]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+        policyName: { type: string }
+        partnerId: { type: string }
+        apiName: { type: string }
+        apiContext: { type: string }
+        apiVersion: { type: string }
+        applicationId: { type: string }
+        applicationName: { type: string }
+        correlationId: { type: string }
+        retryAfterSeconds: { type: integer }
+        rateLimit: { type: integer }

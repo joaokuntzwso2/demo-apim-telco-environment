@@ -165,6 +165,23 @@ services = [
             ("post", "/network-status", "Retrieve OSS network status"),
         ],
     },
+
+    {
+        "name": "RuntimePolicyAlertAPI",
+        "title": "Runtime Policy Alert API",
+        "version": "1.0.0",
+        "description": (
+            "WSO2 Integrator: MI service that validates APIM runtime throttling "
+            "events and publishes them to the telco.runtime.policy.alerts Kafka topic."
+        ),
+        "service_url": (
+            "http://wso2-mi:8290/internal/runtime-policy-alerts/v1"
+        ),
+        "operations": [
+            ("get", "/health", "Check runtime policy alert integration health"),
+            ("post", "/events", "Publish a normalized runtime policy alert"),
+        ],
+    },
 ]
 
 
@@ -401,6 +418,7 @@ EXPECTED_SERVICES=(
   SimSwapRiskAdapterAPI
   DeviceLocationRiskAdapterAPI
   OssRiskAdapterAPI
+  RuntimePolicyAlertAPI
 )
 
 for required in "${EXPECTED_SERVICES[@]}"; do
@@ -418,4 +436,4 @@ for required in "${EXPECTED_SERVICES[@]}"; do
 done
 
 echo
-echo "[service-catalog] All five MI services are registered."
+echo "[service-catalog] All six MI services are registered."

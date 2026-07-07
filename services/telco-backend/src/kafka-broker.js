@@ -9,7 +9,8 @@ const KAFKA_BROKERS = String(process.env.KAFKA_BROKERS || 'redpanda:9092')
 const TOPICS = [
   'telco.network.qod.events',
   'telco.fraud.sim-swap.events',
-  'telco.partner.settlement.events'
+  'telco.partner.settlement.events',
+  'telco.runtime.policy.alerts'
 ];
 
 const recentEvents = new Map(TOPICS.map(topic => [topic, []]));

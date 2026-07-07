@@ -14,8 +14,8 @@ RUN set -eux; \
       '# ---------------------------------------------------------------------' \
       '' \
       '[indexing]' \
-      'enable = false' \
-      'starting_delay = 600' \
+      'enable = true' \
+      'starting_delay = 10' \
       'frequency = 60' \
       'batch_size = 5' \
       'pool_size = 1' \
@@ -92,4 +92,10 @@ RUN chmod +x /tmp/merge-apim-observability-config.sh \
     && /tmp/merge-apim-observability-config.sh /home/wso2carbon/wso2am-4.7.0/repository/conf/deployment.toml \
     && rm -f /tmp/merge-apim-observability-config.sh
 # END TELCO APIM OBSERVABILITY
+# BEGIN TELCO SIDDHI RUNTIME ENFORCEMENT
+RUN mkdir -p /home/wso2carbon/wso2am-4.7.0/repository/deployment/server/synapse-configs/default/sequences
+COPY services/wso2-apim/sequences/_throttle_out_handler_.xml /home/wso2carbon/wso2am-4.7.0/repository/deployment/server/synapse-configs/default/sequences/_throttle_out_handler_.xml
+RUN chown wso2carbon /home/wso2carbon/wso2am-4.7.0/repository/deployment/server/synapse-configs/default/sequences/_throttle_out_handler_.xml  && chmod 0644 /home/wso2carbon/wso2am-4.7.0/repository/deployment/server/synapse-configs/default/sequences/_throttle_out_handler_.xml
+# END TELCO SIDDHI RUNTIME ENFORCEMENT
+
 USER wso2carbon

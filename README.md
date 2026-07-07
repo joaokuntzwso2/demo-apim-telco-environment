@@ -143,3 +143,15 @@ If you change files under `artifacts/` or `contracts/`, rebuild:
 docker-compose build pipeline-portal
 docker-compose up
 ```
+
+<!-- BEGIN SIDDHI RUNTIME ENFORCEMENT -->
+## Runtime Siddhi business controls
+
+The SIM Swap fair-use and Quality-on-Demand assurance policies are attached to the live APIM request stream and demonstrate normalized HTTP 429 responses, `Retry-After`/rate-limit headers, MI-mediated Kafka alerts and partner/API/application/correlation evidence.
+
+- Architecture, consumer guidance and commands: [`docs/siddhi-runtime-enforcement.md`](docs/siddhi-runtime-enforcement.md)
+- Start helper: `./scripts/start-siddhi-runtime-enforcement.sh`
+- Full verification: `./scripts/verify-siddhi-runtime-enforcement.sh`
+- Postman collection: `artifacts/postman/telco-siddhi-runtime-enforcement.postman_collection.json`
+<!-- END SIDDHI RUNTIME ENFORCEMENT -->
+

@@ -268,7 +268,7 @@ async function listApis(token) {
     `${APIM_URL}/api/am/publisher/v4/apis?limit=1000`,
     { bearer: token }
   );
-  return response.list || response.data || [];
+  return Array.isArray(response) ? response : (response.list || response.data || []);
 }
 
 async function listApiProducts(token) {
@@ -276,7 +276,7 @@ async function listApiProducts(token) {
     `${APIM_URL}/api/am/publisher/v4/api-products?limit=1000`,
     { bearer: token }
   );
-  return response.list || response.data || [];
+  return Array.isArray(response) ? response : (response.list || response.data || []);
 }
 
 function parseDefinition(raw) {
@@ -1167,7 +1167,7 @@ async function listDocuments(token, basePath) {
   const response = await request(`${APIM_URL}${basePath}?limit=100`, {
     bearer: token
   });
-  return response.list || response.data || [];
+  return Array.isArray(response) ? response : (response.list || response.data || []);
 }
 
 
