@@ -27,28 +27,45 @@ function runCurlJson(args, log = console.log, okStatuses = [200, 201, 202, 204])
   return { status, data };
 }
 
-function findPublisherApiIfExists(apimUrl, token, name, version, log = console.log) {
-  function queryApis(query) {
-    const encoded = encodeURIComponent(query);
+function findPublisherApiIfExists(apimUrl, token, name, version, log = console.log, context = '') {
+  function queryApis(query = '') {
+    const queryPart = query ? `query=${encodeURIComponent(query)}&` : '';
     const res = runCurlJson([
       '-H', `Authorization: Bearer ${token}`,
-      `${apimUrl}/api/am/publisher/v4/apis?query=${encoded}&limit=100`
+      `${apimUrl}/api/am/publisher/v4/apis?${queryPart}limit=100&offset=0`
     ], log);
-
     return res.data?.list || res.data?.data || [];
   }
 
-  const candidates = [
-    ...queryApis(name),
-    ...queryApis(`name:${name}`)
-  ];
+  const seen = new Map();
+  const queries = [name, `name:${name}`, context, context ? `context:${context}` : '', ''];
+  for (const query of queries) {
+    if (query === '' || query) {
+      for (const api of queryApis(query)) {
+        if (api?.id) seen.set(api.id, api);
+      }
+    }
+  }
 
-  return candidates.find(api =>
-    api.name === name &&
-    (!api.version || api.version === version)
-  ) || null;
+  for (const summary of seen.values()) {
+    let full = summary;
+    try {
+      full = runCurlJson([
+        '-H', `Authorization: Bearer ${token}`,
+        `${apimUrl}/api/am/publisher/v4/apis/${summary.id}`
+      ], log).data || summary;
+    } catch (err) {
+      log(`Non-fatal full API lookup failure for ${summary.id}: ${err.message || err}`);
+    }
+
+    const versionMatches = !full.version || full.version === version;
+    const nameMatches = full.name === name;
+    const contextMatches = Boolean(context) && full.context === context;
+    if (versionMatches && (nameMatches || contextMatches)) return full;
+  }
+
+  return null;
 }
-
 function deleteLegacyApiIfPossible(apimUrl, token, name, version, log = console.log) {
   const existing = findPublisherApiIfExists(apimUrl, token, name, version, log);
 
@@ -338,7 +355,7 @@ function createSoapPassThroughApi({
 
   // Runtime SOAP APIs are idempotent. If the API already exists as SOAP,
   // reuse it because APIM blocks deletion once subscriptions exist.
-  const existingSoapApi = findPublisherApiIfExists(apimUrl, token, name, version, log);
+  const existingSoapApi = findPublisherApiIfExists(apimUrl, token, name, version, log, context);
 
   if (
     existingSoapApi &&
@@ -406,7 +423,9 @@ function createSoapPassThroughApi({
     `${apimUrl}/api/am/publisher/v4/apis?limit=1`
   ], log);
 
-  const imported = runCurlJson([
+  let imported;
+try {
+  imported = runCurlJson([
     '-X', 'POST',
     '-H', `Authorization: Bearer ${token}`,
     '-F', `file=@${wsdlPath};type=text/xml`,
@@ -414,8 +433,55 @@ function createSoapPassThroughApi({
     '-F', 'implementationType=SOAP',
     `${apimUrl}/api/am/publisher/v4/apis/import-wsdl`
   ], log);
+} catch (err) {
+  const message = String(err.message || err);
+  if (!message.includes('HTTP 409')) throw err;
 
-  const created = imported.data || {};
+  const existingAfterConflict = findPublisherApiIfExists(
+    apimUrl, token, name, version, log, context
+  );
+  if (!existingAfterConflict?.id) {
+    throw new Error(
+      `SOAP import returned HTTP 409, but no existing API could be resolved by ` +
+      `name=${name}, version=${version}, context=${context}. Original error: ${message}`
+    );
+  }
+
+  log(
+    `SOAP import returned HTTP 409; reusing existing API: ` +
+    `${existingAfterConflict.name || name}:${existingAfterConflict.version || version} ` +
+    `(${existingAfterConflict.id}) context=${existingAfterConflict.context || context} ` +
+    `type=${existingAfterConflict.type || 'unknown'}`
+  );
+
+  try {
+    patchSoapTryoutExample({
+      apimUrl,
+      token,
+      apiId: existingAfterConflict.id,
+      log
+    });
+  } catch (patchErr) {
+    log(`Non-fatal SOAP Try Out patch failure after 409 recovery: ${patchErr.message || patchErr}`);
+  }
+
+  if (publish) {
+    changeLifecycleIfNeeded(apimUrl, token, existingAfterConflict.id, 'Publish', log);
+  }
+
+  return {
+    id: existingAfterConflict.id,
+    apiId: existingAfterConflict.id,
+    name: existingAfterConflict.name || name,
+    version: existingAfterConflict.version || version,
+    type: existingAfterConflict.type || 'SOAP',
+    context: existingAfterConflict.context || context,
+    lifeCycleStatus: existingAfterConflict.lifeCycleStatus,
+    reused: true,
+    recoveredFromConflict: true
+  };
+}
+const created = imported.data || {};
   const apiId = created.id;
 
   if (!apiId) {

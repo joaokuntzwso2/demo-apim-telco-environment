@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+scrape_configs:
+  - job_name: prometheus
+    static_configs: [{ targets: ['prometheus:9090'] }]
+  - job_name: telco-gateway-observer
+    static_configs: [{ targets: ['telco-gateway-observer:8089'] }]
+  - job_name: wso2-apim-correlation
+    static_configs: [{ targets: ['apim-correlation-exporter:9470'] }]
+  - job_name: wso2-mi
+    metrics_path: /metric-service/metrics
+    static_configs: [{ targets: ['wso2-mi:9201'] }]
+  - job_name: telco-backend-observer
+    static_configs: [{ targets: ['telco-backend-observer:8090'] }]
+  - job_name: telco-observability
+    static_configs: [{ targets: ['telco-observability:8088'] }]
+  - job_name: kafka-exporter
+    static_configs: [{ targets: ['kafka-exporter:9308'] }]
+  - job_name: otel-collector
+    static_configs: [{ targets: ['otel-collector:8888'] }]

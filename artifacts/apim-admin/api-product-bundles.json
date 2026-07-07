@@ -7,8 +7,18 @@
     "businessOutcome": "Lower fraud losses, fewer false positives and a premium telco data product for financial partners.",
     "buyer": "Banks, wallets, marketplaces, super apps and fraud platforms",
     "plan": "TelcoOpenGatewayTrustPremium",
-    "plans": ["TelcoOpenGatewayTrustStarter", "TelcoOpenGatewayTrustPremium"],
-    "markets": ["MX", "BR", "CO", "AR", "PE", "CL"],
+    "plans": [
+      "TelcoOpenGatewayTrustStarter",
+      "TelcoOpenGatewayTrustPremium"
+    ],
+    "markets": [
+      "MX",
+      "BR",
+      "CO",
+      "AR",
+      "PE",
+      "CL"
+    ],
     "apis": [
       "OpenGatewayNumberVerificationAPI",
       "OpenGatewaySimSwapRiskAPI",
@@ -51,7 +61,12 @@
       "revenueShareModel": "OPEN_GATEWAY_REVENUE_SHARE",
       "settlementOwner": "Telco Marketplace Finance",
       "productLine": "Open Gateway Fraud Prevention APIs",
-      "meters": ["api_call", "number_verification", "sim_swap_risk_check", "device_location_verification"]
+      "meters": [
+        "api_call",
+        "number_verification",
+        "sim_swap_risk_check",
+        "device_location_verification"
+      ]
     }
   },
   {
@@ -62,8 +77,17 @@
     "businessOutcome": "Faster partner onboarding, reusable BSS exposure and country-by-country rollout through one commercial API package.",
     "buyer": "Super apps, digital care partners, fintechs and loyalty ecosystems",
     "plan": "TelcoPartnerPremium",
-    "plans": ["TelcoPartnerStandard", "TelcoPartnerPremium"],
-    "markets": ["MX", "BR", "CO", "AR", "PE"],
+    "plans": [
+      "TelcoPartnerStandard",
+      "TelcoPartnerPremium"
+    ],
+    "markets": [
+      "MX",
+      "BR",
+      "CO",
+      "AR",
+      "PE"
+    ],
     "apis": [
       "Customer360API",
       "NumberLifecycleAPI",
@@ -106,7 +130,12 @@
       "revenueShareModel": "PARTNER_API_REVENUE_SHARE",
       "settlementOwner": "Telco Marketplace Finance",
       "productLine": "Customer and BSS Exposure APIs",
-      "meters": ["api_call", "customer_profile_lookup", "eligibility_check", "settlement_preview"]
+      "meters": [
+        "api_call",
+        "customer_profile_lookup",
+        "eligibility_check",
+        "settlement_preview"
+      ]
     }
   },
   {
@@ -117,8 +146,16 @@
     "businessOutcome": "Transforms network capabilities into sellable API products with observable usage, event-driven SLA proof and commercial settlement.",
     "buyer": "Mobility platforms, enterprise private 5G customers, IoT providers and event operators",
     "plan": "TelcoEventStreamPremium",
-    "plans": ["TelcoPartnerPremium", "TelcoEventStreamPremium"],
-    "markets": ["BR", "MX", "CO", "CL"],
+    "plans": [
+      "TelcoPartnerPremium",
+      "TelcoEventStreamPremium"
+    ],
+    "markets": [
+      "BR",
+      "MX",
+      "CO",
+      "CL"
+    ],
     "apis": [
       "NetworkSliceAPI",
       "NetworkEventsStreamAPI",
@@ -161,7 +198,12 @@
       "revenueShareModel": "NETWORK_EXPOSURE_REVENUE_SHARE",
       "settlementOwner": "Telco Network Monetization Office",
       "productLine": "5G Network Exposure APIs",
-      "meters": ["api_call", "slice_reservation", "network_event", "usage_summary"]
+      "meters": [
+        "api_call",
+        "slice_reservation",
+        "network_event",
+        "usage_summary"
+      ]
     }
   },
   {
@@ -172,18 +214,27 @@
     "businessOutcome": "Modernize legacy revenue operations through API governance instead of a risky backend replacement program.",
     "buyer": "Internal digital channels, care platforms, settlement teams and strategic partners",
     "plan": "TelcoPartnerStandard",
-    "plans": ["TelcoFreeTrial", "TelcoPartnerStandard"],
-    "markets": ["MX", "BR", "AR", "CO", "PE"],
+    "plans": [
+      "TelcoFreeTrial",
+      "TelcoPartnerStandard"
+    ],
+    "markets": [
+      "MX",
+      "BR",
+      "AR",
+      "CO",
+      "PE"
+    ],
     "apis": [
-      "BillingAdjustmentSOAP",
+      "BillingAdjustmentModernizationAPI",
       "PartnerChargingAPI"
     ],
     "apiBundle": [
       {
-        "apiName": "BillingAdjustmentSOAP",
-        "capability": "Legacy billing adjustment",
-        "method": "SOAP",
-        "path": "/soap/billing-adjustment",
+        "apiName": "BillingAdjustmentModernizationAPI",
+        "capability": "Modern REST facade for legacy billing adjustment",
+        "method": "POST",
+        "path": "/adjustments",
         "meter": "billing_adjustment"
       },
       {
@@ -208,7 +259,11 @@
       "revenueShareModel": "LEGACY_BSS_REVENUE_SHARE",
       "settlementOwner": "Telco BSS Finance",
       "productLine": "Legacy BSS Modernization APIs",
-      "meters": ["api_call", "billing_adjustment", "settlement_preview"]
+      "meters": [
+        "api_call",
+        "billing_adjustment",
+        "settlement_preview"
+      ]
     }
   }
 ]

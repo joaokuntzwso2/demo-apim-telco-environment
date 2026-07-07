@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: Telco Demo
+    orgId: 1
+    folder: Telco Platform
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards

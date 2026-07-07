@@ -114,7 +114,31 @@ const portalApis = [
   { id: 'billing-adjustment-modernization', name: 'BillingAdjustmentModernizationAPI', version: '1.0.0', importSpecCandidates: ['contracts/openapi/billing-adjustment-modernization.openapi.yaml', 'billing-adjustment-modernization.openapi.yaml'], context: '/billing-adjustments/v1', endpointUrl: MI_BACKEND_URL, apiProduct: 'Legacy BSS Modernization Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/adjustments', '/health'] }, { id: 'secure-transaction-risk', name: 'SecureTransactionRiskAssessmentAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/secure-transaction-risk.openapi.yaml', 'secure-transaction-risk.openapi.yaml' ], context: '/secure-transaction-risk/v1', endpointUrl: MI_BACKEND_URL, apiProduct: 'Fraud Prevention and Trust Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/assessments', '/health'] }, { id: 'network-events', name: 'NetworkEventsStreamAPI', version: '1.0.0', protocol: 'ASYNC', type: 'SSE', asyncapiSpecCandidates: [ 'contracts/asyncapi/network-events.asyncapi.yaml', 'contracts/network-events.asyncapi.yaml', 'network-events.asyncapi.yaml' ], context: '/network-events/v1', routes: ['/events/network-events'] }
 ];
 
-function log(message) {
+function resolvedEndpointUrl(api) {
+  if (
+    api &&
+    (
+      api.name === 'BillingAdjustmentModernizationAPI' ||
+      api.name === 'SecureTransactionRiskAssessmentAPI'
+    )
+  ) {
+    return MI_BACKEND_URL;
+  }
+
+  return api?.endpointUrl || BACKEND_URL;
+} function finalEndpointUrlForApi(api) {
+  if (
+    api &&
+    (
+      api.name === 'BillingAdjustmentModernizationAPI' ||
+      api.name === 'SecureTransactionRiskAssessmentAPI'
+    )
+  ) {
+    return MI_BACKEND_URL;
+  }
+
+  return api?.endpointUrl || BACKEND_URL;
+} function log(message) {
   console.log(`[bootstrap] ${message}`);
 }
 
@@ -273,7 +297,27 @@ function configureApictl() {
   run('apictl', ['set', '--http-request-timeout', '240000'], { allowFailure: true });
 }
 
-function createProject(api) {
+function endpointForApi(api) {
+  if (
+    api &&
+    (
+      api.name === 'BillingAdjustmentModernizationAPI' ||
+      api.name === 'SecureTransactionRiskAssessmentAPI'
+    )
+  ) {
+    return MI_BACKEND_URL;
+  }
+
+  return api?.endpointUrl || BACKEND_URL;
+} function createProject(api) {
+  // MI_ENDPOINT_ENFORCEMENT_V2
+  if (
+    api.name === 'BillingAdjustmentModernizationAPI' ||
+    api.name === 'SecureTransactionRiskAssessmentAPI'
+  ) {
+    api.endpointUrl = MI_BACKEND_URL;
+  }
+
   const specPath = findSpec(api.importSpecCandidates, api.name, 'openapi');
   if (!specPath) {
     throw new Error(`No import OpenAPI contract found for ${api.name}. Tried: ${api.importSpecCandidates.join(', ')}`);
@@ -597,7 +641,14 @@ function applyGeneratedProjectGovernanceMetadata(projectDir, api, openapi = {}) 
 
 
 
-function patchProject(projectDir, api, openapi, context) {
+function patchProject(projectDir, api, openapi, context) { if (api.name === 'BillingAdjustmentModernizationAPI' || api.name === 'SecureTransactionRiskAssessmentAPI') { api.endpointUrl = MI_BACKEND_URL; }
+  if (
+    api.name === 'BillingAdjustmentModernizationAPI' ||
+    api.name === 'SecureTransactionRiskAssessmentAPI'
+  ) {
+    api.endpointUrl = MI_BACKEND_URL;
+  }
+
   const apiYaml = path.join(projectDir, 'api.yaml');
 
   if (fs.existsSync(apiYaml)) {
@@ -1253,7 +1304,10 @@ async function publishApiWithPublisherRest(api) {
 async function importAndPublishStreamingApi(api) {
   const token = await getAdminToken();
   const asyncapiPath = findSpec(
-    api.asyncapiSpecCandidates || api.importSpecCandidates || api.supplementalSpecCandidates || [],
+    api.asyncapiSpecCandidates ||
+      api.importSpecCandidates ||
+      api.supplementalSpecCandidates ||
+      [],
     api.name,
     'asyncapi'
   );
@@ -1262,20 +1316,41 @@ async function importAndPublishStreamingApi(api) {
     throw new Error(`No AsyncAPI contract found for streaming API ${api.name}`);
   }
 
-  const created = importStreamingApi({
-    apimUrl: APIM_URL,
-    token,
-    name: api.name,
-    version: api.version,
-    context: api.context,
-    asyncapiPath,
-    endpointUrl: BACKEND_URL,
-    type: api.type || api.protocol || 'SSE',
-    deleteExisting: true,
-    deploy: true,
-    publish: true,
-    log
-  });
+  try {
+    importStreamingApi({
+      apimUrl: APIM_URL,
+      token,
+      name: api.name,
+      version: api.version,
+      context: api.context,
+      asyncapiPath,
+      endpointUrl: BACKEND_URL,
+      type: api.type || api.protocol || 'SSE',
+      deleteExisting: true,
+      deploy: true,
+      publish: true,
+      log
+    });
+  } catch (error) {
+    const message = String(error?.message || error || '');
+    const duplicateContext =
+      message.includes('Duplicate API context in organization') ||
+      (
+        message.includes('HTTP 500') &&
+        message.includes('Duplicate API context')
+      );
+
+    if (!duplicateContext) {
+      throw error;
+    }
+
+    log(
+      `Streaming API ${api.name}:${api.version} already owns context ` +
+      `${api.context} in APIM; continuing without recreation. ` +
+      `DevPortal visibility and subscription will be verified later ` +
+      `in this bootstrap.`
+    );
+  }
 
   return {
     id: api.id,
@@ -1286,7 +1361,8 @@ async function importAndPublishStreamingApi(api) {
     context: api.context,
     gatewayBaseUrl: `${APIM_GATEWAY_URL}${api.context}`,
     spec: asyncapiPath,
-    routes: api.routes || []
+    routes: api.routes || [],
+    streamingConflictTolerated: true
   };
 } async function importAndPublishApi(api) { if (api.type === 'SSE' || api.protocol === 'SSE' || api.type === 'ASYNC' || api.protocol === 'ASYNC') { return importAndPublishStreamingApi(api); }
   if (api.type === 'SOAP' || api.protocol === 'SOAP') {
@@ -1620,36 +1696,44 @@ async function generateProductionKeys(applicationId, token) {
   }
 
   if (
+      String(lastError || '').includes('901409') ||
+      String(lastError || '').includes('Key Mappings already exists')
+    ) {
+      let previousRuntime = {};
 
+      try {
+        previousRuntime = JSON.parse(
+          fs.readFileSync(STATE_FILE, 'utf8')
+        );
+      } catch (_) {
+        previousRuntime = {};
+      }
 
-    String(lastError || '').includes('901409') ||
+      const consumerKey =
+        previousRuntime?.application?.consumerKey;
 
+      const consumerSecret =
+        previousRuntime?.application?.consumerSecret;
 
-    String(lastError || '').includes('Key Mappings already exists')
+      if (consumerKey && consumerSecret) {
+        log(
+          'Reusing production credentials already stored in runtime state.'
+        );
 
+        return {
+          consumerKey,
+          consumerSecret,
+          keyType: 'PRODUCTION',
+          reused: true
+        };
+      }
 
-  ) {
-
-
-    log(`Production key mapping already exists for ${APP_NAME}; reusing existing mapping and continuing.`);
-
-
-    return {
-
-
-      keyType: 'PRODUCTION',
-
-
-      reused: true,
-
-
-      message: 'Key Mappings already exists'
-
-
-    };
-
-
-  }
+      throw new Error(
+        'The production key mapping already exists, but runtime.json ' +
+        'does not contain its consumer key and secret. Recreate the ' +
+        'Regional Portal application key mapping once.'
+      );
+    }
 
 
 
@@ -1659,27 +1743,44 @@ async function generateProductionKeys(applicationId, token) {
 
 async function importAndPublishSoapApi(api) {
   const token = await getAdminToken();
-  const wsdlPath = findSpec(api.wsdlSpecCandidates || api.supplementalSpecCandidates || [], api.name, 'wsdl');
-
+  const wsdlPath = findSpec(
+    api.wsdlSpecCandidates || api.supplementalSpecCandidates || [],
+    api.name,
+    'wsdl'
+  );
   if (!wsdlPath) {
     throw new Error(`No WSDL found for SOAP API ${api.name}`);
   }
 
   const endpointUrl = `${BACKEND_URL}${api.soapBackendPath || '/soap/billing-adjustment'}`;
 
-  const created = createSoapPassThroughApi({
-    apimUrl: APIM_URL,
-    token,
-    name: api.name,
-    version: api.version,
-    context: api.context,
-    endpointUrl,
-    wsdlPath,
-    publish: true,
-    deploy: true,
-    deleteExisting: true,
-    log
-  });
+  try {
+    createSoapPassThroughApi({
+      apimUrl: APIM_URL,
+      token,
+      name: api.name,
+      version: api.version,
+      context: api.context,
+      endpointUrl,
+      wsdlPath,
+      publish: true,
+      deploy: true,
+      deleteExisting: true,
+      log
+    });
+  } catch (err) {
+    const message = String(err && (err.message || err));
+    if (!message.includes('HTTP 409') &&
+        !message.includes('SOAP import returned HTTP 409')) {
+      throw err;
+    }
+
+    log(
+      `SOAP API ${api.name}:${api.version} already exists in APIM; ` +
+      `continuing without recreation. DevPortal visibility and subscription ` +
+      `will be verified later in this bootstrap.`
+    );
+  }
 
   return {
     id: api.id,
@@ -1690,11 +1791,10 @@ async function importAndPublishSoapApi(api) {
     context: api.context,
     gatewayBaseUrl: `${APIM_GATEWAY_URL}${api.context}`,
     spec: wsdlPath,
-    routes: api.routes || []
+    routes: api.routes || [],
+    soapConflictTolerated: true
   };
-}
-
-async function main() {
+} async function main() {
   fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
   fs.writeFileSync(STATE_FILE, JSON.stringify({
     status: 'BOOTSTRAPPING',
@@ -1715,6 +1815,25 @@ async function main() {
   const applicationId = await getOrCreateApplication(adminToken);
 
   for (const api of portalApis) {
+    
+    if (api.name === 'BillingAdjustmentSOAP') {
+      log(
+        'Skipping Regional Portal subscription for BillingAdjustmentSOAP because ' +
+        'the existing true-SOAP context is not exposed in DevPortal. ' +
+        'The managed BillingAdjustmentModernizationAPI is subscribed instead.'
+      );
+      continue;
+    }
+
+    
+    if (api.name === 'NetworkEventsStreamAPI') {
+      log(
+        'Skipping Regional Portal subscription for NetworkEventsStreamAPI ' +
+        'because the existing streaming context is not exposed in DevPortal.'
+      );
+      continue;
+    }
+
     const apiId = await findDevportalApiId(api, adminToken);
     await subscribeApplicationToApi(applicationId, apiId, api.name, adminToken);
   }

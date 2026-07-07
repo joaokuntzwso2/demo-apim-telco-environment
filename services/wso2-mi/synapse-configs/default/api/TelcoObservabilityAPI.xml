@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse"
+     name="TelcoObservabilityAPI"
+     context="/observability/v1"
+     statistics="enable"
+     trace="enable">
+
+    <resource methods="GET" uri-template="/health">
+        <inSequence>
+            <property name="CorrelationId" expression="get-property('transport','X-Correlation-ID')" scope="default" type="STRING"/>
+            <filter xpath="string-length(normalize-space($ctx:CorrelationId)) = 0">
+                <then>
+                    <property name="CorrelationId" expression="get-property('MessageID')" scope="default" type="STRING"/>
+                </then>
+            </filter>
+            <header name="X-Correlation-ID" expression="$ctx:CorrelationId" scope="transport"/>
+            <header name="activityID" expression="$ctx:CorrelationId" scope="transport"/>
+            <property name="REST_URL_POSTFIX" scope="axis2" action="remove"/>
+            <call>
+                <endpoint>
+                    <http method="GET" uri-template="http://telco-observability:8088/health">
+                        <timeout><duration>3000</duration><responseAction>fault</responseAction></timeout>
+                        <suspendOnFailure><initialDuration>5000</initialDuration><progressionFactor>2.0</progressionFactor><maximumDuration>30000</maximumDuration></suspendOnFailure>
+                        <markForSuspension><retriesBeforeSuspension>2</retriesBeforeSuspension><retryDelay>500</retryDelay></markForSuspension>
+                    </http>
+                </endpoint>
+            </call>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <payloadFactory media-type="json">
+                <format>{"code":"OBSERVABILITY_UNAVAILABLE","message":"Observability service is unavailable","correlationId":"$1"}</format>
+                <args><arg evaluator="xml" expression="$ctx:CorrelationId"/></args>
+            </payloadFactory>
+            <property name="HTTP_SC" value="503" scope="axis2"/>
+            <property name="messageType" value="application/json" scope="axis2"/>
+            <respond/>
+        </faultSequence>
+    </resource>
+
+    <resource methods="GET" uri-template="/transactions/{correlationId}">
+        <inSequence>
+            <property name="CorrelationId" expression="get-property('uri.var.correlationId')" scope="default" type="STRING"/>
+            <header name="X-Correlation-ID" expression="$ctx:CorrelationId" scope="transport"/>
+            <header name="activityID" expression="$ctx:CorrelationId" scope="transport"/>
+            <property name="REST_URL_POSTFIX" scope="axis2" action="remove"/>
+            <call>
+                <endpoint>
+                    <http method="GET" uri-template="http://telco-observability:8088/v1/transactions/{uri.var.correlationId}">
+                        <timeout><duration>5000</duration><responseAction>fault</responseAction></timeout>
+                        <suspendOnFailure><initialDuration>5000</initialDuration><progressionFactor>2.0</progressionFactor><maximumDuration>30000</maximumDuration></suspendOnFailure>
+                        <markForSuspension><retriesBeforeSuspension>2</retriesBeforeSuspension><retryDelay>500</retryDelay></markForSuspension>
+                    </http>
+                </endpoint>
+            </call>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <payloadFactory media-type="json">
+                <format>{"code":"TRACE_LOOKUP_FAILED","message":"Unable to retrieve transaction timeline","correlationId":"$1"}</format>
+                <args><arg evaluator="xml" expression="$ctx:CorrelationId"/></args>
+            </payloadFactory>
+            <property name="HTTP_SC" value="503" scope="axis2"/>
+            <property name="messageType" value="application/json" scope="axis2"/>
+            <respond/>
+        </faultSequence>
+    </resource>
+
+    <resource methods="GET" uri-template="/billing/failed">
+        <inSequence>
+            <property name="CorrelationId" expression="get-property('transport','X-Correlation-ID')" scope="default" type="STRING"/>
+            <filter xpath="string-length(normalize-space($ctx:CorrelationId)) = 0">
+                <then><property name="CorrelationId" expression="get-property('MessageID')" scope="default" type="STRING"/></then>
+            </filter>
+            <header name="X-Correlation-ID" expression="$ctx:CorrelationId" scope="transport"/>
+            <header name="activityID" expression="$ctx:CorrelationId" scope="transport"/>
+            <property name="REST_URL_POSTFIX" scope="axis2" action="remove"/>
+            <call>
+                <endpoint>
+                    <http method="GET" uri-template="http://telco-observability:8088/v1/billing/failed">
+                        <timeout><duration>5000</duration><responseAction>fault</responseAction></timeout>
+                        <suspendOnFailure><initialDuration>5000</initialDuration><progressionFactor>2.0</progressionFactor><maximumDuration>30000</maximumDuration></suspendOnFailure>
+                        <markForSuspension><retriesBeforeSuspension>2</retriesBeforeSuspension><retryDelay>500</retryDelay></markForSuspension>
+                    </http>
+                </endpoint>
+            </call>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <payloadFactory media-type="json"><format>{"code":"BILLING_LOOKUP_FAILED","correlationId":"$1"}</format><args><arg evaluator="xml" expression="$ctx:CorrelationId"/></args></payloadFactory>
+            <property name="HTTP_SC" value="503" scope="axis2"/>
+            <property name="messageType" value="application/json" scope="axis2"/>
+            <respond/>
+        </faultSequence>
+    </resource>
+
+
+</api>

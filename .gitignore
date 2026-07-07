@@ -68,3 +68,7 @@ pipeline-state/
 *.tar
 *.tar.gz
 *.tgz
+
+# Local generated backup files
+*.before-*
+*.backup.*

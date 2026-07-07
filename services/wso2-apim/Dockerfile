@@ -80,4 +80,10 @@ RUN set -eux; \
     mv "$TMP" "$CONF"; \
     chown wso2carbon "$CONF"
 
+# BEGIN TELCO APIM OBSERVABILITY
+COPY services/wso2-apim/merge-observability-config.sh /tmp/merge-apim-observability-config.sh
+RUN chmod +x /tmp/merge-apim-observability-config.sh \
+    && /tmp/merge-apim-observability-config.sh /home/wso2carbon/wso2am-4.7.0/repository/conf/deployment.toml \
+    && rm -f /tmp/merge-apim-observability-config.sh
+# END TELCO APIM OBSERVABILITY
 USER wso2carbon

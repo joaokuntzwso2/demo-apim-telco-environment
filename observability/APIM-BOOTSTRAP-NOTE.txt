@@ -1,0 +1,10 @@
+TelcoObservabilityAPI is implemented by WSO2 Integrator: MI and registered in
+WSO2 API Manager Service Catalog. The supplied publish-observability-api.sh also
+creates/updates and publishes the managed APIM facade with:
+
+  Name: TelcoObservabilityAPI
+  Version: 1.0.0
+  Context: /observability/v1
+  Endpoint: http://wso2-mi:8290/observability/v1
+
+The internal telco-observability:8088 service is never published directly.

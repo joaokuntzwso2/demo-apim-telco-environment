@@ -1,0 +1,22 @@
+# WSO2 Integrator: MI 4.6.0 native observability configuration.
+# Appended to <MI_HOME>/conf/deployment.toml by install.sh.
+
+[mediation]
+flow.statistics.capture_all = true
+# Payload collection is intentionally disabled because the demo carries subscriber data.
+stat.tracer.collect_payloads = false
+stat.tracer.collect_mediation_properties = true
+
+[opentelemetry]
+enable = true
+logs = true
+type = "otlp"
+protocol = "http"
+url = "http://otel-collector:4318/v1/traces"
+# Keep useful integration spans while avoiding excessive property/log noise.
+filtered.mediator.names = "LogMediator,PropertyMediator"
+custom.span.header.tags = "activityID,X-Correlation-ID,traceparent,organization-id,source-id,application-id"
+
+[[synapse_handlers]]
+name = "CustomObservabilityHandler"
+class = "org.wso2.micro.integrator.observability.metric.handler.MetricHandler"

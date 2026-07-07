@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+<<<<<<< HEAD
 detect_compose() {
   if docker compose version >/dev/null 2>&1; then
     COMPOSE=(docker compose)
@@ -16,6 +17,9 @@ detect_compose() {
 }
 
 detect_compose
+=======
+COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.mi.yml)
+>>>>>>> e488ab4 (Including grafana in the context)
 MI_URL="${MI_URL:-http://localhost:8290/secure-transaction-risk/v1}"
 APIM_TOKEN_URL="${APIM_TOKEN_URL:-https://localhost:9443/oauth2/token}"
 APIM_GATEWAY_URL="${APIM_GATEWAY_URL:-https://localhost:8243/secure-transaction-risk/v1}"

@@ -1,0 +1,6 @@
+services:
+  wso2-apim:
+    volumes:
+      - apim-runtime-database:/home/wso2carbon/wso2am-4.7.0/repository/database
+volumes:
+  apim-runtime-database:

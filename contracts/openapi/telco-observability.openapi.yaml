@@ -1,0 +1,74 @@
+openapi: 3.0.3
+info:
+  title: Telco End-to-End Observability API
+  version: 1.0.0
+  description: Operator API exposed by WSO2 Integrator for tracing one partner transaction
+    across API Manager, MI, BSS/OSS backends, Kafka, analytics and billing.
+  contact:
+    name: Telco API Platform Operations
+    email: telco-api-platform@example.com
+servers:
+- url: http://wso2-mi:8290/observability/v1
+paths:
+  /health:
+    get:
+      operationId: getObservabilityHealth
+      summary: Check observability services
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+  /transactions/{correlationId}:
+    get:
+      operationId: getTransactionTrace
+      summary: Retrieve the complete transaction timeline
+      parameters:
+      - in: path
+        name: correlationId
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Correlated timeline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionTrace'
+        '404':
+          description: Correlation ID not found
+  /billing/failed:
+    get:
+      operationId: listFailedBillingRecords
+      summary: List failed billing records
+      responses:
+        '200':
+          description: Failed records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+components:
+  schemas:
+    TransactionTrace:
+      type: object
+      required:
+      - correlationId
+      - events
+      properties:
+        correlationId:
+          type: string
+        traceId:
+          type: string
+        status:
+          type: string
+        events:
+          type: array
+          items:
+            type: object
+            additionalProperties: true

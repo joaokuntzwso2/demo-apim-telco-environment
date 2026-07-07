@@ -1,0 +1,203 @@
+services:
+  wso2-apim:
+    environment:
+      JAVA_TOOL_OPTIONS: "-DenableCorrelationLogs=true ${APIM_JAVA_TOOL_OPTIONS_EXTRA:-}"
+      OTEL_RESOURCE_ATTRIBUTES: "service.name=wso2-api-manager,deployment.environment.name=telco-demo"
+    volumes:
+      - apim-observability-logs:/home/wso2carbon/wso2am-4.7.0/repository/logs
+    depends_on:
+      otel-collector:
+        condition: service_started
+
+  wso2-mi:
+    environment:
+      JAVA_TOOL_OPTIONS: "-DenablePrometheusApi=true ${MI_JAVA_TOOL_OPTIONS_EXTRA:-}"
+      OTEL_RESOURCE_ATTRIBUTES: "service.name=wso2-integrator-mi,deployment.environment.name=telco-demo"
+      crm_base_url: http://telco-backend-observer:8090/backend/crm
+      sim_swap_base_url: http://telco-backend-observer:8090/backend/sim-swap
+      device_location_base_url: http://telco-backend-observer:8090/backend/device-location
+      oss_base_url: http://telco-backend-observer:8090/backend/oss
+      billing_base_url: http://telco-backend-observer:8090/backend/billing
+      billing_soap_base_url: http://telco-backend-observer:8090/backend/billing
+      legacy_billing_base_url: http://telco-backend-observer:8090/backend/billing
+    volumes:
+      - mi-observability-logs:/home/wso2carbon/wso2mi-4.6.0/repository/logs
+    depends_on:
+      telco-backend-observer:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+  telco-gateway-observer:
+    build: ./observability/gateway-observer
+    container_name: telco-gateway-observer
+    environment:
+      GATEWAY_TARGET: https://wso2-apim:8243
+      TELEMETRY_URL: http://telco-observability:8088/v1/events
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8288:8089"
+    depends_on:
+      wso2-apim:
+        condition: service_started
+      telco-observability:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8089/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  telco-backend-observer:
+    build: ./observability/backend-observer
+    container_name: telco-backend-observer
+    environment:
+      CRM_TARGET: ${CRM_TARGET:-http://subscriber-crm:8080}
+      SIM_SWAP_TARGET: ${SIM_SWAP_TARGET:-http://sim-swap-service:8080}
+      DEVICE_LOCATION_TARGET: ${DEVICE_LOCATION_TARGET:-http://device-location-service:8080}
+      OSS_TARGET: ${OSS_TARGET:-http://oss-network-service:8080}
+      BILLING_TARGET: ${BILLING_TARGET:-http://legacy-billing-primary:8080}
+      TELEMETRY_URL: http://telco-observability:8088/v1/events
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      BACKEND_TIMEOUT_MS: 3500
+      CIRCUIT_TIMEOUT_MS: 4500
+    ports:
+      - "8091:8090"
+    depends_on:
+      telco-observability:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  telco-observability:
+    build: ./observability/telemetry-service
+    container_name: telco-observability
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      DATA_DIR: /data
+    volumes:
+      - telco-observability-data:/data
+    ports:
+      - "8088:8088"
+    depends_on:
+      redpanda:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8088/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+
+  apim-correlation-exporter:
+    build: ./observability/apim-correlation-exporter
+    container_name: telco-apim-correlation-exporter
+    environment:
+      CORRELATION_LOG: /var/log/wso2/correlation.log
+      TELEMETRY_URL: http://telco-observability:8088/v1/events
+    volumes:
+      - apim-observability-logs:/var/log/wso2:ro
+    ports:
+      - "9470:9470"
+    depends_on:
+      wso2-apim:
+        condition: service_started
+      telco-observability:
+        condition: service_healthy
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:${OTEL_COLLECTOR_VERSION:-0.121.0}
+    container_name: telco-otel-collector
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./observability/otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
+    depends_on:
+      - tempo
+
+  tempo:
+    image: grafana/tempo:${TEMPO_VERSION:-2.7.2}
+    container_name: telco-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200"
+
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v3.2.1}
+    container_name: telco-prometheus
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=24h", "--web.enable-lifecycle"]
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+
+  loki:
+    image: grafana/loki:${LOKI_VERSION:-3.4.2}
+    container_name: telco-loki
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./observability/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+
+  fluent-bit:
+    image: fluent/fluent-bit:${FLUENT_BIT_VERSION:-4.0.4}
+    container_name: telco-fluent-bit
+    volumes:
+      - ./observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./observability/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - telco-observability-data:/logs/telemetry:ro
+      - apim-observability-logs:/logs/apim:ro
+      - mi-observability-logs:/logs/mi:ro
+    depends_on:
+      - loki
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:${KAFKA_EXPORTER_VERSION:-v1.8.0}
+    container_name: telco-kafka-exporter
+    command: ["--kafka.server=redpanda:9092", "--group.filter=.*", "--topic.filter=.*"]
+    ports:
+      - "9308:9308"
+    depends_on:
+      - redpanda
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION:-11.5.2}
+    container_name: telco-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+volumes:
+  apim-observability-logs:
+  mi-observability-logs:
+  telco-observability-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+  tempo-data:

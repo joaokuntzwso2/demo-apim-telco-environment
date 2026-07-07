@@ -351,7 +351,7 @@ async function main() {
         continue;
       }
 
-      const operations = operationsFromApi(detail, bundleOperations);
+      const operations = bundleOperations.map(operationFromBundle).filter(Boolean);
 
       if (!operations.length) {
         memberState.members.push({

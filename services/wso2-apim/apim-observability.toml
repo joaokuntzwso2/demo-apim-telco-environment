@@ -1,0 +1,7 @@
+# WSO2 API Manager 4.7 native OpenTelemetry configuration.
+# Merged into <APIM_HOME>/repository/conf/deployment.toml by the image build.
+
+[apim.open_telemetry]
+remote_tracer.enable = true
+remote_tracer.name = "otlp"
+remote_tracer.url = "http://otel-collector:4317/v1/traces"

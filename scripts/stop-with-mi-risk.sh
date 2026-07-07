@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+<<<<<<< HEAD
 
 detect_compose() {
   if docker compose version >/dev/null 2>&1; then
@@ -17,3 +18,6 @@ detect_compose() {
 
 detect_compose
 "${COMPOSE[@]}" down
+=======
+docker compose -f docker-compose.yml -f docker-compose.mi.yml down
+>>>>>>> e488ab4 (Including grafana in the context)
