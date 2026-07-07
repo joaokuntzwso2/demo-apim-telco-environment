@@ -89,7 +89,7 @@ if [ "$READY" != "yes" ]; then
   ' || true
 
   exit 1
-}
+fi
 
 echo "Verifying APIM-backed runtime APIs..."
 ./scripts/verify-apim-bootstrap.sh
