@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 wso2/wso2mi:4.6.0-alpine
+FROM wso2/wso2mi:4.6.0-alpine
 USER root
 
 COPY synapse-configs/default/ ${WSO2_SERVER_HOME}/repository/deployment/server/synapse-configs/default/

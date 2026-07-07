@@ -33,6 +33,7 @@ services:
     container_name: telco-gateway-observer
     environment:
       GATEWAY_TARGET: https://wso2-apim:8243
+      GATEWAY_VHOST: localhost
       TELEMETRY_URL: http://telco-observability:8088/v1/events
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
@@ -192,6 +193,36 @@ services:
       - prometheus
       - loki
       - tempo
+
+
+  telco-traffic-generator:
+    build:
+      context: ./observability/traffic-generator
+    container_name: telco-traffic-generator
+    environment:
+      APIM_BASE_URL: https://wso2-apim:9443
+      GATEWAY_URL: http://telco-gateway-observer:8089
+      STATE_FILE: /state/runtime.json
+      TRAFFIC_INTERVAL_SECONDS: "${TRAFFIC_INTERVAL_SECONDS:-3}"
+      TRAFFIC_BURST_SIZE: "${TRAFFIC_BURST_SIZE:-3}"
+      TOKEN_REFRESH_SECONDS: "${TRAFFIC_TOKEN_REFRESH_SECONDS:-900}"
+      READY_INTERVAL_SECONDS: "5"
+    volumes:
+      - apim-portal-state:/state:ro
+    depends_on:
+      wso2-apim:
+        condition: service_started
+      telco-gateway-observer:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -f /tmp/continuous-traffic-ready
+      interval: 10s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
 
 volumes:
   apim-observability-logs:

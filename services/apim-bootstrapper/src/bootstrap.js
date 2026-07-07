@@ -15,6 +15,20 @@ const APIM_TOKEN_URL = process.env.WSO2_APIM_TOKEN_URL || `${APIM_URL}/oauth2/to
 const APIM_USER = process.env.APIM_USERNAME || 'admin';
 const APIM_PASS = process.env.APIM_PASSWORD || 'admin';
 const BACKEND_URL = process.env.TELCO_BACKEND_URL || 'http://telco-backend:8081'; const MI_BACKEND_URL = process.env.WSO2_MI_URL || 'http://wso2-mi:8290';
+
+function managedMiEndpointUrl(api) {
+  const base = MI_BACKEND_URL.replace(/\/+$/, '');
+
+  if (api?.name === 'BillingAdjustmentModernizationAPI') {
+    return `${base}/billing-adjustments/v1`;
+  }
+
+  if (api?.name === 'SecureTransactionRiskAssessmentAPI') {
+    return `${base}/secure-transaction-risk/v1`;
+  }
+
+  return api?.endpointUrl || base;
+}
 const STATE_FILE = process.env.APIM_PORTAL_STATE_FILE || '/workspace/state/runtime.json';
 const APP_NAME = process.env.PORTAL_APP_NAME || 'Regional Portal';
 
@@ -111,7 +125,7 @@ const portalApis = [
     soapBackendPath: '/soap/billing-adjustment',
     routes: ['/soap/billing-adjustment']
   },
-  { id: 'billing-adjustment-modernization', name: 'BillingAdjustmentModernizationAPI', version: '1.0.0', importSpecCandidates: ['contracts/openapi/billing-adjustment-modernization.openapi.yaml', 'billing-adjustment-modernization.openapi.yaml'], context: '/billing-adjustments/v1', endpointUrl: MI_BACKEND_URL, apiProduct: 'Legacy BSS Modernization Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/adjustments', '/health'] }, { id: 'secure-transaction-risk', name: 'SecureTransactionRiskAssessmentAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/secure-transaction-risk.openapi.yaml', 'secure-transaction-risk.openapi.yaml' ], context: '/secure-transaction-risk/v1', endpointUrl: MI_BACKEND_URL, apiProduct: 'Fraud Prevention and Trust Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/assessments', '/health'] }, { id: 'network-events', name: 'NetworkEventsStreamAPI', version: '1.0.0', protocol: 'ASYNC', type: 'SSE', asyncapiSpecCandidates: [ 'contracts/asyncapi/network-events.asyncapi.yaml', 'contracts/network-events.asyncapi.yaml', 'network-events.asyncapi.yaml' ], context: '/network-events/v1', routes: ['/events/network-events'] }
+  { id: 'billing-adjustment-modernization', name: 'BillingAdjustmentModernizationAPI', version: '1.0.0', importSpecCandidates: ['contracts/openapi/billing-adjustment-modernization.openapi.yaml', 'billing-adjustment-modernization.openapi.yaml'], context: '/billing-adjustments/v1', endpointUrl: `${MI_BACKEND_URL}/billing-adjustments/v1`, apiProduct: 'Legacy BSS Modernization Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/adjustments', '/health'] }, { id: 'secure-transaction-risk', name: 'SecureTransactionRiskAssessmentAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/secure-transaction-risk.openapi.yaml', 'secure-transaction-risk.openapi.yaml' ], context: '/secure-transaction-risk/v1', endpointUrl: `${MI_BACKEND_URL}/secure-transaction-risk/v1`, apiProduct: 'Fraud Prevention and Trust Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/assessments', '/health'] }, { id: 'network-events', name: 'NetworkEventsStreamAPI', version: '1.0.0', protocol: 'ASYNC', type: 'SSE', asyncapiSpecCandidates: [ 'contracts/asyncapi/network-events.asyncapi.yaml', 'contracts/network-events.asyncapi.yaml', 'network-events.asyncapi.yaml' ], context: '/network-events/v1', routes: ['/events/network-events'] }
 ];
 
 function resolvedEndpointUrl(api) {
@@ -122,7 +136,7 @@ function resolvedEndpointUrl(api) {
       api.name === 'SecureTransactionRiskAssessmentAPI'
     )
   ) {
-    return MI_BACKEND_URL;
+    return managedMiEndpointUrl(api);
   }
 
   return api?.endpointUrl || BACKEND_URL;
@@ -134,7 +148,7 @@ function resolvedEndpointUrl(api) {
       api.name === 'SecureTransactionRiskAssessmentAPI'
     )
   ) {
-    return MI_BACKEND_URL;
+    return managedMiEndpointUrl(api);
   }
 
   return api?.endpointUrl || BACKEND_URL;
@@ -305,7 +319,7 @@ function endpointForApi(api) {
       api.name === 'SecureTransactionRiskAssessmentAPI'
     )
   ) {
-    return MI_BACKEND_URL;
+    return managedMiEndpointUrl(api);
   }
 
   return api?.endpointUrl || BACKEND_URL;
@@ -315,7 +329,7 @@ function endpointForApi(api) {
     api.name === 'BillingAdjustmentModernizationAPI' ||
     api.name === 'SecureTransactionRiskAssessmentAPI'
   ) {
-    api.endpointUrl = MI_BACKEND_URL;
+    api.endpointUrl = managedMiEndpointUrl(api);
   }
 
   const specPath = findSpec(api.importSpecCandidates, api.name, 'openapi');
@@ -349,10 +363,10 @@ function endpointForApi(api) {
       endpointConfig: {
         endpoint_type: 'http',
         production_endpoints: {
-          url: api.endpointUrl || BACKEND_URL
+          url: resolvedEndpointUrl(api)
         },
         sandbox_endpoints: {
-          url: api.endpointUrl || BACKEND_URL
+          url: resolvedEndpointUrl(api)
         }
       }
     }
@@ -641,12 +655,12 @@ function applyGeneratedProjectGovernanceMetadata(projectDir, api, openapi = {}) 
 
 
 
-function patchProject(projectDir, api, openapi, context) { if (api.name === 'BillingAdjustmentModernizationAPI' || api.name === 'SecureTransactionRiskAssessmentAPI') { api.endpointUrl = MI_BACKEND_URL; }
+function patchProject(projectDir, api, openapi, context) { if (api.name === 'BillingAdjustmentModernizationAPI' || api.name === 'SecureTransactionRiskAssessmentAPI') { api.endpointUrl = resolvedEndpointUrl(api); } if (api.name === 'BillingAdjustmentModernizationAPI' || api.name === 'SecureTransactionRiskAssessmentAPI') { api.endpointUrl = managedMiEndpointUrl(api); }
   if (
     api.name === 'BillingAdjustmentModernizationAPI' ||
     api.name === 'SecureTransactionRiskAssessmentAPI'
   ) {
-    api.endpointUrl = MI_BACKEND_URL;
+    api.endpointUrl = managedMiEndpointUrl(api);
   }
 
   const apiYaml = path.join(projectDir, 'api.yaml');
@@ -669,8 +683,8 @@ function patchProject(projectDir, api, openapi, context) { if (api.name === 'Bil
     doc.data.endpointImplementationType = 'ENDPOINT';
     doc.data.endpointConfig = {
       endpoint_type: 'http',
-      production_endpoints: { url: api.endpointUrl || BACKEND_URL },
-      sandbox_endpoints: { url: api.endpointUrl || BACKEND_URL }
+      production_endpoints: { url: resolvedEndpointUrl(api) },
+      sandbox_endpoints: { url: resolvedEndpointUrl(api) }
     };
 
     // APIM 4.7 import expects additionalPropertiesMap to be a JSON object.
@@ -1600,36 +1614,129 @@ async function subscribeApplicationToApi(applicationId, apiId, apiName, token) {
   throw new Error(`Could not subscribe ${APP_NAME} to ${apiName}`);
 }
 
-async function generateProductionKeys(applicationId, token) {
-  const endpoint = `${APIM_URL}/api/am/devportal/v3/applications/${applicationId}/generate-keys`;
+async function generateProductionKeys(
+  applicationId,
+  token,
+  allowCleanup = true
+) {
+  const baseEndpoint =
+    `${APIM_URL}/api/am/devportal/v3/applications/${applicationId}`;
+  const oauthKeysEndpoint = `${baseEndpoint}/oauth-keys`;
+
+  function normalizeKey(payload) {
+    const key = payload?.keyMapping || payload || {};
+
+    return {
+      keyMappingId: key.keyMappingId || key.id || null,
+      keyType: key.keyType || 'PRODUCTION',
+      consumerKey:
+        key.consumerKey ||
+        key.consumer_key ||
+        null,
+      consumerSecret:
+        key.consumerSecret ||
+        key.consumer_secret ||
+        null,
+      accessToken:
+        key.accessToken ||
+        key.access_token ||
+        key.token?.accessToken ||
+        key.token?.access_token ||
+        null
+    };
+  }
+
+  async function getExistingProductionKey() {
+    const response = await apiRequest(
+      'GET',
+      oauthKeysEndpoint,
+      token
+    );
+
+    const keys =
+      response.data?.list ||
+      response.data?.data ||
+      [];
+
+    const productionKey = keys.find(
+      item =>
+        String(item?.keyType || '').toUpperCase() === 'PRODUCTION'
+    );
+
+    return productionKey
+      ? normalizeKey(productionKey)
+      : null;
+  }
+
+  /*
+   * Make repeated bootstrap executions idempotent.
+   *
+   * APIM returns HTTP 409 when a production mapping already exists.
+   * Retrieve and reuse that mapping instead of attempting to recreate it.
+   */
+  let existingKey = await getExistingProductionKey();
+
+  if (
+    existingKey?.consumerKey &&
+    existingKey?.consumerSecret
+  ) {
+    log(
+      `Reusing existing production key mapping for ${APP_NAME}.`
+    );
+
+    return {
+      ...existingKey,
+      reused: true
+    };
+  }
+
+  /*
+   * A mapping can exist without its secret being returned, for example
+   * after an interrupted initial bootstrap. Remove that unusable mapping
+   * once and recreate it.
+   */
+  if (
+    existingKey?.keyMappingId &&
+    allowCleanup
+  ) {
+    log(
+      `Existing production mapping ${existingKey.keyMappingId} ` +
+      `does not expose a consumer secret; removing it once.`
+    );
+
+    await apiRequest(
+      'DELETE',
+      `${oauthKeysEndpoint}/${existingKey.keyMappingId}`,
+      token
+    );
+
+    existingKey = null;
+  }
+
+  const generateEndpoint = `${baseEndpoint}/generate-keys`;
 
   const candidateBodies = [
     {
       keyType: 'PRODUCTION',
-      validityTime: 3600,
+      grantTypesToBeSupported: ['client_credentials'],
       callbackUrl: 'http://localhost:8080/callback',
-      scopes: []
+      validityTime: '3600'
     },
     {
       keyType: 'PRODUCTION',
-      validityTime: 3600,
-      callbackUrl: 'http://localhost:8080/callback'
-    },
-    {
-      keyType: 'PRODUCTION',
-      validityTime: 3600
-    },
-    {
-      keyType: 'PRODUCTION'
+      grantTypesToBeSupported: ['client_credentials']
     }
   ];
 
   let lastError = null;
 
   for (const body of candidateBodies) {
-    log(`Generating production keys using payload: ${JSON.stringify(body)}`);
+    log(
+      `Generating production keys using payload: ` +
+      `${JSON.stringify(body)}`
+    );
 
-    const res = await fetch(endpoint, {
+    const response = await fetch(generateEndpoint, {
       method: 'POST',
       dispatcher,
       headers: {
@@ -1639,7 +1746,8 @@ async function generateProductionKeys(applicationId, token) {
       body: JSON.stringify(body)
     });
 
-    const text = await res.text();
+    const text = await response.text();
+
     let data = null;
 
     try {
@@ -1648,98 +1756,92 @@ async function generateProductionKeys(applicationId, token) {
       data = text;
     }
 
-    if (!res.ok) {
-      lastError = `${res.status} ${typeof data === 'string' ? data : JSON.stringify(data)}`;
-      log(`Production key generation attempt failed: ${lastError}`);
+    if (!response.ok) {
+      lastError =
+        `${response.status} ` +
+        `${
+          typeof data === 'string'
+            ? data
+            : JSON.stringify(data)
+        }`;
 
-      // Try the next smaller payload when APIM rejects unknown request properties.
-      if (res.status === 400) {
-        continue;
-      }
+      log(
+        `Production key generation attempt failed: ${lastError}`
+      );
 
-      // Also continue on conflict/server-side idempotency issues; the next payload may still work.
-      if (res.status === 409 || res.status >= 500) {
-        continue;
+      if (
+        response.status === 409 ||
+        String(lastError).includes('901409') ||
+        String(lastError).includes('Key Mappings already exists')
+      ) {
+        const recoveredKey =
+          await getExistingProductionKey();
+
+        if (
+          recoveredKey?.consumerKey &&
+          recoveredKey?.consumerSecret
+        ) {
+          log(
+            `Recovered existing production credentials for ${APP_NAME}.`
+          );
+
+          return {
+            ...recoveredKey,
+            reused: true
+          };
+        }
+
+        if (
+          recoveredKey?.keyMappingId &&
+          allowCleanup
+        ) {
+          log(
+            `Removing incomplete production mapping ` +
+            `${recoveredKey.keyMappingId} and retrying once.`
+          );
+
+          await apiRequest(
+            'DELETE',
+            `${oauthKeysEndpoint}/${recoveredKey.keyMappingId}`,
+            token
+          );
+
+          return generateProductionKeys(
+            applicationId,
+            token,
+            false
+          );
+        }
       }
 
       continue;
     }
 
-    const keyMapping = data?.keyMapping || data || {};
-    const consumerKey =
-      keyMapping.consumerKey ||
-      keyMapping.consumer_key ||
-      data?.consumerKey ||
-      data?.consumer_key;
+    const generatedKey = normalizeKey(data);
 
-    const consumerSecret =
-      keyMapping.consumerSecret ||
-      keyMapping.consumer_secret ||
-      data?.consumerSecret ||
-      data?.consumer_secret;
+    if (
+      generatedKey.consumerKey &&
+      generatedKey.consumerSecret
+    ) {
+      log(
+        `Generated production keys for ${APP_NAME}.`
+      );
 
-    const accessToken =
-      keyMapping.accessToken ||
-      keyMapping.access_token ||
-      data?.accessToken ||
-      data?.access_token ||
-      null;
-
-    if (!consumerKey || !consumerSecret) {
-      lastError = `Successful response did not include consumerKey/consumerSecret: ${JSON.stringify(data)}`;
-      log(lastError);
-      continue;
+      return generatedKey;
     }
 
-    log(`Generated production keys for ${APP_NAME}`);
-    return { consumerKey, consumerSecret, accessToken };
+    lastError =
+      `Successful response did not include ` +
+      `consumerKey/consumerSecret: ${JSON.stringify(data)}`;
+
+    log(lastError);
   }
 
-  if (
-      String(lastError || '').includes('901409') ||
-      String(lastError || '').includes('Key Mappings already exists')
-    ) {
-      let previousRuntime = {};
-
-      try {
-        previousRuntime = JSON.parse(
-          fs.readFileSync(STATE_FILE, 'utf8')
-        );
-      } catch (_) {
-        previousRuntime = {};
-      }
-
-      const consumerKey =
-        previousRuntime?.application?.consumerKey;
-
-      const consumerSecret =
-        previousRuntime?.application?.consumerSecret;
-
-      if (consumerKey && consumerSecret) {
-        log(
-          'Reusing production credentials already stored in runtime state.'
-        );
-
-        return {
-          consumerKey,
-          consumerSecret,
-          keyType: 'PRODUCTION',
-          reused: true
-        };
-      }
-
-      throw new Error(
-        'The production key mapping already exists, but runtime.json ' +
-        'does not contain its consumer key and secret. Recreate the ' +
-        'Regional Portal application key mapping once.'
-      );
-    }
-
-
-
-  throw new Error(`Production key generation failed for ${APP_NAME}. Last error: ${lastError}`);
+  throw new Error(
+    `Production key generation failed for ${APP_NAME}. ` +
+    `Last error: ${lastError}`
+  );
 }
-
 
 async function importAndPublishSoapApi(api) {
   const token = await getAdminToken();

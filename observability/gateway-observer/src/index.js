@@ -38,7 +38,7 @@ app.all('*', async (req,res) => {
   const partner = val(req, ['source-id','x-partner-id'], 'anonymous');
   const application = val(req, ['application-id','x-application-id'], 'unknown');
   const trace = ensureTraceContext(req.headers);
-  const headers = cleanHeaders(req.headers);
+  const headers = cleanHeaders(req.headers); headers.host = process.env.GATEWAY_VHOST || 'localhost';
   headers.activityid = correlationId;
   headers['x-correlation-id'] = correlationId;
   headers.traceparent = trace.traceparent;

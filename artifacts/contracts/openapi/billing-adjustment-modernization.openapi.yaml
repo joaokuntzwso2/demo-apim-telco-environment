@@ -1,280 +1,307 @@
-openapi: 3.0.3
-info:
-  title: Billing Adjustment Modernization API
-  version: 1.0.0
-  description: |
-    Governed REST façade for a legacy SOAP billing-adjustment capability. WSO2 API Manager
-    provides partner-facing lifecycle, security and throttling while WSO2 Integrator: MI
-    validates JSON, creates a SOAP 1.1 request with a WS-Security UsernameToken, invokes
-    resilient primary/DR BSS endpoints, converts SOAP responses to JSON and normalizes
-    legacy SOAP faults into consistent REST errors.
-  contact:
-    name: América Móvil API Platform Team
-    email: api-platform@example.com
-    url: https://www.americamovil.com/
-  license:
-    name: Proprietary demo contract
-    url: https://www.americamovil.com/
-servers:
-  - url: https://localhost:8243/billing-adjustments/v1
-    description: Local WSO2 API Manager gateway
-tags:
-  - name: Billing Adjustments
-    description: Modernized billing-adjustment operations
-  - name: Health
-    description: Runtime readiness operations
-paths:
-  /adjustments:
-    post:
-      tags: [Billing Adjustments]
-      operationId: createBillingAdjustment
-      summary: Apply a billing adjustment
-      description: |
-        Converts the partner JSON request into the legacy SOAP/XML contract and applies the
-        adjustment using an idempotent transaction identifier. Transport failures can fail
-        over from the primary BSS node to the disaster-recovery node.
-      parameters:
-        - $ref: '#/components/parameters/CorrelationId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BillingAdjustmentRequest'
-            examples:
-              goodwillCredit:
-                value:
-                  transactionId: txn-billing-2026-0001
-                  subscriberId: '5215512340001'
-                  amount: 125.75
-                  currency: MXN
-                  reasonCode: GOODWILL_CREDIT
-                  requestedBy: partner-care-portal
-      responses:
-        '200':
-          description: Adjustment applied or returned idempotently
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/CorrelationId'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BillingAdjustmentResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/AccountNotFound'
-        '422':
-          $ref: '#/components/responses/Rejected'
-        '429':
-          description: Request throttled by WSO2 API Manager
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-        '500':
-          $ref: '#/components/responses/InternalError'
-        '502':
-          $ref: '#/components/responses/BadGateway'
-        '503':
-          $ref: '#/components/responses/Unavailable'
-        '504':
-          $ref: '#/components/responses/Timeout'
-  /health:
-    get:
-      tags: [Health]
-      operationId: getBillingModernizationHealth
-      summary: Check integration readiness
-      description: 'Confirms that the WSO2 Integrator: MI REST façade is deployed and ready.'
-      parameters:
-        - $ref: '#/components/parameters/CorrelationId'
-      responses:
-        '200':
-          description: Integration façade is ready
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [status, service, runtime, correlationId]
-                properties:
-                  status:
-                    type: string
-                    example: UP
-                  service:
-                    type: string
-                    example: BillingAdjustmentModernizationAPI
-                  runtime:
-                    type: string
-                    example: 'WSO2 Integrator: MI 4.6.0'
-                  pattern:
-                    type: string
-                  correlationId:
-                    type: string
-        '429':
-          description: Request throttled by WSO2 API Manager
-        '500':
-          $ref: '#/components/responses/InternalError'
-components:
-  parameters:
-    CorrelationId:
-      name: X-Correlation-ID
-      in: header
-      required: false
-      description: End-to-end correlation identifier. MI generates one when absent.
-      schema:
-        type: string
-        maxLength: 128
-    IdempotencyKey:
-      name: Idempotency-Key
-      in: header
-      required: false
-      description: Optional partner-visible idempotency key. The transactionId remains the BSS system-of-record key.
-      schema:
-        type: string
-        maxLength: 128
-  headers:
-    CorrelationId:
-      description: End-to-end correlation identifier
-      schema:
-        type: string
-  schemas:
-    BillingAdjustmentRequest:
-      type: object
-      additionalProperties: false
-      required: [transactionId, subscriberId, amount, currency, reasonCode, requestedBy]
-      properties:
-        transactionId:
-          type: string
-          minLength: 1
-          maxLength: 128
-          description: Unique idempotency identifier for the adjustment.
-        subscriberId:
-          type: string
-          minLength: 1
-          maxLength: 64
-        amount:
-          type: number
-          format: double
-          exclusiveMinimum: true
-          minimum: 0
-        currency:
-          type: string
-          pattern: '^[A-Z]{3}$'
-          example: MXN
-        reasonCode:
-          type: string
-          minLength: 1
-          example: GOODWILL_CREDIT
-        requestedBy:
-          type: string
-          minLength: 1
-          example: partner-care-portal
-    BillingAdjustmentResponse:
-      type: object
-      required:
-        - transactionId
-        - adjustmentId
-        - status
-        - subscriberId
-        - amount
-        - currency
-        - previousBalance
-        - newBalance
-        - backendNode
-        - processedAt
-        - idempotentReplay
-        - correlationId
-      properties:
-        transactionId:
-          type: string
-        adjustmentId:
-          type: string
-        status:
-          type: string
-          enum: [APPLIED]
-        subscriberId:
-          type: string
-        amount:
-          type: number
-        currency:
-          type: string
-        previousBalance:
-          type: number
-        newBalance:
-          type: number
-        backendNode:
-          type: string
-          enum: [PRIMARY, DR]
-        processedAt:
-          type: string
-          format: date-time
-        idempotentReplay:
-          type: boolean
-        correlationId:
-          type: string
-    Problem:
-      type: object
-      required: [type, title, status, code, detail, correlationId]
-      properties:
-        type:
-          type: string
-          format: uri
-        title:
-          type: string
-        status:
-          type: integer
-        code:
-          type: string
-        detail:
-          type: string
-        correlationId:
-          type: string
-        integrationErrorCode:
-          type: string
-        legacy:
-          type: object
-          additionalProperties: true
-  responses:
-    BadRequest:
-      description: Invalid canonical REST request
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
-    AccountNotFound:
-      description: Legacy billing account was not found
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
-    Rejected:
-      description: Legacy BSS rejected the business adjustment
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
-    InternalError:
-      description: Unexpected integration failure
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
-    BadGateway:
-      description: Legacy SOAP fault or backend security failure
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
-    Unavailable:
-      description: No legacy BSS endpoint was available
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
-    Timeout:
-      description: All eligible legacy BSS endpoints timed out
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Billing Adjustment Modernization API",
+    "version": "1.0.0",
+    "description": "Managed REST/JSON facade backed by WSO2 Integrator: MI. It validates a canonical billing-adjustment request, transforms it to the legacy SOAP/XML contract with WS-Security UsernameToken, uses failover/circuit-breaking for the legacy BSS endpoints, and normalizes the SOAP response or fault back to JSON.",
+    "contact": {
+      "name": "Telco API Platform Team",
+      "email": "telco-api-platform@example.com",
+      "url": "https://wso2.com/"
+    },
+    "license": {
+      "name": "Proprietary demo contract"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://wso2-mi:8290/billing-adjustments/v1"
+    }
+  ],
+  "x-wso2-basePath": "/billing-adjustments/v1",
+  "x-telco-health-path": "/health",
+  "x-telco-health-method": "GET",
+  "x-telco-api-product": "Legacy BSS Modernization Pack",
+  "x-telco-architecture-layer": "enterprise-integration",
+  "tags": [
+    {
+      "name": "Billing Adjustments",
+      "description": "Modern REST facade for the legacy SOAP billing system."
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Billing Adjustments"
+        ],
+        "operationId": "getBillingAdjustmentModernizationHealth",
+        "summary": "Check the billing modernization integration service",
+        "description": "Confirms that the WSO2 MI REST-to-SOAP facade is deployed.",
+        "responses": {
+          "200": {
+            "description": "Runtime is available",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/adjustments": {
+      "post": {
+        "tags": [
+          "Billing Adjustments"
+        ],
+        "operationId": "createBillingAdjustment",
+        "summary": "Create a billing adjustment through the legacy BSS",
+        "description": "Accepts canonical JSON, transforms it to a SOAP 1.1 request with WS-Security, invokes the failover legacy billing service, and returns a normalized JSON response.",
+        "parameters": [
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": false,
+            "description": "Existing correlation identifier. WSO2 MI creates one when omitted.",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingAdjustmentRequest"
+              },
+              "examples": {
+                "roamingCredit": {
+                  "value": {
+                    "transactionId": "BILL-ADJ-2026-0001",
+                    "subscriberId": "+525512340001",
+                    "amount": 12.4,
+                    "currency": "USD",
+                    "reasonCode": "ROAMING_CREDIT",
+                    "requestedBy": "care-agent-778"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Billing adjustment completed or replayed idempotently",
+            "headers": {
+              "X-Correlation-ID": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid billing adjustment request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Legacy SOAP service returned a normalized SOAP fault",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "All legacy billing endpoints are unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BillingAdjustmentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "transactionId",
+          "subscriberId",
+          "amount",
+          "currency",
+          "reasonCode",
+          "requestedBy"
+        ],
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "subscriberId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "amount": {
+            "type": "number",
+            "format": "double",
+            "exclusiveMinimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "reasonCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "requestedBy": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      },
+      "BillingAdjustmentResponse": {
+        "type": "object",
+        "required": [
+          "transactionId",
+          "adjustmentId",
+          "status",
+          "subscriberId",
+          "amount",
+          "currency",
+          "previousBalance",
+          "newBalance",
+          "backendNode",
+          "idempotentReplay",
+          "correlationId"
+        ],
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "adjustmentId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "subscriberId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "previousBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "newBalance": {
+            "type": "number",
+            "format": "double"
+          },
+          "backendNode": {
+            "type": "string"
+          },
+          "processedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "idempotentReplay": {
+            "type": "boolean"
+          },
+          "correlationId": {
+            "type": "string"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "UP"
+          },
+          "service": {
+            "type": "string",
+            "example": "BillingAdjustmentModernizationAPI"
+          },
+          "runtime": {
+            "type": "string"
+          },
+          "pattern": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string"
+          }
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

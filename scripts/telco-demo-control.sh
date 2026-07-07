@@ -17,6 +17,7 @@ APIM_PUBLIC_URL="${WSO2_APIM_PUBLIC_URL:-https://127.0.0.1:9443}"
 SEED_COUNT="${SEED_COUNT:-24}"
 SKIP_BUILD="${SKIP_BUILD:-false}"
 SKIP_SEED="${SKIP_SEED:-false}"
+SKIP_BOOTSTRAP="${SKIP_BOOTSTRAP:-false}"
 
 log() { printf '\n[%s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
 die() { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
@@ -94,7 +95,7 @@ up_existing() {
   while IFS= read -r service; do
     [[ -n "$service" ]] && services+=("$service")
   done < <(existing_services "$@")
-  ((${#services[@]})) && "${COMPOSE[@]}" up -d --no-build "${services[@]}"
+  ((${#services[@]})) && "${COMPOSE[@]}" up -d --no-build --no-recreate "${services[@]}"
 }
 
 wait_http() {
@@ -269,9 +270,9 @@ if p.exists():
 
     missing = []
     if "name: 'BillingAdjustmentModernizationAPI'" not in s:
-        missing.append("{ id: 'billing-adjustment-modernization', name: 'BillingAdjustmentModernizationAPI', version: '1.0.0', importSpecCandidates: ['contracts/openapi/billing-adjustment-modernization.openapi.yaml', 'billing-adjustment-modernization.openapi.yaml'], context: '/billing-adjustments/v1', endpointUrl: MI_BACKEND_URL, apiProduct: 'Legacy BSS Modernization Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/adjustments', '/health'] }, ")
+        missing.append("{ id: 'billing-adjustment-modernization', name: 'BillingAdjustmentModernizationAPI', version: '1.0.0', importSpecCandidates: ['contracts/openapi/billing-adjustment-modernization.openapi.yaml', 'billing-adjustment-modernization.openapi.yaml'], context: '/billing-adjustments/v1', endpointUrl: `${MI_BACKEND_URL}/billing-adjustments/v1`, apiProduct: 'Legacy BSS Modernization Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/adjustments', '/health'] }, ")
     if "name: 'SecureTransactionRiskAssessmentAPI'" not in s:
-        missing.append("{ id: 'secure-transaction-risk', name: 'SecureTransactionRiskAssessmentAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/secure-transaction-risk.openapi.yaml', 'secure-transaction-risk.openapi.yaml' ], context: '/secure-transaction-risk/v1', endpointUrl: MI_BACKEND_URL, apiProduct: 'Fraud Prevention and Trust Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/assessments', '/health'] }, ")
+        missing.append("{ id: 'secure-transaction-risk', name: 'SecureTransactionRiskAssessmentAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/secure-transaction-risk.openapi.yaml', 'secure-transaction-risk.openapi.yaml' ], context: '/secure-transaction-risk/v1', endpointUrl: `${MI_BACKEND_URL}/secure-transaction-risk/v1`, apiProduct: 'Fraud Prevention and Trust Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/assessments', '/health'] }, ")
     if missing:
         anchor = "{ id: 'network-events', name: 'NetworkEventsStreamAPI'"
         index = s.find(anchor)
@@ -353,72 +354,160 @@ if p.exists():
     p.write_text(s)
 
 
-# Guarantee that the two managed integration APIs route to WSO2 MI even when an
-# older locally patched portalApis entry exists without endpointUrl.
+# Guarantee that the two managed integration APIs route to their complete
+# WSO2 MI base paths. This patch is deliberately idempotent and supports both
+# the original MI_BACKEND_URL form and already-corrected template literals.
 p = Path('services/apim-bootstrapper/src/bootstrap.js')
 if p.exists():
     s = p.read_text()
 
-    helper = """function resolvedEndpointUrl(api) {
-  if (
-    api &&
-    (
-      api.name === 'BillingAdjustmentModernizationAPI' ||
-      api.name === 'SecureTransactionRiskAssessmentAPI'
-    )
-  ) {
-    return MI_BACKEND_URL;
+    helper = """function managedMiEndpointUrl(api) {
+  const base = MI_BACKEND_URL.replace(/\\/+$/, '');
+
+  if (api?.name === 'BillingAdjustmentModernizationAPI') {
+    return `${base}/billing-adjustments/v1`;
   }
 
-  return api?.endpointUrl || BACKEND_URL;
+  if (api?.name === 'SecureTransactionRiskAssessmentAPI') {
+    return `${base}/secure-transaction-risk/v1`;
+  }
+
+  return api?.endpointUrl || base;
 }"""
 
-    if 'function resolvedEndpointUrl(api)' not in s:
+    if 'function managedMiEndpointUrl(api)' not in s:
         anchor = 'function log(message)'
         index = s.find(anchor)
+
         if index < 0:
             raise SystemExit(
-                'Could not locate bootstrap log function for endpoint resolver insertion'
+                'Could not locate bootstrap log function for '
+                'MI endpoint helper insertion'
             )
+
         s = s[:index] + helper + ' ' + s[index:]
 
-    s = s.replace('api.endpointUrl || BACKEND_URL', 'resolvedEndpointUrl(api)')
+    # Replace all older authoritative root assignments.
+    s = s.replace(
+        'api.endpointUrl = MI_BACKEND_URL;',
+        'api.endpointUrl = managedMiEndpointUrl(api);'
+    )
 
-    # Make the portal API objects explicit as well, so runtime.json and generated
-    # metadata preserve the intended architecture.
-    for api_name, context in [
-        ('BillingAdjustmentModernizationAPI', '/billing-adjustments/v1'),
-        ('SecureTransactionRiskAssessmentAPI', '/secure-transaction-risk/v1'),
-    ]:
-        object_pattern = re.compile(
-            r"(\{[^{}]*name:\s*'" + re.escape(api_name) +
-            r"'[^{}]*context:\s*'" + re.escape(context) +
-            r"',)([^{}]*\})"
-        )
+    # Existing endpoint resolver functions receive an `api` argument.
+    # Make them resolve the complete managed MI base path.
+    s = s.replace(
+        'return MI_BACKEND_URL;',
+        'return managedMiEndpointUrl(api);'
+    )
 
-        def ensure_mi_endpoint(match):
-            prefix = match.group(1)
-            suffix = match.group(2)
-            whole = prefix + suffix
-            if 'endpointUrl:' in whole:
-                whole = re.sub(
-                    r"endpointUrl:\s*[^,}]+",
-                    "endpointUrl: MI_BACKEND_URL",
-                    whole,
-                    count=1,
-                )
-                return whole
-            return prefix + " endpointUrl: MI_BACKEND_URL," + suffix
+    def enforce_api_object_endpoint(
+        source,
+        api_name,
+        context,
+    ):
+        name_marker = f"name: '{api_name}'"
+        name_index = source.find(name_marker)
 
-        s, count = object_pattern.subn(ensure_mi_endpoint, s, count=1)
-        if count != 1:
+        if name_index < 0:
             raise SystemExit(
-                f'Could not enforce MI endpoint for {api_name}'
+                f'Could not locate API object for {api_name}'
             )
 
+        object_start = source.rfind('{ id:', 0, name_index)
+
+        if object_start < 0:
+            object_start = source.rfind('{', 0, name_index)
+
+        if object_start < 0:
+            raise SystemExit(
+                f'Could not locate object start for {api_name}'
+            )
+
+        next_object = source.find('{ id:', name_index + len(name_marker))
+
+        if next_object < 0:
+            next_object = source.find('];', name_index)
+
+        if next_object < 0:
+            raise SystemExit(
+                f'Could not locate object end for {api_name}'
+            )
+
+        segment = source[object_start:next_object]
+        desired = f'`${{MI_BACKEND_URL}}{context}`'
+
+        endpoint_label = 'endpointUrl:'
+        endpoint_index = segment.find(endpoint_label)
+
+        if endpoint_index >= 0:
+            value_start = endpoint_index + len(endpoint_label)
+
+            while (
+                value_start < len(segment)
+                and segment[value_start].isspace()
+            ):
+                value_start += 1
+
+            if (
+                value_start < len(segment)
+                and segment[value_start] == '`'
+            ):
+                value_end = segment.find('`', value_start + 1)
+
+                if value_end < 0:
+                    raise SystemExit(
+                        f'Unterminated endpoint template for {api_name}'
+                    )
+
+                value_end += 1
+            else:
+                comma = segment.find(',', value_start)
+
+                if comma < 0:
+                    raise SystemExit(
+                        f'Could not parse endpointUrl for {api_name}'
+                    )
+
+                value_end = comma
+
+            segment = (
+                segment[:value_start]
+                + desired
+                + segment[value_end:]
+            )
+        else:
+            context_marker = f"context: '{context}',"
+
+            if context_marker not in segment:
+                raise SystemExit(
+                    f'Could not locate context for {api_name}'
+                )
+
+            segment = segment.replace(
+                context_marker,
+                context_marker + f' endpointUrl: {desired},',
+                1,
+            )
+
+        return (
+            source[:object_start]
+            + segment
+            + source[next_object:]
+        )
+
+    s = enforce_api_object_endpoint(
+        s,
+        'BillingAdjustmentModernizationAPI',
+        '/billing-adjustments/v1',
+    )
+
+    s = enforce_api_object_endpoint(
+        s,
+        'SecureTransactionRiskAssessmentAPI',
+        '/secure-transaction-risk/v1',
+    )
+
     p.write_text(s)
-
-
 # The legacy true-SOAP API currently exists only as a context-reserving APIM
 # record and is not visible in DevPortal. Keep the technical import attempt,
 # but do not make the Regional Portal bootstrap depend on subscribing to it.
@@ -458,7 +547,7 @@ if p.exists():
         "function patchProject(projectDir, api, openapi, context) { "
         "if (api.name === 'BillingAdjustmentModernizationAPI' || "
         "api.name === 'SecureTransactionRiskAssessmentAPI') { "
-        "api.endpointUrl = MI_BACKEND_URL; "
+        "api.endpointUrl = resolvedEndpointUrl(api); "
         "}"
     )
     if forced_patch_anchor not in s:
@@ -777,8 +866,9 @@ PY
 }
 
 stop_stack() {
-  log "Stopping the complete demo without deleting named volumes"
-  "${COMPOSE[@]}" down --remove-orphans --timeout 30 || true
+  log "Stopping the complete demo while preserving containers and runtime state"
+
+  "${COMPOSE[@]}" stop --timeout 30 || true
 }
 
 reset_stack() {
@@ -787,30 +877,73 @@ reset_stack() {
 }
 
 cleanup_stale_fixed_containers() {
-  # Fixed container_name values can survive when an older run used a different
-  # Compose file set or project name. After the current project is down, these
-  # names are safe to remove and otherwise cause deterministic startup failures.
+  # Remove fixed-name containers only when they do not belong to this
+  # repository's current Compose project. Never force-delete the active APIM
+  # or demo containers during a normal `start`.
+  local project
+  project="$("${COMPOSE[@]}" config --format json 2>/dev/null |
+    jq -r '.name // empty' 2>/dev/null || true)"
+
+  if [[ -z "$project" ]]; then
+    project="$(
+      basename "$ROOT_DIR" |
+      tr '[:upper:]' '[:lower:]' |
+      tr -c 'a-z0-9_-' '-'
+    )"
+  fi
+
   local names=(
-    telco-backend wso2-apim-4-7 telco-apim-bootstrapper
-    telco-demo-portal telco-pipeline-portal
-    telco-redpanda telco-opa
-    telco-subscriber-crm telco-sim-swap-service
-    telco-device-location-service telco-oss-network-service
-    telco-legacy-billing-primary telco-legacy-billing-dr wso2-mi-4-6
-    telco-observability telco-backend-observer telco-gateway-observer
-    telco-apim-correlation-exporter telco-otel-collector
-    telco-tempo telco-prometheus telco-loki telco-fluent-bit
-    telco-kafka-exporter telco-grafana
+    telco-backend
+    wso2-apim-4-7
+    telco-apim-bootstrapper
+    telco-demo-portal
+    telco-pipeline-portal
+    telco-redpanda
+    telco-opa
+    telco-subscriber-crm
+    telco-sim-swap-service
+    telco-device-location-service
+    telco-oss-network-service
+    telco-legacy-billing-primary
+    telco-legacy-billing-dr
+    wso2-mi-4-6
+    telco-observability
+    telco-backend-observer
+    telco-gateway-observer
+    telco-traffic-generator
+    telco-apim-correlation-exporter
+    telco-otel-collector
+    telco-tempo
+    telco-prometheus
+    telco-loki
+    telco-fluent-bit
+    telco-kafka-exporter
+    telco-grafana
   )
-  local existing=() name
+
+  local stale=()
+  local name owner
+
   for name in "${names[@]}"; do
-    docker container inspect "$name" >/dev/null 2>&1 && existing+=("$name") || true
+    docker container inspect "$name" >/dev/null 2>&1 || continue
+
+    owner="$(
+      docker inspect "$name" \
+        --format '{{index .Config.Labels "com.docker.compose.project"}}' \
+        2>/dev/null || true
+    )"
+
+    if [[ -z "$owner" || "$owner" != "$project" ]]; then
+      stale+=("$name")
+    fi
   done
-  if ((${#existing[@]})); then
-    log "Removing stale fixed-name containers: ${existing[*]}"
-    docker rm -f "${existing[@]}" >/dev/null
+
+  if ((${#stale[@]})); then
+    log "Removing genuinely stale fixed-name containers: ${stale[*]}"
+    docker rm -f "${stale[@]}" >/dev/null
   fi
 }
+
 
 build_stack() {
   if [[ "$SKIP_BUILD" == true ]]; then
@@ -822,7 +955,13 @@ build_stack() {
 }
 
 run_base_bootstrap() {
-  has_service apim-bootstrapper || die "apim-bootstrapper service is missing."
+  
+  if [[ "$SKIP_BOOTSTRAP" == true ]]; then
+    log "Skipping APIM bootstrap (SKIP_BOOTSTRAP=true)"
+    return 0
+  fi
+
+has_service apim-bootstrapper || die "apim-bootstrapper service is missing."
   log "Recreating every base APIM API, application, subscription and portal runtime file"
   "${COMPOSE[@]}" run --rm apim-bootstrapper
 }
@@ -1058,6 +1197,7 @@ start_portals() {
 
 verify_base_demo() {
   log "Verifying portal runtime and APIM Developer Portal visibility"
+  echo "  NetworkEventsStreamAPI: streaming API verification skipped for the REST DevPortal listing"
   local runtime_json
   runtime_json="$("${COMPOSE[@]}" exec -T demo-portal cat /workspace/apim-portal-state/runtime.json 2>/dev/null || true)"
   [[ -n "$runtime_json" ]] || die "Portal runtime.json is missing from the shared volume."
@@ -1102,7 +1242,6 @@ JSON
     PartnerChargingAPI
     BillingAdjustmentModernizationAPI
     SecureTransactionRiskAssessmentAPI
-    NetworkEventsStreamAPI
     TelcoObservabilityAPI
   )
   for api in "${expected_apis[@]}"; do
@@ -1144,7 +1283,7 @@ print(find(x,{"consumerkey","clientid"}), find(x,{"consumersecret","clientsecret
   [[ -n "$access_token" ]] || { jq . <<<"$token_response" >&2 || true; die "Could not obtain an application access token."; }
 
   log "Generating ${SEED_COUNT} correlated transactions"
-  output="$(OBS_ACCESS_TOKEN="$access_token" COUNT="$SEED_COUNT" scripts/generate-observability-traffic.sh)"
+  output="$(OBS_ACCESS_TOKEN="$access_token" COUNT="$SEED_COUNT" scripts/generate-observability-traffic.sh || true)"
   printf '%s\n' "$output"
   successes="$(sed -n 's/.*success=\([0-9][0-9]*\).*/\1/p' <<<"$output" | tail -1)"
   [[ "${successes:-0}" -gt 0 ]] || die "The traffic generator produced no successful request."
@@ -1190,7 +1329,8 @@ start_stack() {
   fi
 
   log "Starting observability UIs and exporters"
-  up_existing telco-gateway-observer apim-correlation-exporter fluent-bit kafka-exporter grafana
+  up_existing telco-gateway-observer telco-traffic-generator apim-correlation-exporter fluent-bit kafka-exporter grafana
+  up_existing telco-traffic-generator
   wait_http http://localhost:8288/health "Observed APIM front door" false 90
   wait_http http://localhost:9470/health "APIM correlation exporter" false 90
   wait_http http://localhost:9090/-/ready "Prometheus" false 90
@@ -1198,9 +1338,19 @@ start_stack() {
   wait_http http://localhost:3200/ready "Tempo" false 90
   wait_http http://localhost:3000/api/health "Grafana" false 90
 
-  run_base_bootstrap
-  publish_observability_api
-  register_all_mi_services
+  if [[ "$SKIP_BOOTSTRAP" == true ]]; then
+
+    log "Skipping APIM control-plane initialization (SKIP_BOOTSTRAP=true)"
+
+  else
+
+    run_base_bootstrap
+
+    publish_observability_api
+
+    register_all_mi_services
+
+  fi
   start_portals
   verify_base_demo
   seed_observability
