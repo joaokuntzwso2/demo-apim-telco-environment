@@ -1,0 +1,59 @@
+services:
+  commercial-meter-store-primary:
+    build:
+      context: ./services/commercial-meter-store
+    container_name: telco-commercial-meter-primary
+    environment:
+      PORT: "8086"
+      STATE_FILE: /data/commercial-meter-state.json
+      MAX_EVENTS: "25000"
+    volumes:
+      - commercial-meter-data:/data
+    ports:
+      - "18086:8086"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8086/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  commercial-meter-store-secondary:
+    build:
+      context: ./services/commercial-meter-store
+    container_name: telco-commercial-meter-secondary
+    environment:
+      PORT: "8086"
+      STATE_FILE: /data/commercial-meter-state.json
+      MAX_EVENTS: "25000"
+    volumes:
+      - commercial-meter-data:/data
+    ports:
+      - "18087:8086"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8086/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  wso2-mi:
+    depends_on:
+      commercial-meter-store-primary:
+        condition: service_healthy
+      commercial-meter-store-secondary:
+        condition: service_healthy
+
+  apim-bootstrapper:
+    depends_on:
+      commercial-meter-store-primary:
+        condition: service_healthy
+      commercial-meter-store-secondary:
+        condition: service_healthy
+      wso2-mi:
+        condition: service_healthy
+
+volumes:
+  commercial-meter-data:

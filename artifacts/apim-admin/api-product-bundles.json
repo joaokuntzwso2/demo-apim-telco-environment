@@ -273,5 +273,190 @@
         "settlement_preview"
       ]
     }
+  },
+  {
+    "id": "secure-mobile-transactions",
+    "name": "Secure Mobile Transactions Bundle",
+    "title": "Secure Mobile Transactions",
+    "description": "Operational product for Number Verification, SIM Swap and Quality on Demand with executable plan assignment, allowances, outcome-based rating, country/currency metadata and usage visibility.",
+    "businessStory": "A bank, fintech or enterprise buys one secure mobile transaction product and receives consistent consent handling, commercial rating and usage evidence across three mobile-network capabilities.",
+    "businessOutcome": "Turns API subscriptions into an executable commercial flow with partner-specific allowance, overage, SLA and outcome-based billing evidence.",
+    "buyer": "Banks, fintechs, payment providers, fraud platforms and enterprise mobility teams",
+    "businessOwner": "Telco Digital Products",
+    "technicalOwner": "Telco API Platform",
+    "plan": "SecureMobileBusiness",
+    "plans": [
+      "SecureMobileSandbox",
+      "SecureMobileBusiness",
+      "SecureMobileEnterprise"
+    ],
+    "markets": [
+      "BR"
+    ],
+    "apis": [
+      "SecureMobileTransactionsCommercialAPI"
+    ],
+    "products": [
+      {
+        "name": "Number Verification",
+        "meter": "number_verification",
+        "unit": "successful request"
+      },
+      {
+        "name": "SIM Swap",
+        "meter": "sim_swap",
+        "unit": "successful request"
+      },
+      {
+        "name": "Quality on Demand",
+        "meter": "quality_on_demand",
+        "unit": "successful or partial activation"
+      }
+    ],
+    "commercialPlans": [
+      {
+        "name": "Sandbox",
+        "subscriptionPolicy": "SecureMobileSandbox",
+        "billingPlan": "FREE",
+        "includedAllowanceMonthly": 100,
+        "country": "BR",
+        "currency": "BRL",
+        "dataPolicy": "MASKED",
+        "sla": {
+          "availabilityPercent": 98.0,
+          "support": "community"
+        },
+        "prices": {
+          "number_verification": 0,
+          "sim_swap": 0,
+          "quality_on_demand": 0,
+          "rejected": 0
+        }
+      },
+      {
+        "name": "Business",
+        "subscriptionPolicy": "SecureMobileBusiness",
+        "billingPlan": "COMMERCIAL",
+        "monthlyFee": 1500,
+        "includedAllowanceMonthly": 10000,
+        "country": "BR",
+        "currency": "BRL",
+        "sla": {
+          "availabilityPercent": 99.5,
+          "support": "business-hours"
+        },
+        "overagePrices": {
+          "number_verification": 0.08,
+          "sim_swap": 0.14,
+          "quality_on_demand": 0.35,
+          "rejected": 0
+        }
+      },
+      {
+        "name": "Enterprise",
+        "subscriptionPolicy": "SecureMobileEnterprise",
+        "billingPlan": "COMMERCIAL",
+        "monthlyCommitment": 12000,
+        "committedVolume": 100000,
+        "country": "BR",
+        "currency": "BRL",
+        "sla": {
+          "availabilityPercent": 99.95,
+          "support": "24x7",
+          "responseMinutes": 15
+        },
+        "committedPrices": {
+          "number_verification": 0.045,
+          "sim_swap": 0.085,
+          "quality_on_demand": 0.22
+        },
+        "overagePrices": {
+          "number_verification": 0.04,
+          "sim_swap": 0.075,
+          "quality_on_demand": 0.19,
+          "rejected": 0
+        }
+      }
+    ],
+    "apiBundle": [
+      {
+        "apiName": "SecureMobileTransactionsCommercialAPI",
+        "method": "POST",
+        "path": "/number-verification",
+        "capability": "Number Verification",
+        "meter": "number_verification"
+      },
+      {
+        "apiName": "SecureMobileTransactionsCommercialAPI",
+        "method": "POST",
+        "path": "/sim-swap",
+        "capability": "SIM Swap",
+        "meter": "sim_swap"
+      },
+      {
+        "apiName": "SecureMobileTransactionsCommercialAPI",
+        "method": "POST",
+        "path": "/quality-on-demand",
+        "capability": "Quality on Demand",
+        "meter": "quality_on_demand"
+      },
+      {
+        "apiName": "SecureMobileTransactionsCommercialAPI",
+        "method": "GET",
+        "path": "/plans",
+        "capability": "Commercial plan catalog",
+        "meter": "commercial_read"
+      },
+      {
+        "apiName": "SecureMobileTransactionsCommercialAPI",
+        "method": "GET",
+        "path": "/partners/{partnerId}/usage",
+        "capability": "Partner and API Product usage",
+        "meter": "commercial_read"
+      },
+      {
+        "apiName": "SecureMobileTransactionsCommercialAPI",
+        "method": "PUT",
+        "path": "/partners/{partnerId}/plan",
+        "capability": "Partner plan assignment",
+        "meter": "commercial_manage"
+      }
+    ],
+    "apim": {
+      "apiProductName": "SecureMobileTransactionsProduct",
+      "displayName": "Secure Mobile Transactions",
+      "version": "1.0.0",
+      "context": "/secure-mobile-transactions-product",
+      "description": "Number Verification, SIM Swap and Quality on Demand sold through executable Sandbox, Business and Enterprise plans.",
+      "subscriptionPolicies": [
+        "SecureMobileSandbox",
+        "SecureMobileBusiness",
+        "SecureMobileEnterprise"
+      ],
+      "apiThrottlingPolicy": "Unlimited",
+      "visibility": "PUBLIC",
+      "governanceLabel": "Telco Commercial APIs",
+      "tags": [
+        "telco",
+        "commercial",
+        "open-gateway",
+        "monetization"
+      ]
+    },
+    "moesif": {
+      "companyId": "regional-telco-group",
+      "productKey": "moesif_prod_secure_mobile_transactions",
+      "billingCatalogReference": "billing.catalog.secure-mobile-transactions.v1",
+      "revenueShareModel": "OUTCOME_AWARE_USAGE_AND_COMMITMENT",
+      "settlementOwner": "Telco Digital Products Finance",
+      "productLine": "Secure Mobile Transactions",
+      "meters": [
+        "api_call",
+        "number_verification",
+        "sim_swap",
+        "quality_on_demand",
+        "rejected_request"
+      ]
+    }
   }
 ]

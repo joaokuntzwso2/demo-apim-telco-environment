@@ -13,8 +13,7 @@ const STATE_FILE = process.env.APIM_API_PRODUCT_BUNDLES_STATE_FILE || '/workspac
 const NATIVE_PRODUCT_BUNDLE_IDS = new Set([
   'open-gateway-fraud-defense',
   'digital-customer-bss-experience',
-  '5g-network-monetization'
-]);
+  '5g-network-monetization', 'secure-mobile-transactions' ]);
 
 const REST_VERBS = new Set(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']);
 
@@ -227,6 +226,8 @@ function buildProductPayload(bundle, productApis) {
     subscriptionAvailability: 'CURRENT_TENANT',
     subscriptionAvailableTenants: [],
     apiThrottlingPolicy: 'Unlimited',
+    policies: Array.from(new Set([...(bundle.apim?.subscriptionPolicies || bundle.plans || []), 'Unlimited'])),
+    tags: Array.from(new Set(bundle.apim?.tags || [])),
     transport: ['http', 'https'],
     securityScheme: ['oauth2'],
     authorizationHeader: 'Authorization',
@@ -351,7 +352,7 @@ async function main() {
         continue;
       }
 
-      const operations = bundleOperations.map(operationFromBundle).filter(Boolean);
+      const operations = operationsFromApi(detail, bundleOperations);
 
       if (!operations.length) {
         memberState.members.push({

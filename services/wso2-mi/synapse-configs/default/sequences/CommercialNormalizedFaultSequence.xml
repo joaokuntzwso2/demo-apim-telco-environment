@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="CommercialNormalizedFaultSequence" trace="disable">
+  <sequence key="CommercialCorrelationSequence"/>
+  <log level="custom">
+    <property name="event" value="commercial-flow-fault"/>
+    <property name="correlationId" expression="get-property('commercial.correlationId')"/>
+    <property name="errorCode" expression="get-property('ERROR_CODE')"/>
+    <property name="errorMessage" expression="get-property('ERROR_MESSAGE')"/>
+    <property name="failedEndpoint" expression="get-property('SYNAPSE_ENDPOINT')"/>
+  </log>
+  <payloadFactory media-type="json">
+    <format>{"type":"https://example.telco/errors/commercial-flow-unavailable","title":"Commercial flow unavailable","status":503,"code":"COMMERCIAL_FLOW_UNAVAILABLE","detail":"The downstream commercial meter or capability backend could not be reached within the configured timeout and retry budget.","correlationId":"$1"}</format>
+    <args>
+      <arg evaluator="xml" expression="get-property('commercial.correlationId')"/>
+    </args>
+  </payloadFactory>
+  <property name="HTTP_SC" value="503" scope="axis2" type="STRING"/>
+  <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+  <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+  <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+  <respond/>
+</sequence>

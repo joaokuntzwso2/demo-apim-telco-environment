@@ -42,8 +42,7 @@ const TARGET_API_NAMES = new Set([
 const TARGET_PRODUCT_NAMES = new Set([
   'OpenGatewayFraudDefenseProduct',
   'DigitalCustomerBSSExperienceProduct',
-  'FiveGNetworkMonetizationProduct'
-]);
+  'FiveGNetworkMonetizationProduct', 'SecureMobileTransactionsProduct' ]);
 
 const API_PLAN_ASSIGNMENTS = {
   OpenGatewayNumberVerificationAPI: [

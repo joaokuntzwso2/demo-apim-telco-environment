@@ -135,5 +135,105 @@
       "includedQuota": "5000 trust checks/min",
       "commercialSummary": "USD 4,999/month + USD 0.008 per extra Open Gateway trust check"
     }
+  },
+  {
+    "policyName": "SecureMobileSandbox",
+    "displayName": "Secure Mobile Sandbox",
+    "description": "Free sandbox with masked data, 100 successful requests per month in the commercial ledger and 10 requests/minute technical protection.",
+    "requestCount": 10,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "FREE",
+    "stopOnQuotaReach": false,
+    "pricing": {
+      "billingType": "FREE",
+      "billingCycle": "month",
+      "currencyType": "BRL",
+      "fixedPrice": "0.00",
+      "pricePerRequest": "0.00",
+      "includedQuota": "100 successful requests/month",
+      "commercialSummary": "Free; masked data; 100 successful requests/month"
+    },
+    "meterPrices": {
+      "number_verification": 0,
+      "sim_swap": 0,
+      "quality_on_demand": 0,
+      "rejected": 0
+    },
+    "country": "BR",
+    "currency": "BRL",
+    "dataPolicy": "MASKED",
+    "sla": {
+      "availabilityPercent": 98.0,
+      "support": "community"
+    }
+  },
+  {
+    "policyName": "SecureMobileBusiness",
+    "displayName": "Secure Mobile Business",
+    "description": "BRL 1,500/month with 10,000 successful requests included, then meter-specific overage; 60 requests/minute technical protection.",
+    "requestCount": 60,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "COMMERCIAL",
+    "stopOnQuotaReach": false,
+    "pricing": {
+      "billingType": "FIXED_PLUS_METERED_OVERAGE",
+      "billingCycle": "month",
+      "currencyType": "BRL",
+      "fixedPrice": "1500.00",
+      "pricePerRequest": "meter-specific",
+      "includedQuota": "10,000 successful requests/month",
+      "commercialSummary": "BRL 1,500/month; overage NV 0.08, SIM Swap 0.14, QoD 0.35; rejected requests 0.00"
+    },
+    "meterPrices": {
+      "number_verification": 0.08,
+      "sim_swap": 0.14,
+      "quality_on_demand": 0.35,
+      "rejected": 0
+    },
+    "country": "BR",
+    "currency": "BRL",
+    "dataPolicy": "FULL_WITH_CONSENT",
+    "sla": {
+      "availabilityPercent": 99.5,
+      "support": "business-hours"
+    }
+  },
+  {
+    "policyName": "SecureMobileEnterprise",
+    "displayName": "Secure Mobile Enterprise",
+    "description": "BRL 12,000 committed plan with 100,000 successful requests, lower committed/overage unit rates, 99.95% SLA and 24x7 support.",
+    "requestCount": 300,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "COMMERCIAL",
+    "stopOnQuotaReach": false,
+    "pricing": {
+      "billingType": "COMMITTED_VOLUME_PLUS_METERED_OVERAGE",
+      "billingCycle": "month",
+      "currencyType": "BRL",
+      "fixedPrice": "12000.00",
+      "pricePerRequest": "meter-specific",
+      "includedQuota": "100,000 committed successful requests/month",
+      "commercialSummary": "BRL 12,000 commitment; committed NV 0.045, SIM Swap 0.085, QoD 0.22; lower overage rates; rejected requests 0.00"
+    },
+    "meterPrices": {
+      "number_verification_committed": 0.045,
+      "sim_swap_committed": 0.085,
+      "quality_on_demand_committed": 0.22,
+      "number_verification_overage": 0.04,
+      "sim_swap_overage": 0.075,
+      "quality_on_demand_overage": 0.19,
+      "rejected": 0
+    },
+    "country": "BR",
+    "currency": "BRL",
+    "dataPolicy": "FULL_WITH_CONSENT",
+    "sla": {
+      "availabilityPercent": 99.95,
+      "support": "24x7",
+      "responseMinutes": 15
+    }
   }
 ]

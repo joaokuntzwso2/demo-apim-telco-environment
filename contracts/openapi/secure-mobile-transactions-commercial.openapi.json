@@ -1,0 +1,211 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Secure Mobile Transactions Commercial API",
+    "version": "1.0.0",
+    "description": "Operational commercial flow for the Secure Mobile Transactions API Product. WSO2 Integrator: MI resolves the partner plan, executes Number Verification, SIM Swap or Quality on Demand, rates the result, persists an idempotent usage event and returns charge/SLA metadata.",
+    "contact": { "name": "Telco API Platform Team", "email": "telco-api-platform@example.com" }
+  },
+  "servers": [
+    { "url": "http://wso2-mi:8290/secure-mobile-transactions/v1", "description": "WSO2 Integrator: MI runtime" }
+  ],
+  "x-wso2-basePath": "/secure-mobile-transactions/v1",
+  "x-wso2-production-endpoints": { "urls": ["http://wso2-mi:8290/secure-mobile-transactions/v1"] },
+  "x-wso2-sandbox-endpoints": { "urls": ["http://wso2-mi:8290/secure-mobile-transactions/v1"] },
+  "x-telco-api-product": "SecureMobileTransactionsProduct",
+  "x-telco-correlation-header": "X-Correlation-ID",
+  "tags": [
+    { "name": "Transactions", "description": "Commercially rated transaction capabilities" },
+    { "name": "Commercial Management", "description": "Plan assignment and usage visibility" },
+    { "name": "Demo Administration", "description": "Deterministic demo data preparation" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getCommercialFlowHealth",
+        "summary": "Check MI commercial flow health",
+        "security": [],
+        "responses": { "200": { "description": "Runtime is available", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Health" } } } } }
+      }
+    },
+    "/plans": {
+      "get": {
+        "tags": ["Commercial Management"],
+        "operationId": "listCommercialPlans",
+        "summary": "List executable commercial plans and per-capability prices",
+        "security": [{ "oauth2": ["secure_mobile_transactions:commercial.read"] }],
+        "responses": { "200": { "description": "Plan catalog", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/partners/{partnerId}/plan": {
+      "put": {
+        "tags": ["Commercial Management"],
+        "operationId": "assignPartnerPlan",
+        "summary": "Assign a partner to Sandbox, Business or Enterprise",
+        "security": [{ "oauth2": ["secure_mobile_transactions:commercial.manage"] }],
+        "parameters": [{ "$ref": "#/components/parameters/PartnerId" }, { "$ref": "#/components/parameters/CorrelationId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanAssignmentRequest" } } } },
+        "responses": {
+          "200": { "description": "Plan assigned", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "400": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/partners/{partnerId}/usage": {
+      "get": {
+        "tags": ["Commercial Management"],
+        "operationId": "getPartnerProductUsage",
+        "summary": "Get allowance, over-limit state, charges and events by partner and API Product",
+        "security": [{ "oauth2": ["secure_mobile_transactions:commercial.read"] }],
+        "parameters": [{ "$ref": "#/components/parameters/PartnerId" }, { "$ref": "#/components/parameters/CorrelationId" }],
+        "responses": {
+          "200": { "description": "Usage summary", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UsageSummary" } } } },
+          "404": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/number-verification": {
+      "post": {
+        "tags": ["Transactions"],
+        "operationId": "verifyMobileNumberCommercially",
+        "summary": "Verify a mobile number and rate the result",
+        "security": [{ "oauth2": ["secure_mobile_transactions:invoke"] }],
+        "parameters": [{ "$ref": "#/components/parameters/CorrelationId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransactionRequest" }, "examples": { "business": { "value": { "partnerId": "fintech-br-001", "msisdn": "+5511999990001", "consentId": "consent-2026-001", "country": "BR", "currency": "BRL" } } } } } },
+        "responses": { "200": { "$ref": "#/components/responses/Transaction" }, "422": { "$ref": "#/components/responses/Transaction" }, "503": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/sim-swap": {
+      "post": {
+        "tags": ["Transactions"],
+        "operationId": "checkSimSwapCommercially",
+        "summary": "Assess SIM-swap evidence and rate the result",
+        "security": [{ "oauth2": ["secure_mobile_transactions:invoke"] }],
+        "parameters": [{ "$ref": "#/components/parameters/CorrelationId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransactionRequest" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/Transaction" }, "422": { "$ref": "#/components/responses/Transaction" }, "503": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/quality-on-demand": {
+      "post": {
+        "tags": ["Transactions"],
+        "operationId": "activateQualityOnDemandCommercially",
+        "summary": "Activate a QoD session and rate full or partial success",
+        "description": "A partial response remains a successful business outcome with a 0.70 rating factor when live radio telemetry is unavailable.",
+        "security": [{ "oauth2": ["secure_mobile_transactions:invoke"] }],
+        "parameters": [{ "$ref": "#/components/parameters/CorrelationId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransactionRequest" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/Transaction" }, "422": { "$ref": "#/components/responses/Transaction" }, "503": { "$ref": "#/components/responses/Problem" } }
+      }
+    },
+    "/demo/seed": {
+      "post": {
+        "tags": ["Demo Administration"],
+        "operationId": "seedCommercialUsage",
+        "summary": "Compactly seed allowance consumption for deterministic overage demonstrations",
+        "security": [{ "oauth2": ["secure_mobile_transactions:commercial.manage"] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["partnerId", "meter", "successfulRequests"], "properties": { "partnerId": { "type": "string" }, "apiProduct": { "type": "string", "default": "SecureMobileTransactionsProduct" }, "meter": { "type": "string", "enum": ["number_verification", "sim_swap", "quality_on_demand"] }, "successfulRequests": { "type": "integer", "minimum": 0 }, "rejectedRequests": { "type": "integer", "minimum": 0 }, "billedAmount": { "type": "number", "minimum": 0 } } } } } },
+        "responses": { "200": { "description": "Usage fixture seeded" } }
+      }
+    },
+    "/demo/reset": {
+      "post": {
+        "tags": ["Demo Administration"],
+        "operationId": "resetCommercialDemo",
+        "summary": "Reset assignments and usage for deterministic verification",
+        "security": [{ "oauth2": ["secure_mobile_transactions:commercial.manage"] }],
+        "responses": { "200": { "description": "Commercial demo state reset" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "clientCredentials": {
+            "tokenUrl": "https://localhost:8243/token",
+            "scopes": {
+              "secure_mobile_transactions:invoke": "Invoke commercial transaction capabilities",
+              "secure_mobile_transactions:commercial.read": "Read plans and partner/product usage",
+              "secure_mobile_transactions:commercial.manage": "Assign plans and manage demo fixtures"
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "PartnerId": { "name": "partnerId", "in": "path", "required": true, "schema": { "type": "string", "maxLength": 128 } },
+      "CorrelationId": { "name": "X-Correlation-ID", "in": "header", "required": false, "schema": { "type": "string", "maxLength": 128 }, "description": "Preserved end-to-end; MI generates one when omitted." }
+    },
+    "schemas": {
+      "PlanAssignmentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["planId", "country", "currency"],
+        "properties": {
+          "planId": { "type": "string", "enum": ["Sandbox", "Business", "Enterprise"] },
+          "country": { "type": "string", "pattern": "^[A-Z]{2}$" },
+          "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+          "contractReference": { "type": "string" },
+          "effectiveFrom": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TransactionRequest": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["partnerId", "consentId"],
+        "properties": {
+          "partnerId": { "type": "string" },
+          "msisdn": { "type": "string" },
+          "consentId": { "type": "string", "description": "Evidence that the partner has a lawful basis and end-user consent where required." },
+          "country": { "type": "string", "default": "BR" },
+          "currency": { "type": "string", "default": "BRL" },
+          "profile": { "type": "string", "default": "QOS_E" },
+          "durationSeconds": { "type": "integer", "minimum": 60, "maximum": 3600 },
+          "forceOutcome": { "type": "string", "enum": ["SUCCESS", "REJECTED", "PARTIAL", "ERROR"], "description": "Demo-only deterministic branch selector." }
+        }
+      },
+      "CommercialUsage": {
+        "type": "object",
+        "required": ["partnerId", "apiProduct", "planId", "meter", "currency", "billedAmount", "chargeType"],
+        "properties": {
+          "partnerId": { "type": "string" },
+          "apiProduct": { "type": "string" },
+          "planId": { "type": "string" },
+          "meter": { "type": "string" },
+          "country": { "type": "string" },
+          "currency": { "type": "string" },
+          "includedAllowanceMonthly": { "type": "integer" },
+          "successfulRequestsBefore": { "type": "integer" },
+          "overLimit": { "type": "boolean" },
+          "unitPrice": { "type": "number" },
+          "ratingFactor": { "type": "number" },
+          "billedAmount": { "type": "number" },
+          "chargeType": { "type": "string" },
+          "slaEntitlement": { "type": "object" },
+          "dataPolicy": { "type": "string" }
+        }
+      },
+      "TransactionResponse": {
+        "type": "object",
+        "properties": {
+          "outcome": { "type": "string", "enum": ["SUCCESS", "PARTIAL", "REJECTED"] },
+          "status": { "type": "string" },
+          "partial": { "type": "boolean" },
+          "warnings": { "type": "array", "items": { "type": "string" } },
+          "result": { "type": "object" },
+          "correlationId": { "type": "string" },
+          "commercialUsage": { "$ref": "#/components/schemas/CommercialUsage" }
+        }
+      },
+      "UsageSummary": { "type": "object", "properties": { "partnerId": { "type": "string" }, "apiProduct": { "type": "string" }, "assignment": { "type": "object" }, "plan": { "type": "object" }, "totals": { "type": "object" }, "perMeter": { "type": "array", "items": { "type": "object" } }, "overLimit": { "type": "boolean" }, "recentEvents": { "type": "array", "items": { "type": "object" } } } },
+      "Health": { "type": "object", "properties": { "status": { "type": "string" }, "service": { "type": "string" }, "runtime": { "type": "string" }, "correlationId": { "type": "string" } } },
+      "Problem": { "type": "object", "properties": { "type": { "type": "string", "format": "uri" }, "title": { "type": "string" }, "status": { "type": "integer" }, "code": { "type": "string" }, "detail": { "type": "string" }, "correlationId": { "type": "string" } } }
+    },
+    "responses": {
+      "Transaction": { "description": "Capability and commercial usage result", "headers": { "X-Correlation-ID": { "schema": { "type": "string" } } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TransactionResponse" } } } },
+      "Problem": { "description": "Normalized error", "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } } }
+    }
+  }
+}

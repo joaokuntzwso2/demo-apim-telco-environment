@@ -1,0 +1,38 @@
+{
+  "info": {
+    "name": "Secure Mobile Transactions Commercial Flow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gatewayUrl", "value": "https://localhost:8243/secure-mobile-transactions-product/1.0.0" },
+    { "key": "accessToken", "value": "" },
+    { "key": "partnerId", "value": "fintech-br-001" },
+    { "key": "correlationId", "value": "commercial-demo-001" }
+  ],
+  "item": [
+    {
+      "name": "List plans",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "X-Correlation-ID", "value": "{{correlationId}}" }], "url": "{{gatewayUrl}}/plans" }
+    },
+    {
+      "name": "Assign Business plan",
+      "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "X-Correlation-ID", "value": "{{correlationId}}" }], "body": { "mode": "raw", "raw": "{\n  \"planId\": \"Business\",\n  \"country\": \"BR\",\n  \"currency\": \"BRL\",\n  \"contractReference\": \"FINTECH-BR-2026\"\n}" }, "url": "{{gatewayUrl}}/partners/{{partnerId}}/plan" }
+    },
+    {
+      "name": "Number Verification",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "X-Correlation-ID", "value": "{{correlationId}}" }], "body": { "mode": "raw", "raw": "{\n  \"partnerId\": \"{{partnerId}}\",\n  \"msisdn\": \"+5511999990001\",\n  \"consentId\": \"consent-2026-001\",\n  \"country\": \"BR\",\n  \"currency\": \"BRL\"\n}" }, "url": "{{gatewayUrl}}/number-verification" }
+    },
+    {
+      "name": "Rejected SIM Swap",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "X-Correlation-ID", "value": "{{correlationId}}-rejected" }], "body": { "mode": "raw", "raw": "{\n  \"partnerId\": \"{{partnerId}}\",\n  \"msisdn\": \"+5511999990001\",\n  \"consentId\": \"consent-2026-002\",\n  \"forceOutcome\": \"REJECTED\"\n}" }, "url": "{{gatewayUrl}}/sim-swap" }
+    },
+    {
+      "name": "QoD partial response",
+      "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }, { "key": "X-Correlation-ID", "value": "{{correlationId}}-qod" }], "body": { "mode": "raw", "raw": "{\n  \"partnerId\": \"{{partnerId}}\",\n  \"consentId\": \"consent-2026-003\",\n  \"profile\": \"QOS_E\",\n  \"durationSeconds\": 900,\n  \"forceOutcome\": \"PARTIAL\"\n}" }, "url": "{{gatewayUrl}}/quality-on-demand" }
+    },
+    {
+      "name": "Usage by partner and API Product",
+      "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "X-Correlation-ID", "value": "{{correlationId}}-usage" }], "url": "{{gatewayUrl}}/partners/{{partnerId}}/usage" }
+    }
+  ]
+}

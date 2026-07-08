@@ -1,0 +1,47 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Commercial requests",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(telco_commercial_usage_requests_total)", "refId": "A" }],
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Billed amount",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(telco_commercial_billed_amount_total)", "refId": "A" }],
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests by partner, plan, meter and outcome",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum by (partner, plan, meter, outcome) (rate(telco_commercial_usage_requests_total[5m]))", "legendFormat": "{{partner}} / {{plan}} / {{meter}} / {{outcome}}", "refId": "A" }],
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "type": "table",
+      "title": "Billed amount by partner and API Product",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum by (partner, product, plan, meter, currency) (telco_commercial_billed_amount_total)", "format": "table", "instant": true, "refId": "A" }],
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 10 }
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["telco", "commercial", "monetization", "wso2"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "title": "Secure Mobile Transactions — Commercial Usage",
+  "uid": "secure-mobile-commercial",
+  "version": 1
+}

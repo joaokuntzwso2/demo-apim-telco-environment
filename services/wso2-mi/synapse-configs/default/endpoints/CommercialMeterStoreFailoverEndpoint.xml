@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoint xmlns="http://ws.apache.org/ns/synapse" name="CommercialMeterStoreFailoverEndpoint">
+  <failover>
+    <endpoint name="CommercialMeterStorePrimary">
+      <address uri="http://commercial-meter-store-primary:8086">
+        <timeout>
+          <duration>3000</duration>
+          <responseAction>fault</responseAction>
+        </timeout>
+        <markForSuspension>
+          <errorCodes>101503,101504,101505,101506,101507,101508</errorCodes>
+          <retriesBeforeSuspension>2</retriesBeforeSuspension>
+          <retryDelay>500</retryDelay>
+        </markForSuspension>
+        <suspendOnFailure>
+          <initialDuration>5000</initialDuration>
+          <progressionFactor>2.0</progressionFactor>
+          <maximumDuration>30000</maximumDuration>
+        </suspendOnFailure>
+      </address>
+    </endpoint>
+    <endpoint name="CommercialMeterStoreSecondary">
+      <address uri="http://commercial-meter-store-secondary:8086">
+        <timeout>
+          <duration>3000</duration>
+          <responseAction>fault</responseAction>
+        </timeout>
+        <markForSuspension>
+          <errorCodes>101503,101504,101505,101506,101507,101508</errorCodes>
+          <retriesBeforeSuspension>2</retriesBeforeSuspension>
+          <retryDelay>500</retryDelay>
+        </markForSuspension>
+        <suspendOnFailure>
+          <initialDuration>5000</initialDuration>
+          <progressionFactor>2.0</progressionFactor>
+          <maximumDuration>30000</maximumDuration>
+        </suspendOnFailure>
+      </address>
+    </endpoint>
+  </failover>
+</endpoint>

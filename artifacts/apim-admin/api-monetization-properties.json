@@ -98,5 +98,19 @@
       "ProductLine": "Open Gateway Fraud Prevention APIs",
       "BillingCatalogReference": "moesif_product=open-gateway-device-location-verification;plans=TelcoOpenGatewayTrustStarter,TelcoOpenGatewayTrustPremium"
     }
+  },
+  {
+    "apiName": "SecureMobileTransactionsCommercialAPI",
+    "version": "1.0.0",
+    "properties": {
+      "APIProduct": "SecureMobileTransactionsProduct",
+      "CommercialPlans": "Sandbox,Business,Enterprise",
+      "Meters": "number_verification,sim_swap,quality_on_demand",
+      "Country": "BR",
+      "Currency": "BRL",
+      "RatingOwner": "WSO2 Integrator: MI",
+      "UsageDimensions": "partnerId,apiProduct,planId,meter,outcome,country,currency",
+      "OutcomeRating": "SUCCESS/PARTIAL billed; REJECTED recorded at zero"
+    }
   }
 ]

@@ -1,0 +1,14 @@
+{
+  "name": "telco-commercial-meter-store",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Persistence and query adapter for the MI-owned commercial rating flow.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "check": "node --check src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

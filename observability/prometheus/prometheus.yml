@@ -19,3 +19,10 @@ scrape_configs:
     static_configs: [{ targets: ['kafka-exporter:9308'] }]
   - job_name: otel-collector
     static_configs: [{ targets: ['otel-collector:8888'] }]
+
+  - job_name: 'commercial-meter'
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - 'commercial-meter-store-primary:8086'
+          - 'commercial-meter-store-secondary:8086'

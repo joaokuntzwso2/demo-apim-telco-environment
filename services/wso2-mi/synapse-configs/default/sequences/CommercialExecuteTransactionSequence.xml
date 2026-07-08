@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="CommercialExecuteTransactionSequence" trace="disable">
+  <sequence key="CommercialCorrelationSequence"/>
+  <property name="commercial.partnerId" expression="json-eval($.partnerId)" scope="default" type="STRING"/>
+  <property name="commercial.consentId" expression="json-eval($.consentId)" scope="default" type="STRING"/>
+  <property name="commercial.requestCountry" expression="json-eval($.country)" scope="default" type="STRING"/>
+  <property name="commercial.requestCurrency" expression="json-eval($.currency)" scope="default" type="STRING"/>
+  <enrich>
+    <source clone="true" type="body"/>
+    <target action="replace" property="commercial.originalRequest" type="property"/>
+  </enrich>
+
+  <filter xpath="string-length(normalize-space(get-property('commercial.partnerId'))) = 0">
+    <then>
+      <payloadFactory media-type="json">
+        <format>{"type":"https://example.telco/errors/partner-required","title":"Partner identifier required","status":400,"code":"PARTNER_ID_REQUIRED","detail":"partnerId is required for plan lookup and usage attribution.","correlationId":"$1"}</format>
+        <args><arg evaluator="xml" expression="get-property('commercial.correlationId')"/></args>
+      </payloadFactory>
+      <property name="HTTP_SC" value="400" scope="axis2" type="STRING"/>
+      <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+      <respond/>
+    </then>
+  </filter>
+
+  <property name="REST_URL_POSTFIX" expression="fn:concat('/context/', get-property('commercial.partnerId'), '?apiProduct=SecureMobileTransactionsProduct')" scope="axis2" type="STRING"/>
+  <property name="HTTP_METHOD" value="GET" scope="axis2" type="STRING"/>
+  <property name="NO_ENTITY_BODY" value="true" scope="axis2" type="BOOLEAN"/>
+  <call>
+    <endpoint key="CommercialMeterStoreFailoverEndpoint"/>
+  </call>
+  <property name="commercial.planId" expression="json-eval($.assignment.planId)" scope="default" type="STRING"/>
+  <property name="commercial.country" expression="json-eval($.assignment.country)" scope="default" type="STRING"/>
+  <property name="commercial.currency" expression="json-eval($.assignment.currency)" scope="default" type="STRING"/>
+  <property name="commercial.successfulRequestsBefore" expression="json-eval($.totals.successfulRequests)" scope="default" type="STRING"/>
+  <property name="commercial.allowanceBefore" expression="json-eval($.allowanceRemaining)" scope="default" type="STRING"/>
+
+  <enrich>
+    <source clone="true" property="commercial.originalRequest" type="property"/>
+    <target action="replace" type="body"/>
+  </enrich>
+  <property name="REST_URL_POSTFIX" expression="fn:concat('/capabilities/', get-property('commercial.meter'))" scope="axis2" type="STRING"/>
+  <property name="HTTP_METHOD" value="POST" scope="axis2" type="STRING"/>
+  <property name="NO_ENTITY_BODY" action="remove" scope="axis2"/>
+  <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+  <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+  <call>
+    <endpoint key="CommercialMeterStoreFailoverEndpoint"/>
+  </call>
+  <enrich>
+    <source clone="true" type="body"/>
+    <target action="replace" property="commercial.capabilityResponse" type="property"/>
+  </enrich>
+  <property name="commercial.outcome" expression="json-eval($.outcome)" scope="default" type="STRING"/>
+  <property name="commercial.capabilityStatus" expression="json-eval($.status)" scope="default" type="STRING"/>
+
+  <script language="js"><![CDATA[
+    var planId = String(mc.getProperty('commercial.planId') || 'Sandbox');
+    var meter = String(mc.getProperty('commercial.meter') || 'number_verification');
+    var outcome = String(mc.getProperty('commercial.outcome') || 'REJECTED');
+    var successfulBefore = Number(mc.getProperty('commercial.successfulRequestsBefore') || 0);
+    var plans = {
+      Sandbox: {
+        allowance: 100,
+        sla: '98.0',
+        support: 'community',
+        dataPolicy: 'MASKED',
+        included: {number_verification:0, sim_swap:0, quality_on_demand:0},
+        overage: {number_verification:0, sim_swap:0, quality_on_demand:0}
+      },
+      Business: {
+        allowance: 10000,
+        sla: '99.5',
+        support: 'business-hours',
+        dataPolicy: 'FULL_WITH_CONSENT',
+        included: {number_verification:0, sim_swap:0, quality_on_demand:0},
+        overage: {number_verification:0.08, sim_swap:0.14, quality_on_demand:0.35}
+      },
+      Enterprise: {
+        allowance: 100000,
+        sla: '99.95',
+        support: '24x7',
+        dataPolicy: 'FULL_WITH_CONSENT',
+        committed: {number_verification:0.045, sim_swap:0.085, quality_on_demand:0.22},
+        overage: {number_verification:0.04, sim_swap:0.075, quality_on_demand:0.19}
+      }
+    };
+    var plan = plans[planId] || plans.Sandbox;
+    var billable = outcome === 'SUCCESS' || outcome === 'PARTIAL';
+    var overLimit = successfulBefore >= plan.allowance;
+    var chargeType = 'REJECTED_NO_CHARGE';
+    var unitPrice = 0;
+    if (billable) {
+      if (planId === 'Enterprise') {
+        unitPrice = overLimit ? Number(plan.overage[meter] || 0) : Number(plan.committed[meter] || 0);
+        chargeType = overLimit ? 'ENTERPRISE_OVERAGE' : 'COMMITTED_VOLUME';
+      } else if (planId === 'Business') {
+        unitPrice = overLimit ? Number(plan.overage[meter] || 0) : 0;
+        chargeType = overLimit ? 'BUSINESS_OVERAGE' : 'INCLUDED_ALLOWANCE';
+      } else {
+        unitPrice = 0;
+        chargeType = 'SANDBOX_FREE';
+      }
+    }
+    var factor = outcome === 'PARTIAL' ? 0.70 : (billable ? 1.0 : 0.0);
+    var billedAmount = Math.round(unitPrice * factor * 1000000) / 1000000;
+    mc.setProperty('commercial.includedAllowance', String(plan.allowance));
+    mc.setProperty('commercial.overLimit', String(overLimit));
+    mc.setProperty('commercial.unitPrice', String(unitPrice));
+    mc.setProperty('commercial.ratingFactor', String(factor));
+    mc.setProperty('commercial.billedAmount', String(billedAmount));
+    mc.setProperty('commercial.chargeType', chargeType);
+    mc.setProperty('commercial.slaAvailability', plan.sla);
+    mc.setProperty('commercial.supportEntitlement', plan.support);
+    mc.setProperty('commercial.dataPolicy', plan.dataPolicy);
+    mc.setProperty('commercial.eventId', String(mc.getProperty('commercial.correlationId')) + '-' + meter);
+  ]]></script>
+
+  <payloadFactory media-type="json">
+    <format>{"eventId":"$1","partnerId":"$2","apiProduct":"SecureMobileTransactionsProduct","planId":"$3","meter":"$4","outcome":"$5","capabilityStatus":"$6","country":"$7","currency":"$8","unitPrice":$9,"ratingFactor":$10,"billedAmount":$11,"chargeType":"$12","includedAllowanceMonthly":$13,"successfulRequestsBefore":$14,"overLimit":$15,"correlationId":"$16"}</format>
+    <args>
+      <arg evaluator="xml" expression="get-property('commercial.eventId')"/>
+      <arg evaluator="xml" expression="get-property('commercial.partnerId')"/>
+      <arg evaluator="xml" expression="get-property('commercial.planId')"/>
+      <arg evaluator="xml" expression="get-property('commercial.meter')"/>
+      <arg evaluator="xml" expression="get-property('commercial.outcome')"/>
+      <arg evaluator="xml" expression="get-property('commercial.capabilityStatus')"/>
+      <arg evaluator="xml" expression="get-property('commercial.country')"/>
+      <arg evaluator="xml" expression="get-property('commercial.currency')"/>
+      <arg evaluator="xml" expression="get-property('commercial.unitPrice')"/>
+      <arg evaluator="xml" expression="get-property('commercial.ratingFactor')"/>
+      <arg evaluator="xml" expression="get-property('commercial.billedAmount')"/>
+      <arg evaluator="xml" expression="get-property('commercial.chargeType')"/>
+      <arg evaluator="xml" expression="get-property('commercial.includedAllowance')"/>
+      <arg evaluator="xml" expression="get-property('commercial.successfulRequestsBefore')"/>
+      <arg evaluator="xml" expression="get-property('commercial.overLimit')"/>
+      <arg evaluator="xml" expression="get-property('commercial.correlationId')"/>
+    </args>
+  </payloadFactory>
+  <property name="REST_URL_POSTFIX" value="/events" scope="axis2" type="STRING"/>
+  <property name="HTTP_METHOD" value="POST" scope="axis2" type="STRING"/>
+  <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+  <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+  <call>
+    <endpoint key="CommercialMeterStoreFailoverEndpoint"/>
+  </call>
+
+  <enrich>
+    <source clone="true" property="commercial.capabilityResponse" type="property"/>
+    <target action="replace" type="body"/>
+  </enrich>
+  <script language="js"><![CDATA[
+    var response = mc.getPayloadJSON();
+    var planId = String(mc.getProperty('commercial.planId'));
+    if (planId === 'Sandbox' && response.result) {
+      if (response.result.msisdn) {
+        var value = String(response.result.msisdn);
+        response.result.msisdn = value.length > 4 ? '********' + value.substring(value.length - 4) : '****';
+      }
+      response.result.masked = true;
+    }
+    response.commercialUsage = {
+      partnerId: String(mc.getProperty('commercial.partnerId')),
+      apiProduct: 'SecureMobileTransactionsProduct',
+      planId: planId,
+      meter: String(mc.getProperty('commercial.meter')),
+      country: String(mc.getProperty('commercial.country')),
+      currency: String(mc.getProperty('commercial.currency')),
+      includedAllowanceMonthly: Number(mc.getProperty('commercial.includedAllowance') || 0),
+      successfulRequestsBefore: Number(mc.getProperty('commercial.successfulRequestsBefore') || 0),
+      overLimit: String(mc.getProperty('commercial.overLimit')) === 'true',
+      unitPrice: Number(mc.getProperty('commercial.unitPrice') || 0),
+      ratingFactor: Number(mc.getProperty('commercial.ratingFactor') || 0),
+      billedAmount: Number(mc.getProperty('commercial.billedAmount') || 0),
+      chargeType: String(mc.getProperty('commercial.chargeType')),
+      slaEntitlement: {
+        availabilityPercent: Number(mc.getProperty('commercial.slaAvailability') || 0),
+        support: String(mc.getProperty('commercial.supportEntitlement'))
+      },
+      dataPolicy: String(mc.getProperty('commercial.dataPolicy'))
+    };
+    mc.setPayloadJSON(response);
+  ]]></script>
+  <filter source="get-property('commercial.outcome')" regex="REJECTED">
+    <then><property name="HTTP_SC" value="422" scope="axis2" type="STRING"/></then>
+    <else><property name="HTTP_SC" value="200" scope="axis2" type="STRING"/></else>
+  </filter>
+  <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+  <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+  <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+  <log level="custom">
+    <property name="event" value="commercial-usage-rated"/>
+    <property name="correlationId" expression="get-property('commercial.correlationId')"/>
+    <property name="partnerId" expression="get-property('commercial.partnerId')"/>
+    <property name="apiProduct" value="SecureMobileTransactionsProduct"/>
+    <property name="planId" expression="get-property('commercial.planId')"/>
+    <property name="meter" expression="get-property('commercial.meter')"/>
+    <property name="outcome" expression="get-property('commercial.outcome')"/>
+    <property name="billedAmount" expression="get-property('commercial.billedAmount')"/>
+    <property name="currency" expression="get-property('commercial.currency')"/>
+  </log>
+  <respond/>
+</sequence>

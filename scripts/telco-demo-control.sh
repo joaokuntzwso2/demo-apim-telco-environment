@@ -61,6 +61,7 @@ for file in \
   docker-compose.kafka.yml \
   docker-compose.opa.yml \
   docker-compose.mi.yml \
+  docker-compose.commercial.yml \
   docker-compose.mi.soap.yml \
   docker-compose.observability.yml \
   docker-compose.runtime-persistence.yml
