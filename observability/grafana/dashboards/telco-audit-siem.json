@@ -1,0 +1,57 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 18, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Time" }]
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "editorMode": "code",
+          "expr": "{job=\"telco.structured\"} | json | stage=\"audit\"",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Audit and Security Events",
+      "transformations": [
+        { "id": "extractFields", "options": { "source": "Line" } },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Line": true, "Time": false, "component": true, "details": true, "outcome": true, "schemaVersion": true, "stage": true },
+            "indexByName": { "Time": 0, "timestamp": 1, "eventType": 2, "actor": 3, "country": 4, "resource": 5, "action": 6, "result": 7, "correlationId": 8, "auditId": 9 },
+            "renameByName": { "Time": "Ingested", "timestamp": "Event timestamp", "eventType": "Event type", "actor": "Actor", "country": "Country", "resource": "Resource", "action": "Action", "result": "Result", "correlationId": "Correlation ID", "auditId": "Audit ID" }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 39,
+  "tags": ["telco", "audit", "siem", "wso2"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Telco API Platform - Audit and SIEM",
+  "uid": "telco-audit-siem",
+  "version": 1,
+  "weekStart": ""
+}

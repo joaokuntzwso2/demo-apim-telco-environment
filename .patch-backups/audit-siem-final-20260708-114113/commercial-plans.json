@@ -166,12 +166,6 @@
     "sla": {
       "availabilityPercent": 98.0,
       "support": "community"
-    },
-    "permissions": {
-      "permissionType": "ALLOW",
-      "roles": [
-        "Internal/everyone"
-      ]
     }
   },
   {
@@ -204,12 +198,6 @@
     "sla": {
       "availabilityPercent": 99.5,
       "support": "business-hours"
-    },
-    "permissions": {
-      "permissionType": "ALLOW",
-      "roles": [
-        "Internal/everyone"
-      ]
     }
   },
   {
@@ -246,12 +234,6 @@
       "availabilityPercent": 99.95,
       "support": "24x7",
       "responseMinutes": 15
-    },
-    "permissions": {
-      "permissionType": "ALLOW",
-      "roles": [
-        "Internal/everyone"
-      ]
     }
   },
   {

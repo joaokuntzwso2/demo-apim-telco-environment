@@ -232,6 +232,7 @@
             <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
             <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
             <property name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport" type="STRING"/>
+            <sequence key="EmitBillingCorrectionAuditSequence"/>
             <respond/>
         </inSequence>
         <faultSequence>

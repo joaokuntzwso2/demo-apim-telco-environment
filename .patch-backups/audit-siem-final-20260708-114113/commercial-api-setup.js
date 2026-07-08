@@ -104,13 +104,7 @@ async function upsertPolicy(adminToken, plan) {
       { name: 'slaAvailability', value: String(plan.sla) }
     ],
     stopOnQuotaReach: false,
-    billingPlan: plan.billingPlan,
-    // secure-mobile-policy-permissions-v2
-    permissions: {
-      permissionType: 'ALLOW',
-      roles: ['Internal/everyone']
-    }
-
+    billingPlan: plan.billingPlan
   };
   if (existing?.policyId) {
     await request(`${base}/${existing.policyId}`, {

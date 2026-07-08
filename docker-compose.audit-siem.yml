@@ -1,0 +1,37 @@
+services:
+  wso2-apim:
+    healthcheck:
+      test: ["CMD-SHELL", "curl -ksSf https://localhost:9443/services/Version >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 120s
+
+  telco-observability:
+    networks:
+      default:
+        aliases:
+          - telco-observability-backup
+
+  wso2-mi:
+    depends_on:
+      wso2-apim:
+        condition: service_healthy
+      telco-observability:
+        condition: service_healthy
+    healthcheck:
+      # MI native readiness probe. It also reports faulty deployment artifacts.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9201/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 90s
+
+  apim-bootstrapper:
+    depends_on:
+      wso2-apim:
+        condition: service_healthy
+      wso2-mi:
+        condition: service_healthy
+      telco-observability:
+        condition: service_healthy

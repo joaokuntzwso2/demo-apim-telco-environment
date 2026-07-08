@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoint xmlns="http://ws.apache.org/ns/synapse" name="AuditTelemetryFailoverEndpoint">
+    <failover>
+        <endpoint name="AuditTelemetryPrimary">
+            <http method="post" uri-template="http://telco-observability:8088/v1/events">
+                <timeout>
+                    <duration>3000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <suspendOnFailure>
+                    <errorCodes>101500,101503,101504,101505</errorCodes>
+                    <initialDuration>3000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+                <markForSuspension>
+                    <errorCodes>101500,101503,101504,101505</errorCodes>
+                    <retriesBeforeSuspension>2</retriesBeforeSuspension>
+                    <retryDelay>1000</retryDelay>
+                </markForSuspension>
+            </http>
+        </endpoint>
+        <endpoint name="AuditTelemetrySecondary">
+            <http method="post" uri-template="http://telco-observability-backup:8088/v1/events">
+                <timeout>
+                    <duration>3000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <suspendOnFailure>
+                    <errorCodes>101500,101503,101504,101505</errorCodes>
+                    <initialDuration>3000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+                <markForSuspension>
+                    <errorCodes>101500,101503,101504,101505</errorCodes>
+                    <retriesBeforeSuspension>2</retriesBeforeSuspension>
+                    <retryDelay>1000</retryDelay>
+                </markForSuspension>
+            </http>
+        </endpoint>
+    </failover>
+</endpoint>

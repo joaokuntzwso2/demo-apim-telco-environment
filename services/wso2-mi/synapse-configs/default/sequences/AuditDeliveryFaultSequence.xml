@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="AuditDeliveryFaultSequence">
+    <log level="custom">
+        <property name="event" value="AUDIT_DELIVERY_FAILURE"/>
+        <property name="correlationId" expression="get-property('correlation.id')"/>
+        <property name="auditId" expression="$ctx:auditId"/>
+        <property name="errorCode" expression="$ctx:ERROR_CODE"/>
+        <property name="errorMessage" expression="$ctx:ERROR_MESSAGE"/>
+    </log>
+    <drop/>
+</sequence>

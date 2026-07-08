@@ -1,0 +1,38 @@
+{
+  "info": {
+    "_postman_id": "b6fc88e3-8aa7-4c0d-a4ae-audit-siem-demo",
+    "name": "Telco Audit and SIEM",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gatewayUrl", "value": "https://localhost:8243" },
+    { "key": "accessToken", "value": "" },
+    { "key": "correlationId", "value": "postman-audit-001" }
+  ],
+  "item": [
+    {
+      "name": "Audit service health",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "X-Correlation-ID", "value": "{{correlationId}}" }],
+        "url": { "raw": "{{gatewayUrl}}/audit-events/v1/1.0.0/health", "host": ["{{gatewayUrl}}"], "path": ["audit-events", "v1", "1.0.0", "health"] }
+      }
+    },
+    {
+      "name": "Submit administrator action",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Correlation-ID", "value": "{{correlationId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"eventType\": \"ADMINISTRATOR_ACTION\",\n  \"actor\": \"postman-user\",\n  \"country\": \"BR\",\n  \"resource\": \"TelcoAuditEventsAPI:1.0.0\",\n  \"action\": \"TEST_AUDIT_INGESTION\",\n  \"result\": \"SUCCESS\",\n  \"details\": {\n    \"source\": \"Postman\"\n  }\n}"
+        },
+        "url": { "raw": "{{gatewayUrl}}/audit-events/v1/1.0.0/events", "host": ["{{gatewayUrl}}"], "path": ["audit-events", "v1", "1.0.0", "events"] }
+      }
+    }
+  ]
+}

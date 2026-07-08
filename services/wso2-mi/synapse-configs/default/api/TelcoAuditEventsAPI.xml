@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse" name="TelcoAuditEventsAPI" context="/audit-events/v1">
+    <resource methods="GET" uri-template="/health">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+            <!-- audit-health-response-entity-v1 -->
+            <property name="NO_ENTITY_BODY"
+                      value="false"
+                      scope="axis2"
+                      type="BOOLEAN"/>
+            <property name="DISABLE_CHUNKING"
+                      value="true"
+                      scope="axis2"
+                      type="BOOLEAN"/>
+            <payloadFactory media-type="json">
+                <format>{"status":"UP","service":"TelcoAuditEventsAPI","runtime":"WSO2 Integrator: MI 4.6.0","pattern":"validated asynchronous audit ingestion with failover","correlationId":"$1"}</format>
+                <args>
+                    <arg expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_SC" value="200" scope="axis2" type="INTEGER"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="AuditApiFaultSequence"/>
+        </faultSequence>
+    </resource>
+    <resource methods="POST" uri-template="/events">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+            <script language="js"><![CDATA[
+                var allowedTypes = {
+                    API_PUBLICATION: true,
+                    POLICY_MODIFICATION: true,
+                    SUBSCRIPTION_APPROVAL: true,
+                    CREDENTIAL_CREATION: true,
+                    FAILED_AUTHENTICATION: true,
+                    EXCESSIVE_SIM_SWAP_REQUESTS: true,
+                    BILLING_CORRECTION: true,
+                    ADMINISTRATOR_ACTION: true
+                };
+                var allowedResults = {
+                    SUCCESS: true,
+                    FAILURE: true,
+                    DENIED: true,
+                    THROTTLED: true,
+                    PARTIAL: true,
+                    ERROR: true
+                };
+                var body = {};
+                try {
+                    body = mc.getPayloadJSON() || {};
+                } catch (e) {
+                    body = {};
+                }
+                var errors = [];
+                var eventType = String(body.eventType || '').toUpperCase();
+                var actor = String(body.actor || '').trim();
+                var country = String(body.country || '').trim().toUpperCase();
+                var resource = String(body.resource || '').trim();
+                var action = String(body.action || '').trim();
+                var result = String(body.result || '').trim().toUpperCase();
+                if (!allowedTypes[eventType]) errors.push('eventType is not supported');
+                if (!actor) errors.push('actor is required');
+                if (!/^[A-Z]{2}$/.test(country)) errors.push('country must be an ISO-3166 alpha-2 code');
+                if (!resource) errors.push('resource is required');
+                if (!action) errors.push('action is required');
+                if (!allowedResults[result]) errors.push('result is not supported');
+                var timestamp = body.timestamp ? String(body.timestamp) : new Date().toISOString();
+                if (isNaN(Date.parse(timestamp))) errors.push('timestamp must be an ISO-8601 date-time');
+                var correlationId = String(mc.getProperty('correlation.id') || 'mi-audit-' + Date.now());
+                if (errors.length) {
+                    mc.setProperty('auditValid', 'false');
+                    mc.setProperty('auditValidationDetail', errors.join('; '));
+                } else {
+                    var auditId = String(body.auditId || ('AUD-' + Date.now() + '-' + Math.floor(Math.random() * 1000000)));
+                    var outcome = (result === 'SUCCESS' || result === 'PARTIAL') ? 'SUCCESS' : 'ERROR';
+                    mc.setProperty('auditValid', 'true');
+                    mc.setProperty('auditId', auditId);
+                    mc.setPayloadJSON({
+                        schemaVersion: '1.0',
+                        auditId: auditId,
+                        eventType: eventType,
+                        actor: actor,
+                        timestamp: new Date(timestamp).toISOString(),
+                        country: country,
+                        resource: resource,
+                        action: action,
+                        result: result,
+                        details: (body.details && typeof body.details === 'object') ? body.details : {},
+                        correlationId: correlationId,
+                        stage: 'audit',
+                        component: 'wso2-mi-audit',
+                        outcome: outcome
+                    });
+                }
+            ]]></script>
+            <filter source="$ctx:auditValid" regex="true">
+                <then>
+                    <clone continueParent="true" sequential="false">
+                        <target>
+                            <sequence>
+                                <sequence key="AuditDeliverySequence"/>
+                            </sequence>
+                        </target>
+                    </clone>
+                    <script language="js"><![CDATA[
+                        mc.setPayloadJSON({
+                            accepted: true,
+                            auditId: String(mc.getProperty('auditId')),
+                            correlationId: String(mc.getProperty('correlation.id')),
+                            delivery: 'asynchronous'
+                        });
+                    ]]></script>
+                    <property name="HTTP_SC" value="202" scope="axis2" type="INTEGER"/>
+                    <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+                    <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+                    <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+                    <respond/>
+                </then>
+                <else>
+                    <property name="HTTP_SC" value="400" scope="axis2" type="INTEGER"/>
+                    <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <payloadFactory media-type="json">
+                        <format>{"type":"https://example.com/problems/invalid-audit-event","title":"Invalid audit event","status":400,"detail":"$1","correlationId":"$2"}</format>
+                        <args>
+                            <arg expression="$ctx:auditValidationDetail"/>
+                            <arg expression="get-property('correlation.id')"/>
+                        </args>
+                    </payloadFactory>
+                    <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+                    <respond/>
+                </else>
+            </filter>
+        </inSequence>
+        <faultSequence>
+            <sequence key="AuditApiFaultSequence"/>
+        </faultSequence>
+    </resource>
+</api>

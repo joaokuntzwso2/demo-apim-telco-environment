@@ -19,10 +19,10 @@ const API_PLAN_ASSIGNMENTS = {
   NetworkSliceAPI: ['TelcoPartnerStandard', 'TelcoPartnerPremium'],
   PartnerChargingAPI: ['TelcoPartnerStandard', 'TelcoPartnerPremium'],
   BillingAdjustmentSOAP: ['TelcoFreeTrial', 'TelcoPartnerStandard'],
-  NetworkEventsStreamAPI: ['TelcoFreeTrial', 'TelcoEventStreamPremium']
+  TelcoAuditEventsAPI: [ 'TelcoSecurityAuditBurst', 'TelcoPartnerStandard', 'TelcoPartnerPremium' ], NetworkEventsStreamAPI: ['TelcoFreeTrial', 'TelcoEventStreamPremium']
 ,
 OpenGatewayNumberVerificationAPI: ['TelcoFreeTrial', 'TelcoOpenGatewayTrustStarter', 'TelcoOpenGatewayTrustPremium'],
-  OpenGatewaySimSwapRiskAPI: ['TelcoFreeTrial', 'TelcoOpenGatewayTrustStarter', 'TelcoOpenGatewayTrustPremium'],
+  OpenGatewaySimSwapRiskAPI: ['TelcoFreeTrial', 'TelcoOpenGatewayTrustStarter', 'TelcoOpenGatewayTrustPremium', 'TelcoSecurityAuditBurst'],
   OpenGatewayDeviceLocationVerificationAPI: ['TelcoFreeTrial', 'TelcoOpenGatewayTrustStarter', 'TelcoOpenGatewayTrustPremium']
 };
 

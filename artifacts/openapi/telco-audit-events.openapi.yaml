@@ -1,0 +1,215 @@
+openapi: 3.0.3
+info:
+  title: Telco Audit Events API
+  version: 1.0.0
+  description: |
+    Receives normalized audit and security events for the telco API platform.
+    Events are validated and normalized by WSO2 Integrator: MI and delivered
+    asynchronously to the existing observability pipeline for Loki/Grafana SIEM views.
+  contact:
+    name: Telco API Platform Security
+    email: api-security@example.com
+servers:
+  - url: https://localhost:8243/audit-events/v1/1.0.0
+    description: WSO2 API Manager gateway
+x-wso2-basePath: /audit-events/v1
+x-telco-api-product: Telco Audit and SIEM Pack
+x-telco-health-path: /health
+x-telco-health-method: GET
+x-wso2-production-endpoints:
+  urls:
+    - http://wso2-mi:8290/audit-events/v1
+x-wso2-sandbox-endpoints:
+  urls:
+    - http://wso2-mi:8290/audit-events/v1
+x-wso2-cors:
+  corsConfigurationEnabled: true
+  accessControlAllowOrigins:
+    - '*'
+  accessControlAllowCredentials: false
+  accessControlAllowHeaders:
+    - Authorization
+    - Content-Type
+    - X-Correlation-ID
+    - X-Partner-Id
+  accessControlAllowMethods:
+    - GET
+    - POST
+    - OPTIONS
+paths:
+  /health:
+    get:
+      operationId: getAuditEventsHealth
+      summary: Check the MI-managed audit ingestion service
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service, correlationId]
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  service:
+                    type: string
+                    example: TelcoAuditEventsAPI
+                  correlationId:
+                    type: string
+  /events:
+    post:
+      operationId: createAuditEvent
+      summary: Submit an auditable telco platform event
+      description: |
+        Requires the `telco_audit_write` scope. The request is validated and normalized
+        synchronously, then delivery to the SIEM pipeline is asynchronous. A 202 response
+        means the event was accepted by MI, not that an external SIEM has persisted it.
+      security:
+        - OAuth2:
+            - telco_audit_write
+      parameters:
+        - in: header
+          name: X-Correlation-ID
+          required: false
+          schema:
+            type: string
+          description: End-to-end correlation identifier. MI generates one when omitted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditEventRequest'
+            examples:
+              apiPublication:
+                value:
+                  eventType: API_PUBLICATION
+                  actor: admin
+                  timestamp: '2026-07-08T10:00:00.000Z'
+                  country: BR
+                  resource: TelcoAuditEventsAPI:1.0.0
+                  action: PUBLISH_API
+                  result: SUCCESS
+                  details:
+                    lifecycleStatus: PUBLISHED
+      responses:
+        '202':
+          description: Event accepted for asynchronous delivery
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditAccepted'
+        '400':
+          description: Invalid event
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Missing or invalid OAuth credential
+        '403':
+          description: Credential lacks the required scope
+        '429':
+          description: Subscription or operation quota exceeded
+        '500':
+          description: Normalized integration error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9443/oauth2/token
+          scopes:
+            telco_audit_read: Read audit service metadata and health information
+            telco_audit_write: Submit normalized audit and security events
+  schemas:
+    AuditEventRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - eventType
+        - actor
+        - country
+        - resource
+        - action
+        - result
+      properties:
+        eventType:
+          type: string
+          enum:
+            - API_PUBLICATION
+            - POLICY_MODIFICATION
+            - SUBSCRIPTION_APPROVAL
+            - CREDENTIAL_CREATION
+            - FAILED_AUTHENTICATION
+            - EXCESSIVE_SIM_SWAP_REQUESTS
+            - BILLING_CORRECTION
+            - ADMINISTRATOR_ACTION
+        actor:
+          type: string
+          minLength: 1
+          maxLength: 200
+        timestamp:
+          type: string
+          format: date-time
+        country:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        resource:
+          type: string
+          minLength: 1
+          maxLength: 500
+        action:
+          type: string
+          minLength: 1
+          maxLength: 200
+        result:
+          type: string
+          enum: [SUCCESS, FAILURE, DENIED, THROTTLED, PARTIAL, ERROR]
+        details:
+          type: object
+          additionalProperties: true
+    AuditAccepted:
+      type: object
+      required: [accepted, auditId, correlationId, delivery]
+      properties:
+        accepted:
+          type: boolean
+          example: true
+        auditId:
+          type: string
+        correlationId:
+          type: string
+        delivery:
+          type: string
+          example: asynchronous
+    Problem:
+      type: object
+      required: [type, title, status, detail, correlationId]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        correlationId:
+          type: string

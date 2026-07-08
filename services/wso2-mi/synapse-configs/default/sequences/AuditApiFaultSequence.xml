@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="AuditApiFaultSequence">
+    <!-- audit-fault-response-entity-v1 -->
+    <property name="NO_ENTITY_BODY"
+              value="false"
+              scope="axis2"
+              type="BOOLEAN"/>
+    <property name="DISABLE_CHUNKING"
+              value="true"
+              scope="axis2"
+              type="BOOLEAN"/>
+    <property name="HTTP_SC" value="500" scope="axis2" type="INTEGER"/>
+    <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+    <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+    <payloadFactory media-type="json">
+        <format>{"type":"https://example.com/problems/integration-error","title":"Audit event processing failed","status":500,"detail":"The audit event could not be processed by the integration runtime.","correlationId":"$1"}</format>
+        <args>
+            <arg expression="get-property('correlation.id')"/>
+        </args>
+    </payloadFactory>
+    <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+    <log level="custom">
+        <property name="event" value="AUDIT_API_FAILURE"/>
+        <property name="correlationId" expression="get-property('correlation.id')"/>
+        <property name="errorCode" expression="$ctx:ERROR_CODE"/>
+        <property name="errorMessage" expression="$ctx:ERROR_MESSAGE"/>
+    </log>
+    <respond/>
+</sequence>

@@ -470,8 +470,7 @@
     "plans": [
       "TelcoSecurityAuditBurst",
       "TelcoPartnerStandard",
-      "TelcoPartnerPremium",
-      "TelcoOpenGatewayTrustPremium"
+      "TelcoPartnerPremium"
     ],
     "markets": [
       "BR",

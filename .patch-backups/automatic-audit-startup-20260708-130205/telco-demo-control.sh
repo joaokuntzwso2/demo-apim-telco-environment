@@ -1334,61 +1334,6 @@ print(find(x,{"consumerkey","clientid"}), find(x,{"consumersecret","clientsecret
   die "Prometheus did not receive telco_gateway_requests_total after traffic generation."
 }
 
-# automatic-audit-siem-startup-v2
-register_all_mi_services_auto() {
-  [[ -f scripts/register-mi-service-catalog.sh ]] || {
-    die "scripts/register-mi-service-catalog.sh is missing."
-  }
-
-  chmod +x scripts/register-mi-service-catalog.sh
-
-  log "Registering all current WSO2 Integrator: MI services"
-
-  APIM_USERNAME="$APIM_USER" \
-  APIM_PASSWORD="$APIM_PASS" \
-  WSO2_APIM_PUBLIC_URL="$APIM_PUBLIC_URL" \
-    scripts/register-mi-service-catalog.sh
-}
-
-seed_audit_siem() {
-  if [[ "$SKIP_SEED" == true || "${SKIP_AUDIT_SEED:-false}" == true ]]; then
-    log "Skipping Audit/SIEM event generation"
-    return 0
-  fi
-
-  [[ -f scripts/generate-audit-siem-events.sh ]] || {
-    die "scripts/generate-audit-siem-events.sh is missing."
-  }
-
-  chmod +x scripts/generate-audit-siem-events.sh
-
-  wait_http \
-    http://localhost:8290/audit-events/v1/health \
-    "MI Audit Events API" \
-    false \
-    120
-
-  wait_http \
-    http://localhost:3000/api/health \
-    "Grafana" \
-    false \
-    120
-
-  local correlation_prefix
-  correlation_prefix="audit-startup-$(date +%s)"
-
-  log "Generating Audit/SIEM demonstration events"
-
-  CORRELATION_PREFIX="$correlation_prefix" \
-  AUDIT_SEED_STRICT="${AUDIT_SEED_STRICT:-false}" \
-    scripts/generate-audit-siem-events.sh
-
-  # Give Fluent Bit and Loki time to ingest the last generated events.
-  sleep 3
-
-  log "Audit/SIEM scenario is available in Grafana"
-}
-
 start_stack() {
   patch_repository
   cleanup_stale_fixed_containers
@@ -1435,13 +1380,12 @@ start_stack() {
 
     publish_observability_api
 
-    register_all_mi_services_auto
+    register_all_mi_services
 
   fi
   start_portals
   verify_base_demo
   seed_observability
-  seed_audit_siem
 
   log "Final container status"
   "${COMPOSE[@]}" ps -a
