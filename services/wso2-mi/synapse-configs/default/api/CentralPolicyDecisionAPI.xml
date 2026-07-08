@@ -53,7 +53,7 @@
             <property name="REST_URL_POSTFIX"
                       scope="axis2"
                       action="remove"/>
-            <call blocking="true">
+            <call>
                 <endpoint key="CentralPolicyOpaFailoverEndpoint"/>
             </call>
             <script language="js"><![CDATA[

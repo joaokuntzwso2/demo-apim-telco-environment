@@ -1,44 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<endpoint xmlns="http://ws.apache.org/ns/synapse" name="CentralPolicyOpaFailoverEndpoint">
+<endpoint xmlns="http://ws.apache.org/ns/synapse"
+          name="CentralPolicyOpaFailoverEndpoint">
     <failover>
         <endpoint name="CentralPolicyOpaPrimary">
-            <http method="post" uri-template="http://opa:8181/v1/data/telco/central_policy/decision">
+            <http method="post"
+                  uri-template="http://opa:8181/v1/data/telco/central_policy/decision">
                 <timeout>
                     <duration>3000</duration>
                     <responseAction>fault</responseAction>
                 </timeout>
+
                 <suspendOnFailure>
-                    <errorCodes>101500,101501,101503,101506,101507,101508,101509,101510</errorCodes>
-                    <initialDuration>1000</initialDuration>
-                    <progressionFactor>2.0</progressionFactor>
+                    <errorCodes>101503,101504,101505,101507</errorCodes>
+                    <initialDuration>100</initialDuration>
+                    <progressionFactor>1.0</progressionFactor>
                     <maximumDuration>30000</maximumDuration>
                 </suspendOnFailure>
-                <markForSuspension>
-                    <errorCodes>101504,101505</errorCodes>
-                    <retriesBeforeSuspension>1</retriesBeforeSuspension>
-                    <retryDelay>250</retryDelay>
-                </markForSuspension>
             </http>
         </endpoint>
+
         <endpoint name="CentralPolicyOpaDisasterRecovery">
-            <http method="post" uri-template="http://opa-dr:8181/v1/data/telco/central_policy/decision">
+            <http method="post"
+                  uri-template="http://opa-dr:8181/v1/data/telco/central_policy/decision">
                 <timeout>
                     <duration>3000</duration>
                     <responseAction>fault</responseAction>
                 </timeout>
+
                 <suspendOnFailure>
-                    <errorCodes>101500,101501,101503,101506,101507,101508,101509,101510</errorCodes>
-                    <initialDuration>1000</initialDuration>
-                    <progressionFactor>2.0</progressionFactor>
+                    <errorCodes>101503,101504,101505,101507</errorCodes>
+                    <initialDuration>100</initialDuration>
+                    <progressionFactor>1.0</progressionFactor>
                     <maximumDuration>30000</maximumDuration>
                 </suspendOnFailure>
-                <markForSuspension>
-                    <errorCodes>101504,101505</errorCodes>
-                    <retriesBeforeSuspension>1</retriesBeforeSuspension>
-                    <retryDelay>250</retryDelay>
-                </markForSuspension>
+
                 <retryConfig>
-                    <disabledErrorCodes>101500,101501,101503,101504,101505,101506,101507,101508,101509,101510</disabledErrorCodes>
+                    <disabledErrorCodes>101503,101504,101505,101507</disabledErrorCodes>
                 </retryConfig>
             </http>
         </endpoint>
