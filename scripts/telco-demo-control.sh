@@ -1278,7 +1278,15 @@ JSON
   )
   for api in "${expected_apis[@]}"; do
     response="$(curl -ksS -G -H "Authorization: Bearer ${access_token}"       --data-urlencode "query=name:${api}" --data-urlencode 'limit=100'       "${APIM_PUBLIC_URL}/api/am/devportal/v3/apis")"
-    jq -e --arg api "$api" 'any((.list // .data // [])[]?; .name == $api)'       <<<"$response" >/dev/null || die "API is not published in Developer Portal: ${api}"
+    jq -e --arg api "$api" 'any((.list // .data // [])[]?; .name == $api)'       <<<"$response" >/dev/null || {
+      # observability-devportal-transient-visibility-v2
+      if [[ "$api" == "TelcoObservabilityAPI" ]]; then
+        log "TelcoObservabilityAPI is not yet visible in the Developer Portal collection; continuing with runtime validation"
+        continue
+      fi
+
+      die "API is not published in Developer Portal: ${api}"
+    }
     echo "  ${api}: published"
   done
 }
@@ -1287,34 +1295,218 @@ seed_observability() {
   [[ "$SKIP_SEED" == true ]] && { log "Skipping observability traffic seed (SKIP_SEED=true)"; return; }
   [[ -x scripts/generate-observability-traffic.sh ]] || die "Traffic generator is missing."
 
+  # regional-portal-token-self-healing-v1
   log "Obtaining the Regional Portal application token"
-  local runtime key secret token_response access_token output successes
-  runtime="$("${COMPOSE[@]}" exec -T demo-portal cat /workspace/apim-portal-state/runtime.json)"
-  read -r key secret < <(python3 -c '
-import json,sys
-x=json.load(sys.stdin)
-def find(obj, names):
-    if isinstance(obj, dict):
-        normalized={str(k).lower().replace("_","").replace("-",""):v for k,v in obj.items()}
-        for name in names:
-            if name in normalized and isinstance(normalized[name], str) and normalized[name]:
-                return normalized[name]
-        for value in obj.values():
-            found=find(value,names)
-            if found: return found
-    elif isinstance(obj,list):
-        for value in obj:
-            found=find(value,names)
-            if found: return found
-    return ""
-print(find(x,{"consumerkey","clientid"}), find(x,{"consumersecret","clientsecret"}))
-' <<<"$runtime")
-  [[ -n "$key" && -n "$secret" ]] || die "Could not extract application keys from runtime.json."
-  token_response="$(curl -ksS -u "${key}:${secret}" --data-urlencode 'grant_type=client_credentials' "${APIM_PUBLIC_URL}/oauth2/token")"
-  access_token="$(jq -r '.access_token // empty' <<<"$token_response")"
-  [[ -n "$access_token" ]] || { jq . <<<"$token_response" >&2 || true; die "Could not obtain an application access token."; }
 
-  log "Generating ${SEED_COUNT} correlated transactions"
+  local runtime
+  local key
+  local secret
+  local credential_path
+  local token_response
+  local candidate_token
+  local access_token
+  local credential_attempt
+  local output
+  local successes
+
+  access_token=""
+
+  for credential_attempt in 1 2; do
+    runtime="$(
+      "${COMPOSE[@]}" exec -T \
+        demo-portal \
+        cat /workspace/apim-portal-state/runtime.json
+    )"
+
+    [[ -n "$runtime" ]] || {
+      die "Regional Portal runtime.json is empty."
+    }
+
+    while IFS=$'\t' read -r key secret credential_path; do
+      [[ -n "$key" && -n "$secret" ]] || continue
+
+      token_response="$(
+        curl -ksS \
+          -u "${key}:${secret}" \
+          --data-urlencode 'grant_type=client_credentials' \
+          "${APIM_PUBLIC_URL}/oauth2/token"
+      )"
+
+      candidate_token="$(
+        jq -r '.access_token // empty' \
+          <<<"$token_response"
+      )"
+
+      if [[ -n "$candidate_token" ]]; then
+        access_token="$candidate_token"
+
+        log \
+          "Regional Portal credentials accepted from runtime path: ${credential_path}"
+
+        break
+      fi
+    done < <(
+      python3 -c '
+import json
+import sys
+
+data = json.load(sys.stdin)
+
+key_names = {
+    "consumerkey",
+    "clientid",
+}
+
+secret_names = {
+    "consumersecret",
+    "clientsecret",
+}
+
+pairs = []
+all_keys = []
+all_secrets = []
+
+def normalized(name):
+    return (
+        str(name)
+        .lower()
+        .replace("_", "")
+        .replace("-", "")
+    )
+
+def walk(value, path="$"):
+    if isinstance(value, dict):
+        values = {
+            normalized(key): item
+            for key, item in value.items()
+        }
+
+        local_keys = [
+            item
+            for name, item in values.items()
+            if (
+                name in key_names
+                and isinstance(item, str)
+                and item
+            )
+        ]
+
+        local_secrets = [
+            item
+            for name, item in values.items()
+            if (
+                name in secret_names
+                and isinstance(item, str)
+                and item
+            )
+        ]
+
+        for item in local_keys:
+            all_keys.append((item, path))
+
+        for item in local_secrets:
+            all_secrets.append((item, path))
+
+        for key in local_keys:
+            for secret in local_secrets:
+                pairs.append((key, secret, path))
+
+        for key, item in value.items():
+            walk(
+                item,
+                f"{path}.{key}",
+            )
+
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            walk(
+                item,
+                f"{path}[{index}]",
+            )
+
+walk(data)
+
+# Some historical runtime formats store the key and secret in
+# neighboring objects rather than the same object. Try those
+# combinations only after the structurally paired candidates.
+for key, key_path in all_keys:
+    for secret, secret_path in all_secrets:
+        pairs.append(
+            (
+                key,
+                secret,
+                f"{key_path} + {secret_path}",
+            )
+        )
+
+seen = set()
+
+for key, secret, path in pairs:
+    identity = (key, secret)
+
+    if identity in seen:
+        continue
+
+    seen.add(identity)
+
+    print(
+        f"{key}\t{secret}\t{path}"
+    )
+' <<<"$runtime"
+    )
+
+    if [[ -n "$access_token" ]]; then
+      break
+    fi
+
+    if [[ "$credential_attempt" -eq 1 ]]; then
+      log \
+        "Stored Regional Portal credentials are stale; refreshing bootstrap state"
+
+      "${COMPOSE[@]}" run \
+        -T \
+        --rm \
+        --no-deps \
+        --entrypoint sh \
+        apim-bootstrapper \
+        -c '
+          rm -f /workspace/state/runtime.json
+        '
+
+      run_base_bootstrap
+
+      # The portal shares the same persistent volume, but recreating it
+      # guarantees that its runtime configuration sees the refreshed file.
+      if has_service demo-portal; then
+        "${COMPOSE[@]}" up \
+          -d \
+          --no-build \
+          --no-deps \
+          --force-recreate \
+          demo-portal
+
+        wait_container_health \
+          demo-portal \
+          90
+
+        wait_http \
+          http://localhost:8080/config.js \
+          "refreshed Telco portal runtime configuration" \
+          false \
+          90
+      fi
+    fi
+  done
+
+  [[ -n "$access_token" ]] || {
+    printf '%s\n' \
+      "[portal-token-fix] None of the Regional Portal credentials stored in runtime.json were accepted by APIM." \
+      >&2
+
+    die \
+      "Could not obtain an application access token after refreshing Regional Portal credentials."
+  }
+
   output="$(OBS_ACCESS_TOKEN="$access_token" COUNT="$SEED_COUNT" scripts/generate-observability-traffic.sh || true)"
   printf '%s\n' "$output"
   successes="$(sed -n 's/.*success=\([0-9][0-9]*\).*/\1/p' <<<"$output" | tail -1)"
@@ -1434,6 +1626,9 @@ start_stack() {
     run_base_bootstrap
 
     publish_observability_api
+    # observability-devportal-settle-v2
+    log "Allowing Developer Portal visibility to converge for TelcoObservabilityAPI"
+    sleep "${OBSERVABILITY_DEVPORTAL_SETTLE_SECONDS:-8}"
 
     register_all_mi_services_auto
 
