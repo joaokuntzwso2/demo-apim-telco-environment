@@ -1,0 +1,309 @@
+openapi: 3.0.3
+info:
+  title: Central Policy Decision API
+  version: 1.0.0
+  description: |
+    Managed WSO2 API Manager facade for the WSO2 Integrator: MI policy-decision
+    service. MI preserves correlation identifiers, wraps the request for OPA,
+    uses bounded failover between two OPA runtimes and returns blocking and
+    advisory findings separately.
+  contact:
+    name: Group API Platform Governance
+    email: api-governance@example.com
+servers:
+  - url: https://localhost:8243/central-policy-decision/v1/1.0.0
+x-wso2-basePath: /central-policy-decision/v1
+x-wso2-transports:
+  - https
+x-telco-api-product: Central Policy Governance Product
+x-telco-health-path: /health
+x-telco-health-method: GET
+tags:
+  - name: Central Policy
+paths:
+  /health:
+    get:
+      tags: [Central Policy]
+      summary: Check the managed MI policy service
+      operationId: getCentralPolicyHealth
+      security:
+        - OAuth2:
+            - central-policy:read
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Policy mediation service is available
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service, runtime, correlationId]
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  service:
+                    type: string
+                    example: CentralPolicyDecisionAPI
+                  runtime:
+                    type: string
+                    example: WSO2 Integrator MI 4.6.0
+                  correlationId:
+                    type: string
+        '503':
+          $ref: '#/components/responses/NormalizedUnavailable'
+  /decisions:
+    post:
+      tags: [Central Policy]
+      summary: Evaluate group and country policy overlays
+      operationId: evaluateCentralPolicy
+      security:
+        - OAuth2:
+            - central-policy:evaluate
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyDescriptor'
+            examples:
+              mexicoHighRisk:
+                summary: Compliant Mexico high-risk API
+                value:
+                  apiName: OpenGatewaySimSwapRiskAPI
+                  apiVersion: 1.0.0
+                  lifecycle: PRODUCTION
+                  country: MX
+                  groupPolicyVersion: TELCO-GROUP-2026.1
+                  riskClassification: HIGH
+                  dataResidency: MX
+                  localOwner:
+                    name: Mexico Open Gateway Product Owner
+                    email: mx-open-gateway-owner@example.com
+                  regulatoryProfile: MX-LFPDPPP-IFT
+                  approvalPathId: MX-LOCAL-PRIVACY-SECURITY
+                  commercial:
+                    planId: TelcoOpenGatewayTrustPremium
+                    billingModel: USAGE_AND_REVENUE_SHARE
+                    currency: MXN
+                    subscriptionPolicy: TelcoOpenGatewayTrustPremium
+                    slaTier: PREMIUM
+                  evidence:
+                    securityReviewId: MX-SEC-2026-041
+                    privacyImpactAssessmentId: MX-PIA-2026-019
+                    approvalEvidenceId: MX-APPROVAL-2026-071
+                    approvalEvidenceUrl: https://governance.example.com/evidence/MX-APPROVAL-2026-071
+                    consentGuidance: true
+                    errorCatalogue: true
+                    slaGuidance: true
+                    sandboxData: true
+                    postmanCollection: true
+                    sdkInstructions: true
+      responses:
+        '200':
+          description: Policy decision was evaluated; allow=false is a valid decision
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/CorrelationId'
+            X-Policy-Decision:
+              description: ALLOW, ALLOW_WITH_ADVISORIES or DENY
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyDecision'
+        '400':
+          $ref: '#/components/responses/NormalizedBadRequest'
+        '503':
+          $ref: '#/components/responses/NormalizedUnavailable'
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9443/oauth2/token
+          scopes:
+            central-policy:read: Read policy service health and documentation
+            central-policy:evaluate: Evaluate policy descriptors
+  parameters:
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: false
+      description: End-to-end correlation identifier. MI generates one when omitted.
+      schema:
+        type: string
+        maxLength: 128
+  headers:
+    CorrelationId:
+      description: Preserved or generated end-to-end correlation identifier
+      schema:
+        type: string
+  schemas:
+    PolicyDescriptor:
+      type: object
+      required:
+        - apiName
+        - apiVersion
+        - lifecycle
+        - country
+        - groupPolicyVersion
+        - riskClassification
+        - dataResidency
+        - localOwner
+        - regulatoryProfile
+        - approvalPathId
+        - commercial
+      properties:
+        apiName:
+          type: string
+        apiVersion:
+          type: string
+        lifecycle:
+          type: string
+          enum: [DESIGN, DEVELOPMENT, PRODUCTION, DEPRECATED]
+        country:
+          type: string
+          enum: [MX, BR, GROUP]
+        groupPolicyVersion:
+          type: string
+        riskClassification:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+        dataResidency:
+          type: string
+          enum: [MX, BR, MULTI]
+        localOwner:
+          type: object
+          required: [name, email]
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+        regulatoryProfile:
+          type: string
+        approvalPathId:
+          type: string
+        commercial:
+          type: object
+          required: [planId, billingModel, currency, subscriptionPolicy, slaTier]
+          properties:
+            planId:
+              type: string
+            billingModel:
+              type: string
+            currency:
+              type: string
+              minLength: 3
+              maxLength: 3
+            subscriptionPolicy:
+              type: string
+            slaTier:
+              type: string
+        evidence:
+          type: object
+          additionalProperties: true
+    Finding:
+      type: object
+      required: [code, policy, message]
+      properties:
+        code:
+          type: string
+        policy:
+          type: string
+        message:
+          type: string
+    PolicyDecision:
+      type: object
+      required:
+        - allow
+        - decisionStatus
+        - policyVersion
+        - country
+        - blocking
+        - advisories
+        - correlationId
+      properties:
+        allow:
+          type: boolean
+        decisionStatus:
+          type: string
+          enum: [ALLOW, ALLOW_WITH_ADVISORIES, DENY]
+        policyVersion:
+          type: string
+        groupPolicyVersion:
+          type: string
+        country:
+          type: string
+        riskClassification:
+          type: string
+        highRisk:
+          type: boolean
+        dataResidency:
+          type: string
+        localOwner:
+          type: object
+          additionalProperties: true
+        commercial:
+          type: object
+          additionalProperties: true
+        regulatoryProfile:
+          type: string
+        approvalPath:
+          type: object
+          additionalProperties: true
+        blocking:
+          type: array
+          items:
+            $ref: '#/components/schemas/Finding'
+        advisories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Finding'
+        partialResponse:
+          type: boolean
+          description: True when the decision is usable but advisory findings are present.
+        correlationId:
+          type: string
+    NormalizedError:
+      type: object
+      required: [code, message, correlationId, retryable]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+        retryable:
+          type: boolean
+        details:
+          type: object
+          additionalProperties: true
+  responses:
+    NormalizedBadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NormalizedError'
+    NormalizedUnavailable:
+      description: Both bounded OPA endpoints were unavailable or invalid
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NormalizedError'

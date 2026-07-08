@@ -1,0 +1,91 @@
+{
+  "info": {
+    "_postman_id": "11eef35b-6aa2-4b7c-a1b1-central-policy-overlays",
+    "name": "Telco Central Policy Country Overlays",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "GROUP, Mexico and Brazil policy-decision examples through APIM."
+  },
+  "variable": [
+    {
+      "key": "gatewayBaseUrl",
+      "value": "https://localhost:8243/central-policy-decision/v1/1.0.0"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "correlationId",
+      "value": "central-policy-postman-001"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{correlationId}}"
+          }
+        ],
+        "url": "{{gatewayBaseUrl}}/health"
+      }
+    },
+    {
+      "name": "Mexico high-risk allow",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{correlationId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"apiName\": \"OpenGatewaySimSwapRiskAPI\",\n  \"apiVersion\": \"1.0.0\",\n  \"lifecycle\": \"PRODUCTION\",\n  \"country\": \"MX\",\n  \"groupPolicyVersion\": \"TELCO-GROUP-2026.1\",\n  \"riskClassification\": \"HIGH\",\n  \"dataResidency\": \"MX\",\n  \"localOwner\": {\"name\": \"Mexico Open Gateway Product Owner\", \"email\": \"mx-open-gateway-owner@example.com\"},\n  \"regulatoryProfile\": \"MX-LFPDPPP-IFT\",\n  \"approvalPathId\": \"MX-LOCAL-PRIVACY-SECURITY\",\n  \"commercial\": {\"planId\": \"TelcoOpenGatewayTrustPremium\", \"billingModel\": \"USAGE_AND_REVENUE_SHARE\", \"currency\": \"MXN\", \"subscriptionPolicy\": \"TelcoOpenGatewayTrustPremium\", \"slaTier\": \"PREMIUM\"},\n  \"evidence\": {\"securityReviewId\": \"MX-SEC-2026-041\", \"privacyImpactAssessmentId\": \"MX-PIA-2026-019\", \"approvalEvidenceId\": \"MX-APPROVAL-2026-071\", \"approvalEvidenceUrl\": \"https://governance.example.com/evidence/MX-APPROVAL-2026-071\", \"consentGuidance\": true, \"errorCatalogue\": true, \"slaGuidance\": true, \"sandboxData\": true, \"postmanCollection\": true, \"sdkInstructions\": true}\n}"
+        },
+        "url": "{{gatewayBaseUrl}}/decisions"
+      }
+    },
+    {
+      "name": "Brazil residency deny",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-Correlation-ID",
+            "value": "{{correlationId}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"apiName\": \"SecureMobileTransactionsCommercialAPI\",\n  \"apiVersion\": \"1.0.0\",\n  \"lifecycle\": \"PRODUCTION\",\n  \"country\": \"BR\",\n  \"groupPolicyVersion\": \"TELCO-GROUP-2026.1\",\n  \"riskClassification\": \"CRITICAL\",\n  \"dataResidency\": \"MX\",\n  \"localOwner\": {\"name\": \"Brazil Secure Mobile Transactions Owner\", \"email\": \"br-secure-mobile-owner@example.com\"},\n  \"regulatoryProfile\": \"BR-LGPD-ANPD\",\n  \"approvalPathId\": \"BR-LOCAL-DPO-SECURITY\",\n  \"commercial\": {\"planId\": \"SecureMobileEnterprise\", \"billingModel\": \"COMMITMENT_PLUS_OUTCOME_OVERAGE\", \"currency\": \"BRL\", \"subscriptionPolicy\": \"SecureMobileEnterprise\", \"slaTier\": \"ENTERPRISE_24X7\"},\n  \"evidence\": {\"securityReviewId\": \"BR-SEC-2026-033\", \"privacyImpactAssessmentId\": \"BR-RIPD-2026-014\", \"approvalEvidenceId\": \"BR-APPROVAL-2026-058\"}\n}"
+        },
+        "url": "{{gatewayBaseUrl}}/decisions"
+      }
+    }
+  ]
+}

@@ -60,6 +60,7 @@ COMPOSE_FILES=(docker-compose.yml)
 for file in \
   docker-compose.kafka.yml \
   docker-compose.opa.yml \
+  docker-compose.central-policy.yml \
   docker-compose.mi.yml \
   docker-compose.commercial.yml \
   docker-compose.mi.soap.yml \

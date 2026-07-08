@@ -1,0 +1,82 @@
+services:
+  opa:
+    healthcheck:
+      test:
+        - CMD
+        - /opa
+        - eval
+        - --fail
+        - --format=discard
+        - --data
+        - /policies
+        - data.telco.central_policy.health
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  opa-dr:
+    image: openpolicyagent/opa:latest
+    container_name: telco-opa-dr
+    command:
+      - run
+      - --server
+      - --addr=0.0.0.0:8181
+      - /policies
+    volumes:
+      - ./artifacts/opa:/policies:ro
+    healthcheck:
+      test:
+        - CMD
+        - /opa
+        - eval
+        - --fail
+        - --format=discard
+        - --data
+        - /policies
+        - data.telco.central_policy.health
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+
+  wso2-mi:
+    environment:
+      central_policy_opa_primary_url: http://opa:8181/v1/data/telco/central_policy/decision
+      central_policy_opa_dr_url: http://opa-dr:8181/v1/data/telco/central_policy/decision
+      central_policy_timeout_ms: "3000"
+    depends_on:
+      subscriber-crm:
+        condition: service_healthy
+      sim-swap-service:
+        condition: service_healthy
+      device-location-service:
+        condition: service_healthy
+      oss-network-service:
+        condition: service_healthy
+      wso2-apim:
+        condition: service_started
+      opa:
+        condition: service_healthy
+      opa-dr:
+        condition: service_healthy
+
+  apim-bootstrapper:
+    environment:
+      OPA_FAIL_ON_DENY: "false"
+      CENTRAL_POLICY_FAIL_ON_DENY: "true"
+      CENTRAL_POLICY_CATALOG_FILE: /workspace/artifacts/apim-admin/central-policy-catalog.json
+      CENTRAL_POLICY_OPA_URL: http://opa:8181/v1/data/telco/central_policy/decision
+      CENTRAL_POLICY_MI_URL: http://wso2-mi:8290/internal/central-policy/v1
+    depends_on:
+      wso2-apim:
+        condition: service_started
+      telco-backend:
+        condition: service_started
+      opa:
+        condition: service_healthy
+      opa-dr:
+        condition: service_healthy
+      wso2-mi:
+        condition: service_healthy

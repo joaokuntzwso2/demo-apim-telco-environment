@@ -27,7 +27,7 @@ const COMMERCIAL_API_STATE_FILE =
 const NATIVE_PRODUCT_BUNDLE_IDS = new Set([
   'open-gateway-fraud-defense',
   'digital-customer-bss-experience',
-  '5g-network-monetization',
+  '5g-network-monetization', 'central-policy-governance',
   'secure-mobile-transactions',
   'telco-audit-siem'
 ]);

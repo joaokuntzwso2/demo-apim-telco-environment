@@ -530,5 +530,75 @@
         "billing_correction"
       ]
     }
+  },
+  {
+    "id": "central-policy-governance",
+    "name": "Central Policy Governance Bundle",
+    "description": "Group-wide and country-specific API governance decisions for Mexico and Brazil, exposed as a managed API and native API Product.",
+    "businessStory": "A regional telco applies one mandatory group baseline while local owners route high-risk APIs through country-specific privacy, regulatory and security approval.",
+    "businessOutcome": "Consistent production governance with explicit local accountability, residency, commercial metadata and auditable approval paths.",
+    "buyer": "API platform, security, privacy, legal, product and country operating-company teams",
+    "plan": "TelcoPartnerPremium",
+    "plans": [
+      "TelcoPartnerStandard",
+      "TelcoPartnerPremium"
+    ],
+    "markets": [
+      "GROUP",
+      "MX",
+      "BR"
+    ],
+    "apis": [
+      "CentralPolicyDecisionAPI"
+    ],
+    "apiBundle": [
+      {
+        "apiName": "CentralPolicyDecisionAPI",
+        "capability": "Policy service health",
+        "method": "GET",
+        "path": "/health",
+        "meter": "central_policy_read"
+      },
+      {
+        "apiName": "CentralPolicyDecisionAPI",
+        "capability": "Group and country policy evaluation",
+        "method": "POST",
+        "path": "/decisions",
+        "meter": "central_policy_evaluation"
+      }
+    ],
+    "apim": {
+      "apiProductName": "CentralPolicyGovernanceProduct",
+      "displayName": "Central Policy Governance",
+      "context": "/products/central-policy-governance/v1",
+      "version": "1.0.0",
+      "visibility": "PUBLIC",
+      "subscriptionPolicies": [
+        "TelcoPartnerStandard",
+        "TelcoPartnerPremium"
+      ],
+      "apiThrottlingPolicy": "Unlimited",
+      "governanceLabel": "Telco Governance APIs",
+      "tags": [
+        "governance",
+        "opa",
+        "mexico",
+        "brazil",
+        "regulatory"
+      ]
+    },
+    "moesif": {
+      "companyId": "regional-telco-group",
+      "productKey": "moesif_prod_central_policy_governance",
+      "billingCatalogReference": "billing.catalog.central-policy-governance.v1",
+      "revenueShareModel": "INTERNAL_GOVERNANCE_AND_PARTNER_TIER",
+      "settlementOwner": "Group API Platform Governance",
+      "productLine": "API Governance",
+      "meters": [
+        "api_call",
+        "central_policy_read",
+        "central_policy_evaluation"
+      ]
+    }
   }
 ]

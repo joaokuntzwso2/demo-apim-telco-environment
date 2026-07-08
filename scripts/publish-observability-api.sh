@@ -72,7 +72,7 @@ printf -v INNER '%s\n' \
   '    displayOnDevportal: true' \
   '    deploymentVhost: localhost' \
   'YAML' \
-  'apictl import api --file "$PROJECT" --environment "$ENV_NAME" --update=true -k' \
+  'apictl import api --rotate-revision --file "$PROJECT" --environment "$ENV_NAME" --update=true -k' \
   'sleep 10' \
   'set +e' \
   'PUBLISH_OUTPUT="$(apictl change-status api -a Publish -n TelcoObservabilityAPI -v 1.0.0 --provider "$APIM_USER" -e "$ENV_NAME" -k 2>&1)"' \

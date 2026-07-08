@@ -1,0 +1,106 @@
+{
+  "policyVersion": "2026.07.1",
+  "groupPolicyVersion": "TELCO-GROUP-2026.1",
+  "descriptors": [
+    {
+      "apiName": "CentralPolicyDecisionAPI",
+      "apiVersion": "1.0.0",
+      "lifecycle": "PRODUCTION",
+      "country": "GROUP",
+      "groupPolicyVersion": "TELCO-GROUP-2026.1",
+      "riskClassification": "MEDIUM",
+      "dataResidency": "MULTI",
+      "localOwner": {
+        "name": "Group API Platform Governance",
+        "email": "api-governance@example.com"
+      },
+      "regulatoryProfile": "GROUP-BASELINE",
+      "approvalPathId": "GROUP-ARCHITECTURE",
+      "commercial": {
+        "planId": "TelcoPartnerPremium",
+        "billingModel": "INTERNAL_GOVERNANCE_AND_PARTNER_TIER",
+        "currency": "USD",
+        "subscriptionPolicy": "TelcoPartnerPremium",
+        "slaTier": "PREMIUM"
+      },
+      "evidence": {
+        "consentGuidance": true,
+        "errorCatalogue": true,
+        "slaGuidance": true,
+        "sandboxData": true,
+        "postmanCollection": true,
+        "sdkInstructions": true,
+        "approvalEvidenceId": "GROUP-ARCH-2026-071",
+        "approvalEvidenceUrl": "https://governance.example.com/evidence/GROUP-ARCH-2026-071"
+      }
+    },
+    {
+      "apiName": "OpenGatewaySimSwapRiskAPI",
+      "apiVersion": "1.0.0",
+      "lifecycle": "PRODUCTION",
+      "country": "MX",
+      "groupPolicyVersion": "TELCO-GROUP-2026.1",
+      "riskClassification": "HIGH",
+      "dataResidency": "MX",
+      "localOwner": {
+        "name": "Mexico Open Gateway Product Owner",
+        "email": "mx-open-gateway-owner@example.com"
+      },
+      "regulatoryProfile": "MX-LFPDPPP-IFT",
+      "approvalPathId": "MX-LOCAL-PRIVACY-SECURITY",
+      "commercial": {
+        "planId": "TelcoOpenGatewayTrustPremium",
+        "billingModel": "USAGE_AND_REVENUE_SHARE",
+        "currency": "MXN",
+        "subscriptionPolicy": "TelcoOpenGatewayTrustPremium",
+        "slaTier": "PREMIUM"
+      },
+      "evidence": {
+        "securityReviewId": "MX-SEC-2026-041",
+        "privacyImpactAssessmentId": "MX-PIA-2026-019",
+        "approvalEvidenceId": "MX-APPROVAL-2026-071",
+        "approvalEvidenceUrl": "https://governance.example.com/evidence/MX-APPROVAL-2026-071",
+        "consentGuidance": true,
+        "errorCatalogue": true,
+        "slaGuidance": true,
+        "sandboxData": true,
+        "postmanCollection": true,
+        "sdkInstructions": true
+      }
+    },
+    {
+      "apiName": "SecureMobileTransactionsCommercialAPI",
+      "apiVersion": "1.0.0",
+      "lifecycle": "PRODUCTION",
+      "country": "BR",
+      "groupPolicyVersion": "TELCO-GROUP-2026.1",
+      "riskClassification": "CRITICAL",
+      "dataResidency": "BR",
+      "localOwner": {
+        "name": "Brazil Secure Mobile Transactions Owner",
+        "email": "br-secure-mobile-owner@example.com"
+      },
+      "regulatoryProfile": "BR-LGPD-ANPD",
+      "approvalPathId": "BR-LOCAL-DPO-SECURITY",
+      "commercial": {
+        "planId": "SecureMobileEnterprise",
+        "billingModel": "COMMITMENT_PLUS_OUTCOME_OVERAGE",
+        "currency": "BRL",
+        "subscriptionPolicy": "SecureMobileEnterprise",
+        "slaTier": "ENTERPRISE_24X7"
+      },
+      "evidence": {
+        "securityReviewId": "BR-SEC-2026-033",
+        "privacyImpactAssessmentId": "BR-RIPD-2026-014",
+        "approvalEvidenceId": "BR-APPROVAL-2026-058",
+        "approvalEvidenceUrl": "https://governance.example.com/evidence/BR-APPROVAL-2026-058",
+        "consentGuidance": true,
+        "errorCatalogue": true,
+        "slaGuidance": true,
+        "sandboxData": true,
+        "postmanCollection": true,
+        "sdkInstructions": true
+      }
+    }
+  ]
+}

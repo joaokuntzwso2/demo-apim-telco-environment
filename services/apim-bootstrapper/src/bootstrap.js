@@ -125,7 +125,7 @@ const portalApis = [
     soapBackendPath: '/soap/billing-adjustment',
     routes: ['/soap/billing-adjustment']
   },
-  { id: 'billing-adjustment-modernization', name: 'BillingAdjustmentModernizationAPI', version: '1.0.0', importSpecCandidates: ['contracts/openapi/billing-adjustment-modernization.openapi.yaml', 'billing-adjustment-modernization.openapi.yaml'], context: '/billing-adjustments/v1', endpointUrl: `${MI_BACKEND_URL}/billing-adjustments/v1`, apiProduct: 'Legacy BSS Modernization Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/adjustments', '/health'] }, { id: 'secure-transaction-risk', name: 'SecureTransactionRiskAssessmentAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/secure-transaction-risk.openapi.yaml', 'secure-transaction-risk.openapi.yaml' ], context: '/secure-transaction-risk/v1', endpointUrl: `${MI_BACKEND_URL}/secure-transaction-risk/v1`, apiProduct: 'Fraud Prevention and Trust Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/assessments', '/health'] }, { id: 'telco-audit-events', name: 'TelcoAuditEventsAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/telco-audit-events.openapi.yaml', 'artifacts/openapi/telco-audit-events.openapi.yaml', 'telco-audit-events.openapi.yaml' ], context: '/audit-events/v1', endpointUrl: `${MI_BACKEND_URL}/audit-events/v1`, apiProduct: 'Telco Audit and SIEM Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/events', '/health'] }, { id: 'network-events', name: 'NetworkEventsStreamAPI', version: '1.0.0', protocol: 'ASYNC', type: 'SSE', asyncapiSpecCandidates: [ 'contracts/asyncapi/network-events.asyncapi.yaml', 'contracts/network-events.asyncapi.yaml', 'network-events.asyncapi.yaml' ], context: '/network-events/v1', routes: ['/events/network-events'] }
+  { id: 'billing-adjustment-modernization', name: 'BillingAdjustmentModernizationAPI', version: '1.0.0', importSpecCandidates: ['contracts/openapi/billing-adjustment-modernization.openapi.yaml', 'billing-adjustment-modernization.openapi.yaml'], context: '/billing-adjustments/v1', endpointUrl: `${MI_BACKEND_URL}/billing-adjustments/v1`, apiProduct: 'Legacy BSS Modernization Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/adjustments', '/health'] }, { id: 'secure-transaction-risk', name: 'SecureTransactionRiskAssessmentAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/secure-transaction-risk.openapi.yaml', 'secure-transaction-risk.openapi.yaml' ], context: '/secure-transaction-risk/v1', endpointUrl: `${MI_BACKEND_URL}/secure-transaction-risk/v1`, apiProduct: 'Fraud Prevention and Trust Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/assessments', '/health'] }, { id: 'telco-audit-events', name: 'TelcoAuditEventsAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/telco-audit-events.openapi.yaml', 'artifacts/openapi/telco-audit-events.openapi.yaml', 'telco-audit-events.openapi.yaml' ], context: '/audit-events/v1', endpointUrl: `${MI_BACKEND_URL}/audit-events/v1`, apiProduct: 'Telco Audit and SIEM Pack', healthPath: '/health', healthMethod: 'GET', routes: ['/events', '/health'] }, { id: 'central-policy-decision', name: 'CentralPolicyDecisionAPI', version: '1.0.0', importSpecCandidates: [ 'contracts/openapi/central-policy-decision.openapi.yaml', 'central-policy-decision.openapi.yaml' ], context: '/central-policy-decision/v1', endpointUrl: `${MI_BACKEND_URL}/internal/central-policy/v1`, apiProduct: 'Central Policy Governance Product', healthPath: '/health', healthMethod: 'GET', routes: ['/health', '/decisions'] }, { id: 'network-events', name: 'NetworkEventsStreamAPI', version: '1.0.0', protocol: 'ASYNC', type: 'SSE', asyncapiSpecCandidates: [ 'contracts/asyncapi/network-events.asyncapi.yaml', 'contracts/network-events.asyncapi.yaml', 'network-events.asyncapi.yaml' ], context: '/network-events/v1', routes: ['/events/network-events'] }
 ];
 
 function resolvedEndpointUrl(api) {
@@ -1283,7 +1283,50 @@ async function ensureMinimalPublisherCustomPropertiesBeforePublish(api, publishe
 // END MINIMAL PUBLISHER CUSTOM PROPERTY PATCH
 
 
-async function publishApiWithPublisherRest(api) {
+
+const CENTRAL_POLICY_CATALOG_FILE = process.env.CENTRAL_POLICY_CATALOG_FILE || '/workspace/artifacts/apim-admin/central-policy-catalog.json';
+const CENTRAL_POLICY_OPA_URL = process.env.CENTRAL_POLICY_OPA_URL || 'http://opa:8181/v1/data/telco/central_policy/decision';
+const CENTRAL_POLICY_FAIL_ON_DENY = String(process.env.CENTRAL_POLICY_FAIL_ON_DENY || 'true').toLowerCase() === 'true';
+function centralPolicyDescriptorFor(api) {
+  if (!fs.existsSync(CENTRAL_POLICY_CATALOG_FILE)) return null;
+  const catalog = JSON.parse(fs.readFileSync(CENTRAL_POLICY_CATALOG_FILE, 'utf8'));
+  return (catalog.descriptors || []).find(
+    item => item.apiName === api.name && String(item.apiVersion || '1.0.0') === String(api.version || '1.0.0')
+  ) || null;
+}
+async function evaluateCentralPolicyBeforePublish(api) {
+  const descriptor = centralPolicyDescriptorFor(api);
+  if (!descriptor) return null;
+  const response = await fetch(CENTRAL_POLICY_OPA_URL, {
+    method: 'POST',
+    dispatcher,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ input: descriptor }),
+    signal: AbortSignal.timeout(5000)
+  });
+  const text = await response.text();
+  let payload;
+  try { payload = text ? JSON.parse(text) : null; } catch { payload = null; }
+  if (!response.ok || !payload?.result) {
+    throw new Error(`Central policy gate unavailable for ${api.name}: HTTP ${response.status} ${text}`);
+  }
+  const decision = payload.result;
+  const blocking = Array.isArray(decision.blocking) ? decision.blocking : [];
+  const advisories = Array.isArray(decision.advisories) ? decision.advisories : [];
+  log(`[central-policy] ${api.name}: ${decision.decisionStatus}; blocking=${blocking.length}; advisories=${advisories.length}`);
+  for (const advisory of advisories) {
+    log(`[central-policy][advisory] ${api.name} ${advisory.code}: ${advisory.message}`);
+  }
+  if (!decision.allow && CENTRAL_POLICY_FAIL_ON_DENY) {
+    throw new Error(
+      `Central policy blocked ${api.name}: ` +
+      blocking.map(item => `${item.code}: ${item.message}`).join('; ')
+    );
+  }
+  return decision;
+}
+
+async function publishApiWithPublisherRest(api) { await evaluateCentralPolicyBeforePublish(api);
   const token = await getAdminToken();
   const publisherApi = await findPublisherApiForBootstrap(api, token);
 
