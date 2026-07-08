@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="SubscriberAuthorizationContextSequence"
+          trace="disable"
+          xmlns="http://ws.apache.org/ns/synapse">
+
+    <property name="correlation.id"
+              expression="$trp:X-Correlation-ID"
+              scope="default"
+              type="STRING"/>
+
+    <filter xpath="not(normalize-space(get-property('correlation.id')))">
+        <then>
+            <property name="correlation.id"
+                      expression="get-property('MessageID')"
+                      scope="default"
+                      type="STRING"/>
+        </then>
+    </filter>
+
+    <header name="X-Correlation-ID"
+            expression="get-property('correlation.id')"
+            scope="transport"/>
+
+    <property name="backend.jwt"
+              expression="$trp:X-JWT-Assertion"
+              scope="default"
+              type="STRING"/>
+
+    <property name="oauth.authorization"
+              expression="$trp:Authorization"
+              scope="default"
+              type="STRING"/>
+
+    <script language="js"><![CDATA[
+        function text(value) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+
+            if (
+                Object.prototype.toString.call(value)
+                === '[object Array]'
+            ) {
+                return value.join(',');
+            }
+
+            return String(value);
+        }
+
+        function decodeBase64(value) {
+            var alphabet =
+                'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+                + 'abcdefghijklmnopqrstuvwxyz'
+                + '0123456789+/';
+
+            var normalized = text(value)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/')
+                .replace(/\s/g, '');
+
+            while (normalized.length % 4 !== 0) {
+                normalized += '=';
+            }
+
+            var bytes = '';
+            var buffer = 0;
+            var bits = 0;
+
+            for (var i = 0; i < normalized.length; i++) {
+                var ch = normalized.charAt(i);
+
+                if (ch === '=') {
+                    break;
+                }
+
+                var index = alphabet.indexOf(ch);
+
+                if (index < 0) {
+                    continue;
+                }
+
+                buffer = (buffer << 6) | index;
+                bits += 6;
+
+                if (bits >= 8) {
+                    bits -= 8;
+                    bytes += String.fromCharCode(
+                        (buffer >> bits) & 255
+                    );
+                }
+            }
+
+            try {
+                var encoded = '';
+
+                for (var j = 0; j < bytes.length; j++) {
+                    var hex = bytes.charCodeAt(j).toString(16);
+
+                    encoded += '%'
+                        + (hex.length === 1 ? '0' + hex : hex);
+                }
+
+                return decodeURIComponent(encoded);
+            } catch (ignored) {
+                return bytes;
+            }
+        }
+
+        function normalizeJwt(raw) {
+            var token = text(raw).replace(/^\s+|\s+$/g, '');
+
+            token = token.replace(/^Bearer\s+/i, '');
+
+            if (token.split('.').length >= 2) {
+                return token;
+            }
+
+            try {
+                var decoded = decodeBase64(token);
+
+                if (decoded.split('.').length >= 2) {
+                    return decoded;
+                }
+            } catch (ignored) {
+                // Continue with the original value.
+            }
+
+            return token;
+        }
+
+        function decodeClaims(raw) {
+            var token = normalizeJwt(raw);
+            var parts = token.split('.');
+
+            if (parts.length < 2) {
+                return null;
+            }
+
+            return JSON.parse(decodeBase64(parts[1]));
+        }
+
+        function firstClaim(claims, names) {
+            if (!claims) {
+                return '';
+            }
+
+            for (var i = 0; i < names.length; i++) {
+                var value = claims[names[i]];
+
+                if (
+                    value !== null
+                    && value !== undefined
+                    && text(value) !== ''
+                ) {
+                    return text(value);
+                }
+            }
+
+            return '';
+        }
+
+        var backendJwt = text(mc.getProperty('backend.jwt'));
+        var authorization = text(
+            mc.getProperty('oauth.authorization')
+        );
+
+        var claims = null;
+        var identitySource = '';
+
+        try {
+            if (backendJwt) {
+                claims = decodeClaims(backendJwt);
+                identitySource = 'X-JWT-Assertion';
+            }
+        } catch (backendError) {
+            mc.setProperty(
+                'backend.jwt.decode.error',
+                text(backendError)
+            );
+        }
+
+        if (!claims) {
+            try {
+                if (authorization) {
+                    claims = decodeClaims(authorization);
+                    identitySource = 'Authorization';
+                }
+            } catch (accessTokenError) {
+                mc.setProperty(
+                    'access.token.decode.error',
+                    text(accessTokenError)
+                );
+            }
+        }
+
+        var user = firstClaim(
+            claims,
+            [
+                'http://wso2.org/claims/enduser',
+                'http://wso2.org/claims/username',
+                'preferred_username',
+                'username',
+                'enduser',
+                'sub'
+            ]
+        );
+
+        user = user
+            .replace(/^PRIMARY\//, '')
+            .replace(/^carbon\.super\//, '')
+            .replace(/@carbon\.super$/, '');
+
+        var roleValue = firstClaim(
+            claims,
+            [
+                'http://wso2.org/claims/role',
+                'roles',
+                'groups',
+                'role'
+            ]
+        );
+
+        var claimedPersona = firstClaim(
+            claims,
+            [
+                'http://wso2.org/claims/givenname',
+                'persona'
+            ]
+        );
+
+        var claimedPartner = firstClaim(
+            claims,
+            [
+                'http://wso2.org/claims/organization',
+                'http://wso2.org/claims/lastname',
+                'partnerId',
+                'partner_id'
+            ]
+        );
+
+        var claimedCountry = firstClaim(
+            claims,
+            [
+                'http://wso2.org/claims/country',
+                'country'
+            ]
+        );
+
+        var normalizedRoles = roleValue
+            .replace(/Internal\//g, '')
+            .replace(/\s/g, '');
+
+        var persona = claimedPersona;
+        var partner = claimedPartner;
+        var countries = claimedCountry;
+
+        if (user === 'partner.alpha') {
+            persona = 'partner';
+            partner = 'partner-alpha';
+            countries = 'BR';
+        } else if (user === 'partner.beta') {
+            persona = 'partner';
+            partner = 'partner-beta';
+            countries = 'MX';
+        } else if (user === 'telco.operations') {
+            persona = 'operations';
+            partner = '*';
+            countries = 'BR,MX,CO,AR,PE,CL';
+        } else if (user === 'telco.product') {
+            persona = 'product_manager';
+            partner = '*';
+            countries = 'BR,MX,CO,AR,PE,CL';
+        } else if (
+            user === 'telco.admin'
+            || user === 'admin'
+        ) {
+            persona = 'platform_administrator';
+            partner = '*';
+            countries = '*';
+        } else if (
+            normalizedRoles.indexOf('telco_platform_admin')
+            >= 0
+        ) {
+            persona = 'platform_administrator';
+            partner = '*';
+            countries = '*';
+        } else if (
+            normalizedRoles.indexOf('telco_operations')
+            >= 0
+        ) {
+            persona = 'operations';
+            partner = '*';
+            countries = 'BR,MX,CO,AR,PE,CL';
+        } else if (
+            normalizedRoles.indexOf('telco_product_manager')
+            >= 0
+        ) {
+            persona = 'product_manager';
+            partner = '*';
+            countries = 'BR,MX,CO,AR,PE,CL';
+        } else if (
+            normalizedRoles.indexOf('telco_partner')
+            >= 0
+        ) {
+            persona = 'partner';
+        }
+
+        mc.setProperty('authenticated.user', user);
+        mc.setProperty(
+            'authenticated.application',
+            firstClaim(
+                claims,
+                [
+                    'application',
+                    'applicationname',
+                    'http://wso2.org/claims/applicationname',
+                    'azp',
+                    'client_id'
+                ]
+            )
+        );
+
+        mc.setProperty('authenticated.roles', roleValue);
+        mc.setProperty('identity.source', identitySource);
+        mc.setProperty('persona', persona);
+        mc.setProperty('authorized.partner.id', partner);
+        mc.setProperty('authorized.countries', countries);
+    ]]></script>
+</sequence>

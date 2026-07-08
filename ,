@@ -1,0 +1,300 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="${1:-$PWD}"
+cd "$ROOT"
+
+OAUTH_JS="services/apim-bootstrapper/src/oauth-business-controls-setup.js"
+[[ -f "$OAUTH_JS" ]] || { echo "Missing $OAUTH_JS" >&2; exit 1; }
+
+STAMP="$(date +%Y%m%d%H%M%S)"
+cp "$OAUTH_JS" "${OAUTH_JS}.before-user-provisioning-v2.${STAMP}"
+
+python3 <<'PY'
+from pathlib import Path
+import re
+
+path = Path("services/apim-bootstrapper/src/oauth-business-controls-setup.js")
+text = path.read_text()
+
+ensure_role = r'''async function ensureRole(roleName) {
+  let resolved = await existingRoleName(roleName);
+  if (!resolved) {
+    await adminSoap(
+      'addRole',
+      `<ser:roleName>${xmlEscape(roleName)}</ser:roleName>`
+    );
+
+    for (let attempt = 1; attempt <= 20 && !resolved; attempt += 1) {
+      await sleep(250);
+      resolved = await existingRoleName(roleName);
+    }
+
+    if (!resolved) {
+      throw new Error(`Role ${roleName} was not visible after RemoteUserStoreManagerService.addRole`);
+    }
+    log(`Created internal role ${resolved}`);
+  } else {
+    log(`Internal role already exists: ${resolved}`);
+  }
+
+  return {
+    requestedName: roleName,
+    userStoreRole: resolved,
+    scopeRole: resolved.startsWith('Internal/') ? resolved : `Internal/${resolved}`
+  };
+}
+
+async function userExists'''
+
+text, count = re.subn(
+    r"async function ensureRole\(roleName\) \{.*?\n\}\n\nasync function userExists",
+    ensure_role,
+    text,
+    count=1,
+    flags=re.S,
+)
+if count != 1:
+    raise SystemExit(f"Could not replace ensureRole; replacements={count}")
+
+ensure_user_role = r'''function normalizedRoleName(value) {
+  return String(value || '').replace(/^Internal\//, '');
+}
+
+function userHasRole(roles, role) {
+  const expected = new Set([
+    role.userStoreRole,
+    role.requestedName,
+    role.scopeRole
+  ].filter(Boolean).map(normalizedRoleName));
+  return roles.some(item => expected.has(normalizedRoleName(item)));
+}
+
+async function ensureUserRole(username, role) {
+  let roles = await userRoles(username);
+  if (userHasRole(roles, role)) return roles;
+
+  let lastError;
+  const candidates = [...new Set([
+    role.userStoreRole,
+    role.requestedName,
+    role.scopeRole
+  ].filter(Boolean))];
+
+  for (const candidate of candidates) {
+    try {
+      await adminSoap(
+        'updateRoleListOfUser',
+        `<ser:userName>${xmlEscape(username)}</ser:userName>` +
+        `<ser:newRoles>${xmlEscape(candidate)}</ser:newRoles>`
+      );
+
+      for (let attempt = 1; attempt <= 20; attempt += 1) {
+        await sleep(250);
+        roles = await userRoles(username);
+        if (userHasRole(roles, role)) return roles;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error(
+    `Role ${role.userStoreRole} was not assigned to ${username}; observed roles=${JSON.stringify(roles)}`
+  );
+}
+
+async function recreateUser'''
+
+text, count = re.subn(
+    r"async function ensureUserRole\(username, role\) \{.*?\n\}\n\nasync function recreateUser",
+    ensure_user_role,
+    text,
+    count=1,
+    flags=re.S,
+)
+if count != 1:
+    raise SystemExit(f"Could not replace ensureUserRole; replacements={count}")
+
+recreate_user = r'''async function matchingUsers(username) {
+  const xml = await adminSoap(
+    'listUsers',
+    `<ser:filter>*${xmlEscape(username)}*</ser:filter>` +
+    '<ser:maxItemLimit>100</ser:maxItemLimit>',
+    [200]
+  );
+  return soapStringValues(xml);
+}
+
+async function authenticateUser(username, password) {
+  const xml = await adminSoap(
+    'authenticate',
+    `<ser:userName>${xmlEscape(username)}</ser:userName>` +
+    `<ser:credential>${xmlEscape(password)}</ser:credential>`,
+    [200]
+  );
+  return soapBoolean(xml);
+}
+
+async function ensureUserPassword(username, password) {
+  if (await authenticateUser(username, password)) return;
+
+  await adminSoap(
+    'updateCredentialByAdmin',
+    `<ser:userName>${xmlEscape(username)}</ser:userName>` +
+    `<ser:newCredential>${xmlEscape(password)}</ser:newCredential>`
+  );
+
+  for (let attempt = 1; attempt <= 20; attempt += 1) {
+    await sleep(250);
+    if (await authenticateUser(username, password)) return;
+  }
+
+  throw new Error(`Credential verification failed for ${username}`);
+}
+
+async function applyPersonaClaims(persona) {
+  const claims = [
+    ['http://wso2.org/claims/emailaddress', `${persona.username}@example.invalid`],
+    ['http://wso2.org/claims/givenname', persona.persona],
+    ['http://wso2.org/claims/lastname', persona.partnerId],
+    ['http://wso2.org/claims/organization', persona.partnerId],
+    ['http://wso2.org/claims/country', persona.country]
+  ];
+
+  for (const [claimURI, value] of claims) {
+    try {
+      await adminSoap(
+        'setUserClaimValue',
+        `<ser:userName>${xmlEscape(persona.username)}</ser:userName>` +
+        `<ser:claimURI>${xmlEscape(claimURI)}</ser:claimURI>` +
+        `<ser:claimValue>${xmlEscape(value)}</ser:claimValue>` +
+        '<ser:profileName>default</ser:profileName>'
+      );
+    } catch (error) {
+      // Claims enrich the demo identity but are not the authorization source of truth.
+      // The APIM role and MI persona registry remain authoritative.
+      log(`Claim ${claimURI} was not applied to ${persona.username}: ${error.message}`);
+    }
+  }
+}
+
+async function recreateUser(persona, role) {
+  if (await userExists(persona.username)) {
+    await adminSoap(
+      'deleteUser',
+      `<ser:userName>${xmlEscape(persona.username)}</ser:userName>`
+    );
+
+    for (let attempt = 1; attempt <= 40; attempt += 1) {
+      if (!(await userExists(persona.username))) break;
+      await sleep(250);
+    }
+
+    if (await userExists(persona.username)) {
+      throw new Error(`Existing user ${persona.username} was not deleted before recreation`);
+    }
+  }
+
+  // RemoteUserStoreManagerService.addUser is a one-way operation and is
+  // sensitive to both element order and role/claim values. Create the
+  // principal first using only required identity data, then assign the
+  // resolved role and optional profile claims through separate operations.
+  await adminSoap(
+    'addUser',
+    `<ser:userName>${xmlEscape(persona.username)}</ser:userName>` +
+    `<ser:credential>${xmlEscape(persona.password)}</ser:credential>` +
+    '<ser:profileName>default</ser:profileName>' +
+    '<ser:requirePasswordChange>false</ser:requirePasswordChange>'
+  );
+
+  for (let attempt = 1; attempt <= 40; attempt += 1) {
+    if (await userExists(persona.username)) break;
+    await sleep(250);
+  }
+
+  if (!(await userExists(persona.username))) {
+    const visible = await matchingUsers(persona.username).catch(() => []);
+    throw new Error(
+      `User ${persona.username} was not visible after minimal addUser; matching users=${JSON.stringify(visible)}`
+    );
+  }
+
+  await ensureUserPassword(persona.username, persona.password);
+  const roles = await ensureUserRole(persona.username, role);
+  await applyPersonaClaims(persona);
+
+  log(
+    `Provisioned ${persona.username} as ${persona.persona} with user-store role ` +
+    `${role.userStoreRole} and APIM scope role ${role.scopeRole}`
+  );
+
+  return {
+    ...persona,
+    role: role.scopeRole,
+    userStoreRole: role.userStoreRole,
+    roles,
+    userId: persona.username,
+    groupId: role.scopeRole
+  };
+}
+
+async function ensurePersonas'''
+
+text, count = re.subn(
+    r"async function recreateUser\(persona, role\) \{.*?\n\}\n\nasync function ensurePersonas",
+    recreate_user,
+    text,
+    count=1,
+    flags=re.S,
+)
+if count != 1:
+    raise SystemExit(f"Could not replace recreateUser; replacements={count}")
+
+required = [
+    "userStoreRole: resolved",
+    "async function ensureUserPassword",
+    "after minimal addUser",
+    "role.userStoreRole"
+]
+missing = [item for item in required if item not in text]
+if missing:
+    raise SystemExit(f"User-provisioning patch did not converge: {missing}")
+
+path.write_text(text)
+print(f"[repair-v2] Patched {path}")
+PY
+
+node --check "$OAUTH_JS"
+echo "[repair-v2] JavaScript validation passed."
+
+if [[ "${PATCH_ONLY:-0}" == "1" ]]; then
+  echo "[repair-v2] PATCH_ONLY=1; skipping Docker execution."
+  exit 0
+fi
+
+compose=(
+  docker compose
+  -p telco-wso2-demo-kit
+  -f docker-compose.yml
+  -f docker-compose.kafka.yml
+  -f docker-compose.opa.yml
+  -f docker-compose.mi.yml
+  -f docker-compose.oauth-business-controls.yml
+  -f docker-compose.commercial.yml
+  -f docker-compose.mi.soap.yml
+  -f docker-compose.observability.yml
+  -f docker-compose.runtime-persistence.yml
+)
+
+echo "[repair-v2] Rebuilding only apim-bootstrapper."
+"${compose[@]}" build apim-bootstrapper
+
+echo "[repair-v2] Resuming the idempotent bootstrap chain."
+"${compose[@]}" run --rm --no-deps apim-bootstrapper
+
+echo "[repair-v2] Registering the authorization facade in Service Catalog."
+bash scripts/register-oauth-business-control-service-catalog.sh
+
+echo "[repair-v2] Running complete OAuth business-control verification."
+bash scripts/verify-oauth-consent-risk-controls.sh

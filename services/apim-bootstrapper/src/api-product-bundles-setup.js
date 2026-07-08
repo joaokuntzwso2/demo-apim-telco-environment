@@ -29,7 +29,8 @@ const NATIVE_PRODUCT_BUNDLE_IDS = new Set([
   'digital-customer-bss-experience',
   '5g-network-monetization', 'central-policy-governance',
   'secure-mobile-transactions',
-  'telco-audit-siem'
+  'telco-audit-siem',
+  'subscriber-authorization-business-controls'
 ]);
 
 const REST_VERBS = new Set([

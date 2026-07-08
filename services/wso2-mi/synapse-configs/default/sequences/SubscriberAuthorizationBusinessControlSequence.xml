@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="SubscriberAuthorizationBusinessControlSequence" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <filter xpath="not(normalize-space(get-property('authenticated.user')))">
+        <then>
+            <property name="auth.error.status" scope="default" type="INTEGER" value="401"/>
+            <property name="auth.error.code" scope="default" type="STRING" value="AUTHENTICATED_SUBJECT_REQUIRED"/>
+            <property name="auth.error.message" scope="default" type="STRING" value="The APIM gateway did not provide a valid authenticated subject context."/>
+            <sequence key="SubscriberAuthorizationDenySequence"/>
+        </then>
+    </filter>
+
+    <filter xpath="not(normalize-space(get-property('persona')))">
+        <then>
+            <property name="auth.error.status" scope="default" type="INTEGER" value="403"/>
+            <property name="auth.error.code" scope="default" type="STRING" value="PERSONA_NOT_AUTHORIZED"/>
+            <property name="auth.error.message" scope="default" type="STRING" value="The authenticated user is not assigned to a supported telco business persona."/>
+            <sequence key="SubscriberAuthorizationDenySequence"/>
+        </then>
+    </filter>
+
+    <filter xpath="get-property('persona') = 'product_manager' and get-property('capability') != 'commercial-usage'">
+        <then>
+            <property name="auth.error.status" scope="default" type="INTEGER" value="403"/>
+            <property name="auth.error.code" scope="default" type="STRING" value="PERSONA_CAPABILITY_FORBIDDEN"/>
+            <property name="auth.error.message" scope="default" type="STRING" value="Product managers may inspect commercial usage but may not invoke subscriber network controls."/>
+            <sequence key="SubscriberAuthorizationDenySequence"/>
+        </then>
+    </filter>
+
+    <filter xpath="get-property('persona') = 'partner' and normalize-space(get-property('requested.partner.id')) != normalize-space(get-property('authorized.partner.id'))">
+        <then>
+            <property name="auth.error.status" scope="default" type="INTEGER" value="403"/>
+            <property name="auth.error.code" scope="default" type="STRING" value="PARTNER_DATA_ISOLATION"/>
+            <property name="auth.error.message" scope="default" type="STRING" value="A partner may not access another partner's subscriber or commercial data."/>
+            <sequence key="SubscriberAuthorizationDenySequence"/>
+        </then>
+    </filter>
+
+    <filter xpath="get-property('persona') = 'partner' and not(contains(concat(',', get-property('authorized.countries'), ','), concat(',', get-property('requested.country'), ',')))">
+        <then>
+            <property name="auth.error.status" scope="default" type="INTEGER" value="403"/>
+            <property name="auth.error.code" scope="default" type="STRING" value="COUNTRY_NOT_AUTHORIZED"/>
+            <property name="auth.error.message" scope="default" type="STRING" value="The partner is not contractually authorized for the requested country."/>
+            <sequence key="SubscriberAuthorizationDenySequence"/>
+        </then>
+    </filter>
+
+    <filter xpath="get-property('capability') != 'commercial-usage'">
+        <then>
+            <filter xpath="not(normalize-space(get-property('requested.consent.id'))) or not(normalize-space(get-property('requested.purpose')))">
+                <then>
+                    <property name="auth.error.status" scope="default" type="INTEGER" value="403"/>
+                    <property name="auth.error.code" scope="default" type="STRING" value="CONSENT_OR_PURPOSE_REQUIRED"/>
+                    <property name="auth.error.message" scope="default" type="STRING" value="Subscriber-related controls require a purpose and active consent reference."/>
+                    <sequence key="SubscriberAuthorizationDenySequence"/>
+                </then>
+            </filter>
+
+            <filter xpath="get-property('requested.partner.id') = 'partner-alpha' and (get-property('requested.consent.id') != 'CONSENT-ALPHA-001' or get-property('requested.subscriber') != '+5511999990001')">
+                <then>
+                    <property name="auth.error.status" scope="default" type="INTEGER" value="403"/>
+                    <property name="auth.error.code" scope="default" type="STRING" value="CONSENT_SUBJECT_MISMATCH"/>
+                    <property name="auth.error.message" scope="default" type="STRING" value="The consent reference does not cover the requested partner and subscriber."/>
+                    <sequence key="SubscriberAuthorizationDenySequence"/>
+                </then>
+            </filter>
+
+            <filter xpath="get-property('requested.partner.id') = 'partner-beta' and (get-property('requested.consent.id') != 'CONSENT-BETA-001' or get-property('requested.subscriber') != '+525512340001')">
+                <then>
+                    <property name="auth.error.status" scope="default" type="INTEGER" value="403"/>
+                    <property name="auth.error.code" scope="default" type="STRING" value="CONSENT_SUBJECT_MISMATCH"/>
+                    <property name="auth.error.message" scope="default" type="STRING" value="The consent reference does not cover the requested partner and subscriber."/>
+                    <sequence key="SubscriberAuthorizationDenySequence"/>
+                </then>
+            </filter>
+
+            <filter xpath="
+                (get-property('capability') = 'number-verification' and not(get-property('requested.purpose') = 'number-verification' or get-property('requested.purpose') = 'fraud-prevention' or get-property('requested.purpose') = 'fraud-investigation')) or
+                (get-property('capability') = 'sim-swap' and not(get-property('requested.purpose') = 'sim-swap-check' or get-property('requested.purpose') = 'fraud-prevention' or get-property('requested.purpose') = 'fraud-investigation')) or
+                (get-property('capability') = 'device-location' and not(get-property('requested.purpose') = 'device-location-verification' or get-property('requested.purpose') = 'fraud-prevention' or get-property('requested.purpose') = 'fraud-investigation')) or
+                (get-property('capability') = 'qod' and not(get-property('requested.purpose') = 'qod-fulfilment'))
+            ">
+                <then>
+                    <property name="auth.error.status" scope="default" type="INTEGER" value="403"/>
+                    <property name="auth.error.code" scope="default" type="STRING" value="PURPOSE_NOT_PERMITTED"/>
+                    <property name="auth.error.message" scope="default" type="STRING" value="The declared purpose is not permitted for this capability."/>
+                    <sequence key="SubscriberAuthorizationDenySequence"/>
+                </then>
+            </filter>
+        </then>
+    </filter>
+
+    <script language="js"><![CDATA[
+        var value = String(mc.getProperty('requested.subscriber') || '');
+        var masked = value;
+        if (value.length > 7) {
+            masked = value.substring(0, 3) + '******' + value.substring(value.length - 4);
+        } else if (value.length > 0) {
+            masked = '****';
+        }
+        var persona = String(mc.getProperty('persona') || '');
+        var purpose = String(mc.getProperty('requested.purpose') || '');
+        var fullAllowed =
+            (persona === 'operations' || persona === 'platform_administrator') &&
+            purpose === 'fraud-investigation' &&
+            String(mc.getProperty('requested.data.access') || '') === 'FULL';
+        mc.setProperty('returned.subscriber', fullAllowed ? value : masked);
+        mc.setProperty('subscriber.masked', fullAllowed ? 'false' : 'true');
+    ]]></script>
+</sequence>

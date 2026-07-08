@@ -24,9 +24,9 @@ const STATE_FILE =
   process.env.APIM_DEVELOPER_EXPERIENCE_STATE_FILE ||
   '/workspace/state/developer-experience.json';
 
-const TARGET_API_NAMES = new Set([ 'OpenGatewayNumberVerificationAPI', 'OpenGatewaySimSwapRiskAPI', 'OpenGatewayDeviceLocationVerificationAPI', 'TelcoBusinessCatalogAPI', 'Customer360API', 'NumberLifecycleAPI', 'NetworkSliceAPI', 'PartnerChargingAPI', 'BillingAdjustmentSOAP', 'BillingAdjustmentModernizationAPI', 'SecureTransactionRiskAssessmentAPI', 'TelcoAuditEventsAPI', 'NetworkEventsStreamAPI', 'CentralPolicyDecisionAPI' ]);
+const TARGET_API_NAMES = new Set([ 'OpenGatewayNumberVerificationAPI', 'OpenGatewaySimSwapRiskAPI', 'OpenGatewayDeviceLocationVerificationAPI', 'TelcoBusinessCatalogAPI', 'Customer360API', 'NumberLifecycleAPI', 'NetworkSliceAPI', 'PartnerChargingAPI', 'BillingAdjustmentSOAP', 'BillingAdjustmentModernizationAPI', 'SecureTransactionRiskAssessmentAPI', 'TelcoAuditEventsAPI', 'NetworkEventsStreamAPI', 'CentralPolicyDecisionAPI', 'SubscriberAuthorizationControlAPI' ]);
 
-const TARGET_PRODUCT_NAMES = new Set([ 'OpenGatewayFraudDefenseProduct', 'DigitalCustomerBSSExperienceProduct', 'FiveGNetworkMonetizationProduct', 'TelcoAuditSIEMProduct', 'SecureMobileTransactionsProduct', 'CentralPolicyGovernanceProduct' ]);
+const TARGET_PRODUCT_NAMES = new Set([ 'OpenGatewayFraudDefenseProduct', 'DigitalCustomerBSSExperienceProduct', 'FiveGNetworkMonetizationProduct', 'TelcoAuditSIEMProduct', 'SecureMobileTransactionsProduct', 'CentralPolicyGovernanceProduct', 'SubscriberAuthorizationBusinessControlsProduct' ]);
 
 const API_PLAN_ASSIGNMENTS = {
   OpenGatewayNumberVerificationAPI: [
@@ -82,7 +82,7 @@ const API_PLAN_ASSIGNMENTS = {
   TelcoAuditEventsAPI: [ 'TelcoSecurityAuditBurst', 'TelcoPartnerStandard', 'TelcoPartnerPremium' ], NetworkEventsStreamAPI: [
     'TelcoFreeTrial',
     'TelcoEventStreamPremium'
-  ], CentralPolicyDecisionAPI: [ 'TelcoPartnerStandard', 'TelcoPartnerPremium' ] };
+  ], CentralPolicyDecisionAPI: [ 'TelcoPartnerStandard', 'TelcoPartnerPremium' ], SubscriberAuthorizationControlAPI: [ 'TelcoConsentRiskPartner', 'TelcoConsentRiskOperations' ] };
 
 const DEFAULT_POLICY = 'Unlimited';
 const DOC_MARKER = '<!-- TELCO-DEVELOPER-EXPERIENCE-V1 -->';

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoint name="SubscriberRiskAssessmentFailoverEndpoint" xmlns="http://ws.apache.org/ns/synapse">
+    <failover>
+        <endpoint name="SubscriberRiskAssessmentPrimary">
+            <http method="post" uri-template="http://127.0.0.1:8290/secure-transaction-risk/v1/assessments">
+                <timeout>
+                    <duration>8000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <markForSuspension>
+                    <errorCodes>101500,101501,101503,101506,101507,101508,101509,101510</errorCodes>
+                    <retriesBeforeSuspension>2</retriesBeforeSuspension>
+                    <retryDelay>1000</retryDelay>
+                </markForSuspension>
+                <suspendOnFailure>
+                    <errorCodes>101504,101505</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+            </http>
+        </endpoint>
+        <endpoint name="SubscriberRiskAssessmentSecondary">
+            <http method="post" uri-template="http://wso2-mi:8290/secure-transaction-risk/v1/assessments">
+                <timeout>
+                    <duration>8000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <markForSuspension>
+                    <errorCodes>101500,101501,101503,101506,101507,101508,101509,101510</errorCodes>
+                    <retriesBeforeSuspension>1</retriesBeforeSuspension>
+                    <retryDelay>1000</retryDelay>
+                </markForSuspension>
+                <suspendOnFailure>
+                    <errorCodes>101504,101505</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+            </http>
+        </endpoint>
+    </failover>
+</endpoint>

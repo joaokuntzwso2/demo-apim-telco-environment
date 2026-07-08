@@ -600,5 +600,103 @@
         "central_policy_evaluation"
       ]
     }
+  },
+  {
+    "id": "subscriber-authorization-business-controls",
+    "name": "Subscriber Authorization Business Controls",
+    "title": "Subscriber Authorization Business Controls",
+    "description": "OAuth scopes, role-bound personas, consent, purpose limitation, country entitlement, partner isolation and subscriber masking as a sellable telco trust product.",
+    "businessStory": "A partner consumes subscriber trust signals only for contracted countries, its own customer base and an approved purpose with active consent.",
+    "businessOutcome": "Security becomes an auditable business entitlement and privacy control rather than a binary OAuth switch.",
+    "buyer": "Banks, fintechs, marketplaces, operator fraud teams and digital product teams",
+    "businessOwner": "Telco Digital Trust Product Office",
+    "technicalOwner": "Telco API Platform Security",
+    "plan": "TelcoConsentRiskPartner",
+    "plans": [
+      "TelcoConsentRiskPartner",
+      "TelcoConsentRiskOperations"
+    ],
+    "markets": [
+      "BR",
+      "MX"
+    ],
+    "apis": [
+      "SubscriberAuthorizationControlAPI"
+    ],
+    "apiBundle": [
+      {
+        "apiName": "SubscriberAuthorizationControlAPI",
+        "capability": "Number verification authorization",
+        "method": "POST",
+        "path": "/number-verifications",
+        "meter": "number_verification_authorized"
+      },
+      {
+        "apiName": "SubscriberAuthorizationControlAPI",
+        "capability": "SIM swap authorization",
+        "method": "POST",
+        "path": "/sim-swap-checks",
+        "meter": "sim_swap_authorized"
+      },
+      {
+        "apiName": "SubscriberAuthorizationControlAPI",
+        "capability": "Device location authorization",
+        "method": "POST",
+        "path": "/device-location-verifications",
+        "meter": "device_location_authorized"
+      },
+      {
+        "apiName": "SubscriberAuthorizationControlAPI",
+        "capability": "Quality on Demand authorization",
+        "method": "POST",
+        "path": "/qod-requests",
+        "meter": "qod_authorized"
+      },
+      {
+        "apiName": "SubscriberAuthorizationControlAPI",
+        "capability": "Partner commercial usage",
+        "method": "GET",
+        "path": "/partners/{partnerId}/commercial-usage",
+        "meter": "commercial_usage_read"
+      }
+    ],
+    "apim": {
+      "apiProductName": "SubscriberAuthorizationBusinessControlsProduct",
+      "displayName": "Subscriber Authorization Business Controls",
+      "version": "1.0.0",
+      "context": "/products/subscriber-authorization-controls/v1",
+      "description": "Role-, consent-, purpose-, country- and partner-aware subscriber API authorization.",
+      "subscriptionPolicies": [
+        "TelcoConsentRiskPartner",
+        "TelcoConsentRiskOperations"
+      ],
+      "apiThrottlingPolicy": "Unlimited",
+      "visibility": "PUBLIC",
+      "governanceLabel": "Telco Security APIs",
+      "tags": [
+        "telco",
+        "oauth",
+        "consent",
+        "risk",
+        "privacy"
+      ]
+    },
+    "moesif": {
+      "companyId": "regional-telco-group",
+      "productKey": "moesif_prod_subscriber_authorization_controls",
+      "billingCatalogReference": "billing.catalog.subscriber-authorization-controls.v1",
+      "revenueShareModel": "TRUST_CONTROL_USAGE",
+      "settlementOwner": "Telco Digital Trust Finance",
+      "productLine": "Subscriber Trust and Authorization",
+      "meters": [
+        "api_call",
+        "number_verification_authorized",
+        "sim_swap_authorized",
+        "device_location_authorized",
+        "qod_authorized",
+        "commercial_usage_read",
+        "rejected_request"
+      ]
+    }
   }
 ]

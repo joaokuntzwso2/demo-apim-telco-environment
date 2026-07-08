@@ -1,0 +1,18 @@
+services:
+  apim-bootstrapper:
+    depends_on:
+      wso2-mi:
+        condition: service_healthy
+    environment:
+      OAUTH_BUSINESS_CONTROLS_STATE_FILE: /workspace/state/oauth-business-controls.json
+  wso2-mi:
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wget -qO- http://127.0.0.1:9201/healthz >/dev/null 2>&1
+          && wget -qO- http://127.0.0.1:8290/subscriber-authorization/v1/health >/dev/null 2>&1
+      interval: 15s
+      timeout: 8s
+      retries: 40
+      start_period: 120s

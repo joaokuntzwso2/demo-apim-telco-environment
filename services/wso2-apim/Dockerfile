@@ -98,4 +98,10 @@ COPY services/wso2-apim/sequences/_throttle_out_handler_.xml /home/wso2carbon/ws
 RUN chown wso2carbon /home/wso2carbon/wso2am-4.7.0/repository/deployment/server/synapse-configs/default/sequences/_throttle_out_handler_.xml  && chmod 0644 /home/wso2carbon/wso2am-4.7.0/repository/deployment/server/synapse-configs/default/sequences/_throttle_out_handler_.xml
 # END TELCO SIDDHI RUNTIME ENFORCEMENT
 
+# BEGIN TELCO APIM OAUTH BUSINESS CONTROLS
+COPY services/wso2-apim/merge-oauth-business-controls-config.sh /tmp/merge-oauth-business-controls-config.sh
+RUN chmod +x /tmp/merge-oauth-business-controls-config.sh \
+ && /tmp/merge-oauth-business-controls-config.sh /home/wso2carbon/wso2am-4.7.0/repository/conf/deployment.toml \
+ && rm -f /tmp/merge-oauth-business-controls-config.sh
+# END TELCO APIM OAUTH BUSINESS CONTROLS
 USER wso2carbon

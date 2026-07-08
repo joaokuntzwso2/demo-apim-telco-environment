@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoint name="SubscriberCommercialUsageFailoverEndpoint" xmlns="http://ws.apache.org/ns/synapse">
+    <failover>
+        <endpoint name="SubscriberCommercialUsagePrimary">
+            <http method="get" uri-template="http://127.0.0.1:8290/secure-mobile-transactions/v1/partners/{uri.var.partnerId}/usage">
+                <timeout>
+                    <duration>6000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <markForSuspension>
+                    <errorCodes>101500,101501,101503,101506,101507,101508,101509,101510</errorCodes>
+                    <retriesBeforeSuspension>2</retriesBeforeSuspension>
+                    <retryDelay>1000</retryDelay>
+                </markForSuspension>
+                <suspendOnFailure>
+                    <errorCodes>101504,101505</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+            </http>
+        </endpoint>
+        <endpoint name="SubscriberCommercialUsageSecondary">
+            <http method="get" uri-template="http://wso2-mi:8290/secure-mobile-transactions/v1/partners/{uri.var.partnerId}/usage">
+                <timeout>
+                    <duration>6000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+                <suspendOnFailure>
+                    <errorCodes>101500,101501,101503,101504,101505,101506,101507,101508,101509,101510</errorCodes>
+                    <initialDuration>5000</initialDuration>
+                    <progressionFactor>2.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+            </http>
+        </endpoint>
+    </failover>
+</endpoint>

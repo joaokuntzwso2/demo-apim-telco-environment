@@ -1,0 +1,347 @@
+openapi: 3.0.3
+info:
+  title: Subscriber Authorization Business Controls API
+  version: 1.0.0
+  description: |
+    WSO2 Integrator: MI-managed authorization facade that combines APIM OAuth
+    scope enforcement with persona, consent, purpose, country, partner-isolation,
+    masking, correlation and resilient downstream business controls.
+  contact:
+    name: Telco API Platform Team
+servers:
+  - url: https://localhost:8243/subscriber-authorization/v1/1.0.0
+tags:
+  - name: Subscriber controls
+  - name: Commercial controls
+security:
+  - OAuth2: []
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: MI service health
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /number-verifications:
+    post:
+      tags: [Subscriber controls]
+      operationId: verifyNumber
+      summary: Number verification with consent and partner isolation
+      security:
+        - OAuth2: [number-verification:read]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriberControlRequest'
+            example:
+              partnerId: partner-alpha
+              country: BR
+              subscriberNumber: '+5511999990001'
+              purpose: number-verification
+              consentId: CONSENT-ALPHA-001
+              transactionId: TX-AUTH-10001
+      responses:
+        '200':
+          description: Authorized result with subscriber masking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationDecision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /sim-swap-checks:
+    post:
+      tags: [Subscriber controls]
+      operationId: readSimSwapRisk
+      summary: SIM-swap risk with consent and partner isolation
+      security:
+        - OAuth2: [sim-swap:read]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriberControlRequest'
+      responses:
+        '200':
+          description: Authorized risk result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationDecision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /device-location-verifications:
+    post:
+      tags: [Subscriber controls]
+      operationId: verifyDeviceLocation
+      summary: Device-location verification with purpose limitation
+      security:
+        - OAuth2: [device-location:verify]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/SubscriberControlRequest'
+                - type: object
+                  properties:
+                    latitude:
+                      type: number
+                      format: double
+                      example: -23.55052
+                    longitude:
+                      type: number
+                      format: double
+                      example: -46.633308
+      responses:
+        '200':
+          description: Authorized location result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationDecision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /qod-requests:
+    post:
+      tags: [Subscriber controls]
+      operationId: requestQualityOnDemand
+      summary: Quality-on-Demand request authorization
+      security:
+        - OAuth2: [qod:request]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/SubscriberControlRequest'
+                - type: object
+                  properties:
+                    profile:
+                      type: string
+                      example: QOS_E
+                    durationSeconds:
+                      type: integer
+                      minimum: 30
+                      maximum: 3600
+                      example: 300
+      responses:
+        '200':
+          description: Authorized QoD request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationDecision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /partners/{partnerId}/commercial-usage:
+    get:
+      tags: [Commercial controls]
+      operationId: readCommercialUsage
+      summary: Read commercial usage for the authorized partner
+      security:
+        - OAuth2: [commercial-usage:read]
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: partner-alpha
+        - name: country
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 2
+          example: BR
+      responses:
+        '200':
+          description: Authorized commercial usage summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationDecision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      description: WSO2 API Manager OAuth2 token with a role-bound local scope.
+      flows:
+        password:
+          tokenUrl: https://localhost:9443/oauth2/token
+          scopes:
+            number-verification:read: Read number-verification outcomes
+            sim-swap:read: Read SIM-swap risk
+            device-location:verify: Verify device location
+            qod:request: Request Quality on Demand
+            commercial-usage:read: Read partner commercial usage
+          x-scopes-bindings:
+            number-verification:read: "telco_partner,telco_operations,telco_platform_admin"
+            sim-swap:read: "telco_partner,telco_operations,telco_platform_admin"
+            device-location:verify: "telco_partner,telco_operations,telco_platform_admin"
+            qod:request: "telco_partner,telco_operations,telco_platform_admin"
+            commercial-usage:read: "telco_partner,telco_operations,telco_product_manager,telco_platform_admin"
+  schemas:
+    SubscriberControlRequest:
+      type: object
+      required:
+        - partnerId
+        - country
+        - subscriberNumber
+        - purpose
+        - consentId
+      properties:
+        partnerId:
+          type: string
+          example: partner-alpha
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          example: BR
+        subscriberNumber:
+          type: string
+          example: '+5511999990001'
+        purpose:
+          type: string
+          enum:
+            - number-verification
+            - fraud-prevention
+            - sim-swap-check
+            - device-location-verification
+            - qod-fulfilment
+            - fraud-investigation
+        consentId:
+          type: string
+          example: CONSENT-ALPHA-001
+        transactionId:
+          type: string
+          example: TX-AUTH-10001
+    AuthorizationDecision:
+      type: object
+      required:
+        - decision
+        - capability
+        - persona
+        - partnerId
+        - correlationId
+      properties:
+        decision:
+          type: string
+          enum: [ALLOW, CHALLENGE, DENY, PARTIAL]
+        capability:
+          type: string
+        persona:
+          type: string
+          enum: [partner, operations, product_manager, platform_administrator]
+        partnerId:
+          type: string
+        country:
+          type: string
+        subscriber:
+          type: object
+          properties:
+            phoneNumber:
+              type: string
+              example: '+55******0001'
+            masked:
+              type: boolean
+              example: true
+        consent:
+          type: object
+          properties:
+            id:
+              type: string
+            purpose:
+              type: string
+            status:
+              type: string
+              enum: [ACTIVE, NOT_REQUIRED]
+        risk:
+          type: object
+          properties:
+            orchestration:
+              type: string
+            partialResponseSupported:
+              type: boolean
+        correlationId:
+          type: string
+    Error:
+      type: object
+      required: [code, message, correlationId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlationId:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: UP
+        service:
+          type: string
+          example: SubscriberAuthorizationControlAPI
+        runtime:
+          type: string
+          example: WSO2 Integrator MI 4.6.0
+  responses:
+    Unauthorized:
+      description: Missing, invalid or expired OAuth/access context
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Scope, role, consent, country or partner isolation rejected the request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: A required downstream control is unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

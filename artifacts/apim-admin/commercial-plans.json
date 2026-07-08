@@ -272,5 +272,55 @@
       "includedQuota": "5 audit or protected requests/min",
       "commercialSummary": "USD 249/month + USD 0.01 per extra accepted audit event"
     }
+  },
+  {
+    "policyName": "TelcoConsentRiskPartner",
+    "displayName": "Telco Consent and Risk Partner",
+    "description": "Partner plan for purpose-bound subscriber trust controls: 600 requests per minute with masked subscriber data.",
+    "requestCount": 600,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "COMMERCIAL",
+    "stopOnQuotaReach": true,
+    "pricing": {
+      "billingType": "FIXED_PLUS_METERED_OVERAGE",
+      "billingCycle": "month",
+      "currencyType": "USD",
+      "fixedPrice": "1499.00",
+      "pricePerRequest": "0.0100",
+      "includedQuota": "600 authorized controls/min",
+      "commercialSummary": "USD 1,499/month; masked subscriber data; purpose and consent required"
+    },
+    "country": "CONTRACT_BOUND",
+    "dataPolicy": "MASKED_WITH_CONSENT",
+    "sla": {
+      "availabilityPercent": 99.9,
+      "support": "business-hours"
+    }
+  },
+  {
+    "policyName": "TelcoConsentRiskOperations",
+    "displayName": "Telco Consent and Risk Operations",
+    "description": "Operator workforce plan for risk operations and product administration: 3000 requests per minute.",
+    "requestCount": 3000,
+    "timeUnit": "min",
+    "unitTime": 1,
+    "billingPlan": "FREE",
+    "stopOnQuotaReach": true,
+    "pricing": {
+      "billingType": "INTERNAL",
+      "billingCycle": "month",
+      "currencyType": "USD",
+      "fixedPrice": "0.00",
+      "pricePerRequest": "0.0000",
+      "includedQuota": "3000 controls/min",
+      "commercialSummary": "Internal operator entitlement"
+    },
+    "country": "OPERATOR_FOOTPRINT",
+    "dataPolicy": "LEAST_PRIVILEGE",
+    "sla": {
+      "availabilityPercent": 99.95,
+      "support": "24x7"
+    }
   }
 ]

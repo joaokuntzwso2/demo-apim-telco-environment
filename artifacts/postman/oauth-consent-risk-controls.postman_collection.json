@@ -1,0 +1,625 @@
+{
+  "info": {
+    "_postman_id": "f30ef827-ef61-4b90-ae57-4ff7da4297de",
+    "name": "Telco OAuth Consent and Risk Business Controls",
+    "description": "Executable positive and negative scenarios for APIM scopes and MI business authorization controls. Copy the normal and short-lived client credentials from /workspace/state/oauth-business-controls.json.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "apim_url",
+      "value": "https://localhost:9443"
+    },
+    {
+      "key": "gateway_url",
+      "value": "https://localhost:8243"
+    },
+    {
+      "key": "client_id",
+      "value": ""
+    },
+    {
+      "key": "client_secret",
+      "value": ""
+    },
+    {
+      "key": "operations_client_id",
+      "value": ""
+    },
+    {
+      "key": "operations_client_secret",
+      "value": ""
+    },
+    {
+      "key": "expired_client_id",
+      "value": ""
+    },
+    {
+      "key": "expired_client_secret",
+      "value": ""
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "short_lived_token",
+      "value": ""
+    },
+    {
+      "key": "short_lived_issued_at",
+      "value": "0"
+    },
+    {
+      "key": "product_token",
+      "value": ""
+    },
+    {
+      "key": "operations_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1 - Partner scope and masking",
+      "item": [
+        {
+          "name": "Token - partner.alpha / number-verification:read",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{client_id}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{client_secret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "username",
+                  "value": "partner.alpha"
+                },
+                {
+                  "key": "password",
+                  "value": "PartnerAlpha#2026"
+                },
+                {
+                  "key": "scope",
+                  "value": "number-verification:read"
+                }
+              ]
+            },
+            "url": "{{apim_url}}/oauth2/token"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Token issued', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.collectionVariables.set('access_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Valid scoped request - masked subscriber",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "postman-oauth-controls-valid-001"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"partnerId\":\"partner-alpha\",\"country\":\"BR\",\"subscriberNumber\":\"+5511999990001\",\"purpose\":\"number-verification\",\"consentId\":\"CONSENT-ALPHA-001\",\"transactionId\":\"TX-POSTMAN-VALID-001\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{gateway_url}}/subscriber-authorization/v1/1.0.0/number-verifications"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('Decision allowed', function () { pm.expect(body.decision).to.eql('ALLOW'); });",
+                  "pm.test('Subscriber is masked', function () { pm.expect(body.subscriber.masked).to.eql(true); pm.expect(body.subscriber.phoneNumber).to.eql('+55******0001'); });",
+                  "pm.test('Correlation preserved', function () { pm.expect(pm.response.headers.get('X-Correlation-ID')).to.eql('postman-oauth-controls-valid-001'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing-scope rejection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "postman-oauth-controls-scope-001"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"partnerId\":\"partner-alpha\",\"country\":\"BR\",\"subscriberNumber\":\"+5511999990001\",\"purpose\":\"sim-swap-check\",\"consentId\":\"CONSENT-ALPHA-001\",\"transactionId\":\"TX-POSTMAN-SCOPE-001\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{gateway_url}}/subscriber-authorization/v1/1.0.0/sim-swap-checks"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function () { pm.expect(pm.response.code).to.eql(403); });",
+                  "pm.test('Rejected at APIM scope layer', function () { pm.expect(pm.response.code).to.eql(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unauthorized country",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "postman-oauth-controls-country-001"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"partnerId\":\"partner-alpha\",\"country\":\"US\",\"subscriberNumber\":\"+5511999990001\",\"purpose\":\"number-verification\",\"consentId\":\"CONSENT-ALPHA-001\",\"transactionId\":\"TX-POSTMAN-COUNTRY-001\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{gateway_url}}/subscriber-authorization/v1/1.0.0/number-verifications"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function () { pm.expect(pm.response.code).to.eql(403); });",
+                  "pm.test('Country control code', function () { pm.expect(pm.response.json().code).to.eql('COUNTRY_NOT_AUTHORIZED'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Partner attempting another partner's data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "postman-oauth-controls-partner-001"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"partnerId\":\"partner-beta\",\"country\":\"MX\",\"subscriberNumber\":\"+525512340001\",\"purpose\":\"number-verification\",\"consentId\":\"CONSENT-BETA-001\",\"transactionId\":\"TX-POSTMAN-PARTNER-001\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{gateway_url}}/subscriber-authorization/v1/1.0.0/number-verifications"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', function () { pm.expect(pm.response.code).to.eql(403); });",
+                  "pm.test('Partner isolation code', function () { pm.expect(pm.response.json().code).to.eql('PARTNER_DATA_ISOLATION'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 - Expired token",
+      "item": [
+        {
+          "name": "Token - dedicated two-second APIM client",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{expired_client_id}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{expired_client_secret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "username",
+                  "value": "partner.alpha"
+                },
+                {
+                  "key": "password",
+                  "value": "PartnerAlpha#2026"
+                },
+                {
+                  "key": "scope",
+                  "value": "number-verification:read"
+                }
+              ]
+            },
+            "url": "{{apim_url}}/oauth2/token"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Token issued', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.collectionVariables.set('short_lived_token', pm.response.json().access_token);",
+                  "pm.collectionVariables.set('short_lived_issued_at', String(Date.now()));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Expired-token rejection after five seconds",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{short_lived_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "postman-oauth-controls-expired-001"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"partnerId\":\"partner-alpha\",\"country\":\"BR\",\"subscriberNumber\":\"+5511999990001\",\"purpose\":\"number-verification\",\"consentId\":\"CONSENT-ALPHA-001\",\"transactionId\":\"TX-POSTMAN-EXPIRED-001\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{gateway_url}}/subscriber-authorization/v1/1.0.0/number-verifications"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const issued = Number(pm.collectionVariables.get('short_lived_issued_at') || 0);",
+                  "const remaining = Math.max(0, 5000 - (Date.now() - issued));",
+                  "const start = Date.now(); while (Date.now() - start < remaining) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', function () { pm.expect(pm.response.code).to.eql(401); });",
+                  "pm.test('Expired token rejected by APIM', function () { pm.expect(pm.response.code).to.eql(401); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 - Operator and product personas",
+      "item": [
+        {
+          "name": "Token - operations / number-verification:read",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{operations_client_id}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{operations_client_secret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "username",
+                  "value": "telco.operations"
+                },
+                {
+                  "key": "password",
+                  "value": "TelcoOperations#2026"
+                },
+                {
+                  "key": "scope",
+                  "value": "number-verification:read"
+                }
+              ]
+            },
+            "url": "{{apim_url}}/oauth2/token"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Token issued', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.collectionVariables.set('operations_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Operations fraud investigation - full subscriber",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operations_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "postman-oauth-controls-ops-001"
+              },
+              {
+                "key": "X-Data-Access",
+                "value": "FULL"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"partnerId\":\"partner-alpha\",\"country\":\"BR\",\"subscriberNumber\":\"+5511999990001\",\"purpose\":\"fraud-investigation\",\"consentId\":\"CONSENT-ALPHA-001\",\"transactionId\":\"TX-POSTMAN-OPS-001\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{gateway_url}}/subscriber-authorization/v1/1.0.0/number-verifications"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('Operations persona', function () { pm.expect(body.persona).to.eql('operations'); });",
+                  "pm.test('Full data permitted only by explicit control', function () { pm.expect(body.subscriber.masked).to.eql(false); pm.expect(body.subscriber.phoneNumber).to.eql('+5511999990001'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token - product manager / commercial-usage:read",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{operations_client_id}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{operations_client_secret}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "username",
+                  "value": "telco.product"
+                },
+                {
+                  "key": "password",
+                  "value": "TelcoProduct#2026"
+                },
+                {
+                  "key": "scope",
+                  "value": "commercial-usage:read"
+                }
+              ]
+            },
+            "url": "{{apim_url}}/oauth2/token"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Token issued', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.collectionVariables.set('product_token', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Product manager commercial usage",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{product_token}}"
+              },
+              {
+                "key": "X-Correlation-ID",
+                "value": "postman-oauth-controls-commercial-001"
+              }
+            ],
+            "url": "{{gateway_url}}/subscriber-authorization/v1/1.0.0/partners/partner-alpha/commercial-usage?country=BR"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('Product manager persona', function () { pm.expect(pm.response.json().persona).to.eql('product_manager'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
