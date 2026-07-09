@@ -684,6 +684,12 @@ function patchProject(projectDir, api, openapi, context) { if (api.name === 'Bil
     doc.data.name = api.name;
     doc.data.version = api.version;
     doc.data.context = context;
+  if (
+    api.name === 'TelcoSupportAssistantAPI' ||
+    api.name === 'TelcoAgentToolsAPI'
+  ) {
+    doc.data.isDefaultVersion = true;
+  }
     doc.data.lifeCycleStatus = 'CREATED';
     doc.data.type = 'HTTP';
     doc.data.provider = APIM_USER;
@@ -2390,7 +2396,33 @@ async function importAndPublishSoapApi(api) {
       consumerKey: keys.consumerKey,
       consumerSecret: keys.consumerSecret
     },
-    apis: importedApis
+    apis: importedApis,
+    ai: {
+      enabled: Boolean(
+        importedApis.find(
+          item => item.name === 'TelcoSupportAssistantAPI'
+        ) &&
+        importedApis.find(
+          item => item.name === 'TelcoAgentToolsAPI'
+        )
+      ),
+      supportApi:
+        importedApis.find(
+          item => item.name === 'TelcoSupportAssistantAPI'
+        ) || null,
+      toolsApi:
+        importedApis.find(
+          item => item.name === 'TelcoAgentToolsAPI'
+        ) || null,
+      profiles: ['standard', 'advanced'],
+      governance: {
+        tokenQuota: true,
+        modelRouting: true,
+        sensitiveDataMasking: true,
+        promptInjectionProtection: true,
+        partnerAttribution: true
+      }
+    }
   };
 
   fs.writeFileSync(STATE_FILE, JSON.stringify(runtime, null, 2));

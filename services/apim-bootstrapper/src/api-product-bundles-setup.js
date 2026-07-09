@@ -24,7 +24,7 @@ const STATE_FILE =
 const COMMERCIAL_API_STATE_FILE =
   '/workspace/state/commercial-api.json';
 
-const NATIVE_PRODUCT_BUNDLE_IDS = new Set([
+const NATIVE_PRODUCT_BUNDLE_IDS = new Set([ 'telco-ai-service-care',
   'open-gateway-fraud-defense',
   'digital-customer-bss-experience',
   '5g-network-monetization', 'central-policy-governance',

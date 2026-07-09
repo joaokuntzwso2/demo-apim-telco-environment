@@ -30,7 +30,7 @@ module.exports=function(app){
     const correlation=req.get('X-Correlation-ID')||crypto.randomUUID();
     try{
       const t=await token(), payload=JSON.stringify({sessionId:String(req.body?.sessionId||`portal-${partner}`),message:String(req.body?.message||''),profile:req.body?.profile==='advanced'?'advanced':'standard'});
-      const r=await request(`${gateway}/telco-support/v1/chat`,{method:'POST',headers:{authorization:`Bearer ${t}`,'X-Agent-Tool-Token':t,'X-Partner-Id':partner,'X-Correlation-ID':correlation,'content-type':'application/json','content-length':Buffer.byteLength(payload)},body:payload});
+      const r=await request(`${gateway}/telco-support/v1/1.0.0/chat`,{method:'POST',headers:{authorization:`Bearer ${t}`,'X-Agent-Tool-Token':t,'X-Partner-Id':partner,'X-Correlation-ID':correlation,'content-type':'application/json','content-length':Buffer.byteLength(payload)},body:payload});
       res.status(r.status).type(r.headers['content-type']||'application/json').send(r.body);
     }catch(e){res.status(502).json({type:'https://telco.example/problems/portal-ai-proxy',title:'Portal AI proxy failure',status:502,code:'PORTAL_AI_PROXY_FAILURE',detail:e.message,correlationId:correlation})}
   });

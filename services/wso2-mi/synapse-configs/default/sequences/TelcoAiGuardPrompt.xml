@@ -8,8 +8,8 @@
       if (re.test(masked)) { masks.push(label); masked=masked.replace(re,replacement); }
     }
     mask(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"EMAIL","[MASKED_EMAIL]");
-    mask(/\b(?:\+?\d[\d .()\-]{7,}\d)\b/g,"PHONE_OR_ACCOUNT","[MASKED_NUMBER]");
     mask(/\b(?:IMSI|ICCID|MSISDN)\s*[:=]?\s*[A-Za-z0-9+_-]{6,30}\b/gi,"TELCO_IDENTIFIER","[MASKED_TELCO_ID]");
+    mask(/\b(?:\+?\d[\d .()\-]{7,}\d)\b/g,"PHONE_OR_ACCOUNT","[MASKED_NUMBER]");
     mask(/\bBearer\s+[A-Za-z0-9._~+\/=-]{10,}\b/gi,"BEARER_TOKEN","Bearer [MASKED_TOKEN]");
     mask(/\b(?:sk|api)[-_][A-Za-z0-9_-]{12,}\b/gi,"API_KEY","[MASKED_API_KEY]");
     var reasons=[], rules=[

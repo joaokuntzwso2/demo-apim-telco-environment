@@ -1,19 +1,69 @@
+---
 type: MCPServer
 version: v4.7.0
 data:
   name: TelcoOperationsMCP
-  context: /telco-operations-mcp
+  context: "/telco-operations-mcp"
   version: 1.0.0
   provider: admin
   description: Governed telco operations generated from the APIM-managed tools OpenAPI.
   lifeCycleStatus: PUBLISHED
   isDefaultVersion: true
-  transport: [http, https]
-  securityScheme: [oauth2]
+  transport:
+  - http
+  - https
+  securityScheme:
+  - oauth2
   authorizationHeader: Authorization
   visibility: PUBLIC
   subscriptionAvailability: ALL_TENANTS
-  subscriptionPolicies: [Unlimited]
-  tags: [telco, ai, mcp, governed-tools]
+  subscriptionPolicies:
+  - Unlimited
+  tags:
+  - telco
+  - ai
+  - mcp
+  - governed-tools
   subtypeConfiguration:
     subtype: DIRECT_BACKEND
+  operations:
+  - target: retrieveSubscriberServiceStatus
+    feature: TOOL
+    authType: Application & Application User
+    throttlingPolicy: Unlimited
+    description: Retrieve the normalized service status for a subscriber.
+    backendOperationMapping:
+      backendId: cebb3ce4-15bc-40f2-a286-526ca22ca722
+      backendOperation:
+        verb: GET
+        target: "/subscribers/{subscriberId}/status"
+  - target: inspectOutage
+    feature: TOOL
+    authType: Application & Application User
+    throttlingPolicy: Unlimited
+    description: Inspect the current status and impact of a network outage.
+    backendOperationMapping:
+      backendId: cebb3ce4-15bc-40f2-a286-526ca22ca722
+      backendOperation:
+        verb: GET
+        target: "/outages/{outageId}"
+  - target: requestQualityOnDemandSession
+    feature: TOOL
+    authType: Application & Application User
+    throttlingPolicy: Unlimited
+    description: Request a governed Quality-on-Demand session.
+    backendOperationMapping:
+      backendId: cebb3ce4-15bc-40f2-a286-526ca22ca722
+      backendOperation:
+        verb: POST
+        target: "/qod-sessions"
+  - target: openServiceTicket
+    feature: TOOL
+    authType: Application & Application User
+    throttlingPolicy: Unlimited
+    description: Open a governed service ticket for a subscriber.
+    backendOperationMapping:
+      backendId: cebb3ce4-15bc-40f2-a286-526ca22ca722
+      backendOperation:
+        verb: POST
+        target: "/tickets"

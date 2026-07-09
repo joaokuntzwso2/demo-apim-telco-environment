@@ -29,6 +29,18 @@ RUN cat /tmp/service-catalog.toml >> ${WSO2_SERVER_HOME}/conf/deployment.toml \
     && chmod -R a+rX ${WSO2_SERVER_HOME}/repository/deployment/server/synapse-configs/default \
     && chmod a+r ${WSO2_SERVER_HOME}/conf/deployment.toml ${WSO2_SERVER_HOME}/conf/file.properties
 
+
+# The AI entrypoint renders runtime configuration into this Synapse sequence.
+# BusyBox/Alpine sed -i creates a temporary file in the same directory,
+# so the runtime MI user must own both the directory and the target file.
+RUN chown 10802:0 \
+      ${WSO2_SERVER_HOME}/repository/deployment/server/synapse-configs/default/sequences \
+      ${WSO2_SERVER_HOME}/repository/deployment/server/synapse-configs/default/sequences/TelcoAiAdvancedAgent.xml \
+    && chmod 0755 \
+      ${WSO2_SERVER_HOME}/repository/deployment/server/synapse-configs/default/sequences \
+    && chmod 0644 \
+      ${WSO2_SERVER_HOME}/repository/deployment/server/synapse-configs/default/sequences/TelcoAiAdvancedAgent.xml
+
 USER 10802
 
 EXPOSE 8290 8253 9164

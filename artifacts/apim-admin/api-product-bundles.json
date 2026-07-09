@@ -698,5 +698,97 @@
         "rejected_request"
       ]
     }
+  },
+  {
+    "id": "telco-ai-service-care",
+    "name": "Telco AI Service Care Pack",
+    "description": "Optional governed telco support-assistant and agent-tools package with AI safeguards, scoped operations, partner consumption tracking and usage-cost attribution.",
+    "businessStory": "A telco partner uses a support assistant that can answer service-care questions and execute controlled operations through APIM-governed tools.",
+    "businessOutcome": "Demonstrates governed generative AI and agentic operations without distracting from the core API management and monetization platform story.",
+    "buyer": "Telco partners, customer-care teams and service operations",
+    "plan": "TelcoPartnerStandard",
+    "plans": [
+      "TelcoFreeTrial",
+      "TelcoPartnerStandard",
+      "TelcoPartnerPremium"
+    ],
+    "markets": [
+      "BR"
+    ],
+    "apis": [
+      "TelcoSupportAssistantAPI",
+      "TelcoAgentToolsAPI"
+    ],
+    "apiBundle": [
+      {
+        "apiName": "TelcoSupportAssistantAPI",
+        "capability": "Guarded support-assistant invocation",
+        "method": "POST",
+        "path": "/chat",
+        "meter": "ai_assistant_request"
+      },
+      {
+        "apiName": "TelcoSupportAssistantAPI",
+        "capability": "AI safeguard preview",
+        "method": "POST",
+        "path": "/guard-preview",
+        "meter": "ai_guard_evaluation"
+      },
+      {
+        "apiName": "TelcoAgentToolsAPI",
+        "capability": "Subscriber service status",
+        "method": "GET",
+        "path": "/subscribers/{subscriberId}/status",
+        "meter": "subscriber_status_lookup"
+      },
+      {
+        "apiName": "TelcoAgentToolsAPI",
+        "capability": "Outage inspection",
+        "method": "GET",
+        "path": "/outages/{outageId}",
+        "meter": "outage_inspection"
+      },
+      {
+        "apiName": "TelcoAgentToolsAPI",
+        "capability": "Quality-on-Demand request",
+        "method": "POST",
+        "path": "/qod-sessions",
+        "meter": "qod_session_request"
+      },
+      {
+        "apiName": "TelcoAgentToolsAPI",
+        "capability": "Service-ticket creation",
+        "method": "POST",
+        "path": "/tickets",
+        "meter": "service_ticket_creation"
+      }
+    ],
+    "apim": {
+      "apiProductName": "Telco AI Service Care Pack",
+      "context": "/products/telco-ai-service-care/v1",
+      "version": "1.0.0",
+      "visibility": "PUBLIC",
+      "governanceLabel": "Telco AI and Agentic APIs"
+    },
+    "moesif": {
+      "companyId": "regional-telco-group",
+      "productKey": "moesif_prod_telco_ai_service_care",
+      "billingCatalogReference": "billing.catalog.telco-ai-service-care.v1",
+      "revenueShareModel": "AI_USAGE_AND_TOOL_CONSUMPTION",
+      "settlementOwner": "Telco Digital Products Finance",
+      "productLine": "Telco AI Service Care",
+      "meters": [
+        "api_call",
+        "ai_assistant_request",
+        "ai_guard_evaluation",
+        "subscriber_status_lookup",
+        "outage_inspection",
+        "qod_session_request",
+        "service_ticket_creation",
+        "llm_input_token",
+        "llm_output_token",
+        "estimated_ai_cost"
+      ]
+    }
   }
 ]

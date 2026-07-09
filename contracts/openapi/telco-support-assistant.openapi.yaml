@@ -31,7 +31,7 @@ paths:
     post:
       operationId: askTelcoSupportAssistant
       security:
-        - OAuth2: [telco_ai_support, telco_subscriber_status, telco_outage_read, telco_qod_request, telco_ticket_create]
+        - OAuth2: [telco_ai_support]
       parameters:
         - {$ref: '#/components/parameters/CorrelationId'}
         - {$ref: '#/components/parameters/PartnerId'}
@@ -53,10 +53,6 @@ components:
           tokenUrl: https://localhost:9443/oauth2/token
           scopes:
             telco_ai_support: Invoke assistant
-            telco_subscriber_status: Read subscriber status
-            telco_outage_read: Inspect outages
-            telco_qod_request: Request QoD
-            telco_ticket_create: Open tickets
   parameters:
     CorrelationId: {name: X-Correlation-ID, in: header, required: false, schema: {type: string}}
     PartnerId: {name: X-Partner-Id, in: header, required: true, schema: {type: string}}
