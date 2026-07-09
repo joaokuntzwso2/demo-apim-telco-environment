@@ -1,0 +1,139 @@
+{
+  "info": {
+    "_postman_id": "d595598e-33b1-46a5-b150-9bde48c81a47",
+    "name": "Telco Live Gateway Analytics - Moesif",
+    "description": "Runs successful, downstream-failed/degraded and Gateway-rejected requests through the managed SecureTransactionRiskAssessmentAPI. The three correlation IDs should appear in Moesif within seconds.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "gatewayUrl", "value": "http://localhost:8288" },
+    { "key": "accessToken", "value": "" },
+    { "key": "correlationId", "value": "" },
+    { "key": "partnerId", "value": "partner-br-fintech" },
+    { "key": "countryCode", "value": "BR" },
+    { "key": "subscriptionId", "value": "regional-portal-secure-risk" },
+    { "key": "subscriptionPolicy", "value": "TelcoOpenGatewayTrustPremium" },
+    { "key": "commercialPlan", "value": "Open Gateway Trust Premium" }
+  ],
+  "item": [
+    {
+      "name": "1 - Successful transaction",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('correlationId', 'moesif-success-' + pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" },
+          { "key": "X-Correlation-ID", "value": "{{correlationId}}", "type": "text" },
+          { "key": "activityID", "value": "{{correlationId}}", "type": "text" },
+          { "key": "X-Partner-ID", "value": "{{partnerId}}", "type": "text" },
+          { "key": "X-Country-Code", "value": "{{countryCode}}", "type": "text" },
+          { "key": "application-id", "value": "regional-portal", "type": "text" },
+          { "key": "X-Subscription-ID", "value": "{{subscriptionId}}", "type": "text" },
+          { "key": "X-Subscription-Policy", "value": "{{subscriptionPolicy}}", "type": "text" },
+          { "key": "X-Commercial-Plan", "value": "{{commercialPlan}}", "type": "text" },
+          { "key": "X-Billable-Units", "value": "1", "type": "text" },
+          { "key": "X-Partial-Response-Policy", "value": "ALLOW_DEGRADED", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionId\": \"TX-MOESIF-SUCCESS-{{$timestamp}}\",\n  \"subscriberId\": \"SUB-1001\",\n  \"msisdn\": \"+5511999990001\",\n  \"amount\": 1250,\n  \"country\": \"BR\",\n  \"partialResponsePolicy\": \"ALLOW_DEGRADED\"\n}"
+        },
+        "url": {
+          "raw": "{{gatewayUrl}}/secure-transaction-risk/v1/assessments",
+          "host": ["{{gatewayUrl}}"],
+          "path": ["secure-transaction-risk", "v1", "assessments"]
+        }
+      }
+    },
+    {
+      "name": "2 - Downstream billing failure with controlled response",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('correlationId', 'moesif-failed-' + pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}", "type": "text" },
+          { "key": "Content-Type", "value": "application/json", "type": "text" },
+          { "key": "X-Correlation-ID", "value": "{{correlationId}}", "type": "text" },
+          { "key": "activityID", "value": "{{correlationId}}", "type": "text" },
+          { "key": "source-id", "value": "partner-billing-fail", "type": "text" },
+          { "key": "X-Partner-ID", "value": "{{partnerId}}", "type": "text" },
+          { "key": "X-Country-Code", "value": "{{countryCode}}", "type": "text" },
+          { "key": "application-id", "value": "regional-portal", "type": "text" },
+          { "key": "X-Subscription-ID", "value": "{{subscriptionId}}", "type": "text" },
+          { "key": "X-Subscription-Policy", "value": "{{subscriptionPolicy}}", "type": "text" },
+          { "key": "X-Commercial-Plan", "value": "{{commercialPlan}}", "type": "text" },
+          { "key": "X-Billable-Units", "value": "0", "type": "text" },
+          { "key": "X-Partial-Response-Policy", "value": "ALLOW_DEGRADED", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionId\": \"TX-MOESIF-FAILED-{{$timestamp}}\",\n  \"subscriberId\": \"SUB-1001\",\n  \"msisdn\": \"+5511999990001\",\n  \"amount\": 1250,\n  \"country\": \"BR\",\n  \"partialResponsePolicy\": \"ALLOW_DEGRADED\"\n}"
+        },
+        "url": {
+          "raw": "{{gatewayUrl}}/secure-transaction-risk/v1/assessments",
+          "host": ["{{gatewayUrl}}"],
+          "path": ["secure-transaction-risk", "v1", "assessments"]
+        }
+      }
+    },
+    {
+      "name": "3 - Gateway rejected transaction",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('correlationId', 'moesif-rejected-' + pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json", "type": "text" },
+          { "key": "X-Correlation-ID", "value": "{{correlationId}}", "type": "text" },
+          { "key": "activityID", "value": "{{correlationId}}", "type": "text" },
+          { "key": "X-Partner-ID", "value": "{{partnerId}}", "type": "text" },
+          { "key": "X-Country-Code", "value": "{{countryCode}}", "type": "text" },
+          { "key": "application-id", "value": "regional-portal-rejected", "type": "text" },
+          { "key": "X-Subscription-ID", "value": "{{subscriptionId}}", "type": "text" },
+          { "key": "X-Subscription-Policy", "value": "{{subscriptionPolicy}}", "type": "text" },
+          { "key": "X-Commercial-Plan", "value": "{{commercialPlan}}", "type": "text" },
+          { "key": "X-Billable-Units", "value": "0", "type": "text" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionId\": \"TX-MOESIF-REJECTED-{{$timestamp}}\",\n  \"subscriberId\": \"SUB-1001\",\n  \"msisdn\": \"+5511999990001\",\n  \"amount\": 1250,\n  \"country\": \"BR\",\n  \"partialResponsePolicy\": \"ALLOW_DEGRADED\"\n}"
+        },
+        "url": {
+          "raw": "{{gatewayUrl}}/secure-transaction-risk/v1/assessments",
+          "host": ["{{gatewayUrl}}"],
+          "path": ["secure-transaction-risk", "v1", "assessments"]
+        }
+      }
+    }
+  ]
+}

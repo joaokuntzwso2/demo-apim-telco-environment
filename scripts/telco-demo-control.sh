@@ -10,6 +10,17 @@ if [[ ! -f "${ROOT_DIR}/docker-compose.yml" ]]; then
 fi
 cd "$ROOT_DIR"
 
+# BEGIN TELCO LOCAL MOESIF ENV
+LOCAL_MOESIF_ENV="${ROOT_DIR}/.env.moesif.local"
+if [[ -f "$LOCAL_MOESIF_ENV" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$LOCAL_MOESIF_ENV"
+  set +a
+fi
+# END TELCO LOCAL MOESIF ENV
+
+
 ACTION="${1:-restart}"
 APIM_USER="${APIM_USERNAME:-admin}"
 APIM_PASS="${APIM_PASSWORD:-admin}"
@@ -73,6 +84,14 @@ do
   [[ -f "$file" ]] &&
     COMPOSE_FILES+=("$file")
 done
+
+# BEGIN TELCO LIVE MOESIF ANALYTICS OVERLAY
+if [[ "${TELCO_ENABLE_MOESIF_ANALYTICS:-false}" == "true" ]]; then
+  [[ -n "${MOESIF_APPLICATION_ID:-}" ]] || die "MOESIF_APPLICATION_ID is required when TELCO_ENABLE_MOESIF_ANALYTICS=true."
+  [[ -f docker-compose.moesif.yml ]] || die "docker-compose.moesif.yml is missing."
+  COMPOSE_FILES+=(docker-compose.moesif.yml)
+fi
+# END TELCO LIVE MOESIF ANALYTICS OVERLAY
 
 COMPOSE=("${DC[@]}")
 for file in "${COMPOSE_FILES[@]}"; do

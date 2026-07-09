@@ -180,7 +180,7 @@ while IFS=$'\t' read -r product_id product_name; do
   [[ -n "$product_id" ]] || continue
 
   case "$product_name" in
-    OpenGatewayFraudDefenseProduct|DigitalCustomerBSSExperienceProduct|FiveGNetworkMonetizationProduct)
+    OpenGatewayFraudDefenseProduct|DigitalCustomerBSSExperienceProduct|FiveGNetworkMonetizationProduct|SecureMobileTransactionsProduct)
       ;;
     *)
       continue
@@ -238,8 +238,8 @@ while IFS=$'\t' read -r product_id product_name; do
   echo "[verify-developer-experience] API PRODUCT OK: ${product_name}"
 done <<<"$product_ids"
 
-if (( product_count != 3 )); then
-  echo "[verify-developer-experience] Expected 3 native API Products, found ${product_count}." >&2
+if (( product_count != 4 )); then
+  echo "[verify-developer-experience] Expected 4 native API Products, found ${product_count}." >&2
   failures=$((failures + 1))
 fi
 

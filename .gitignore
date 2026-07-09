@@ -18,6 +18,7 @@
 *.jks
 *.keystore
 *.truststore
+deployment.toml
 secrets/
 credentials/
 tokens/
@@ -72,3 +73,9 @@ pipeline-state/
 # Local generated backup files
 *.before-*
 *.backup.*
+.runtime/
+.runtime/
+
+.env.moesif.local
+
+services/wso2-apim/local-conf/

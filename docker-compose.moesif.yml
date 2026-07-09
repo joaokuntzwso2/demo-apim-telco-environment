@@ -1,0 +1,6 @@
+services:
+  wso2-apim:
+    env_file:
+      - .env.moesif.local
+    volumes:
+      - ./services/wso2-apim/local-conf:/home/wso2carbon/wso2-config-volume:ro

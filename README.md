@@ -155,3 +155,11 @@ The SIM Swap fair-use and Quality-on-Demand assurance policies are attached to t
 - Postman collection: `artifacts/postman/telco-siddhi-runtime-enforcement.postman_collection.json`
 <!-- END SIDDHI RUNTIME ENFORCEMENT -->
 
+<!-- BEGIN TELCO LIVE MOESIF ANALYTICS -->
+## Live Gateway analytics with Moesif
+
+The opt-in `docker-compose.moesif.yml` overlay enables WSO2 API Manager 4.7's native Moesif publisher and a WSO2 analytics custom-data provider for partner, API Product, country/Gateway, subscription/commercial plan, billable units and transaction outcome. The existing APIM → MI → backend → Kafka/Prometheus/Loki/Tempo architecture remains unchanged.
+
+See `docs/live-gateway-moesif-analytics.md` for configuration, privacy, startup and end-to-end verification. Import `artifacts/postman/telco-live-moesif-analytics.postman_collection.json` for the successful, failed and rejected demonstration calls.
+<!-- END TELCO LIVE MOESIF ANALYTICS -->
+

@@ -1,5 +1,4 @@
-FROM wso2/wso2am:4.7.0
-
+FROM wso2/wso2am:4.7.0 AS telco-apim-runtime
 USER root
 
 RUN set -eux; \
@@ -105,3 +104,37 @@ RUN chmod +x /tmp/merge-oauth-business-controls-config.sh \
  && rm -f /tmp/merge-oauth-business-controls-config.sh
 # END TELCO APIM OAUTH BUSINESS CONTROLS
 USER wso2carbon
+
+# BEGIN TELCO LIVE MOESIF ANALYTICS
+FROM eclipse-temurin:21-jdk-jammy AS telco-moesif-provider-builder
+COPY --from=telco-apim-runtime /home/wso2carbon/wso2am-4.7.0/repository/components /opt/apim-components
+COPY services/wso2-apim/analytics-custom-data-provider/src/main/java /src
+RUN set -eux; \
+    mkdir -p /classes; \
+    find /opt/apim-components -type f -name '*.jar' -print | paste -sd: - > /tmp/classpath; \
+    javac --release 21 -encoding UTF-8 -cp "$(cat /tmp/classpath)" -d /classes $(find /src -type f -name '*.java' -print); \
+    jar --create --file /telco-analytics-custom-data-provider.jar -C /classes .
+
+FROM telco-apim-runtime AS telco-apim-final
+ARG ENABLE_MOESIF_ANALYTICS=false
+USER root
+COPY --from=telco-moesif-provider-builder /telco-analytics-custom-data-provider.jar /home/wso2carbon/wso2am-4.7.0/repository/components/lib/telco-analytics-custom-data-provider.jar
+
+
+
+# BEGIN TELCO APIM LOCAL CONFIG PERMISSIONS
+USER root
+
+RUN chown -R wso2carbon:wso2 \
+      /home/wso2carbon/wso2am-4.7.0/repository/conf \
+    && find \
+      /home/wso2carbon/wso2am-4.7.0/repository/conf \
+      -type d \
+      -exec chmod 775 {} \; \
+    && chmod 664 \
+      /home/wso2carbon/wso2am-4.7.0/repository/conf/deployment.toml
+
+# END TELCO APIM LOCAL CONFIG PERMISSIONS
+
+USER wso2carbon
+# END TELCO LIVE MOESIF ANALYTICS
