@@ -1,15 +1,71 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<sequence name="TelcoAiPartnerQuotaCommit" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+<sequence name="TelcoAiPartnerQuotaCommit"
+          trace="disable"
+          xmlns="http://ws.apache.org/ns/synapse">
+
   <script language="js"><![CDATA[
-    var props=java.lang.System.getProperties();
-    var ledger=props.get("telco.ai.partner.token.ledger");
-    var key=String(mc.getProperty("aiQuotaLedgerKey"));
-    var before=Number(mc.getProperty("aiTokensUsedBefore")||0);
-    var current=Number(mc.getProperty("aiTotalTokens")||0);
-    var after=before+current;
-    if (ledger!=null) ledger.put(key,java.lang.Long.valueOf(String(after)));
-    var quota=Number(mc.getProperty("partnerDailyTokenQuota")||100000);
-    mc.setProperty("aiTokensUsedAfter",String(after));
-    mc.setProperty("aiTokensRemaining",String(Math.max(0,quota-after)));
+    var preferences =
+      java.util.prefs.Preferences
+        .userRoot()
+        .node("telco-ai/partner-token-ledger");
+
+    var ledgerKey = String(
+      mc.getProperty("aiQuotaLedgerKey") || ""
+    );
+
+    var before = Number(
+      mc.getProperty("aiTokensUsedBefore") || 0
+    );
+
+    var current = Number(
+      mc.getProperty("aiTotalTokens") || 0
+    );
+
+    if (!isFinite(before) || before < 0) {
+      before = 0;
+    }
+
+    if (!isFinite(current) || current < 0) {
+      current = 0;
+    }
+
+    before = Math.floor(before);
+    current = Math.floor(current);
+
+    var after = before + current;
+
+    if (ledgerKey !== "") {
+      preferences.putLong(
+        ledgerKey,
+        after
+      );
+
+      /*
+       * The in-memory Preferences state is immediately visible.
+       * Attempt persistence without failing the AI request if the
+       * backing store is temporarily unavailable.
+       */
+      try {
+        preferences.flush();
+      } catch (ignored) {
+      }
+    }
+
+    var quota = Number(
+      mc.getProperty("partnerDailyTokenQuota") ||
+      100000
+    );
+
+    mc.setProperty(
+      "aiTokensUsedAfter",
+      String(after)
+    );
+
+    mc.setProperty(
+      "aiTokensRemaining",
+      String(
+        Math.max(0, quota - after)
+      )
+    );
   ]]></script>
 </sequence>
