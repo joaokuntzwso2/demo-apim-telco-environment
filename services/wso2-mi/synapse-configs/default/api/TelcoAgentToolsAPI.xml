@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api context="/telco-agent-tools/v1" name="TelcoAgentToolsAPI" xmlns="http://ws.apache.org/ns/synapse">
+  <resource methods="GET" uri-template="/health">
+    <inSequence><sequence key="TelcoAiCommonInit"/>
+      <payloadFactory media-type="json"><format>{"status":"UP","service":"TelcoAgentToolsAPI","governance":"APIM_SCOPES_REQUIRED","correlationId":"$1"}</format><args><arg evaluator="xml" expression="get-property('correlationId')"/></args></payloadFactory><respond/>
+    </inSequence><faultSequence><sequence key="TelcoAiNormalizedFault"/></faultSequence>
+  </resource>
+  <resource methods="GET" uri-template="/subscribers/{subscriberId}/status">
+    <inSequence><sequence key="TelcoAiCommonInit"/>
+      <property name="subscriberId" expression="get-property('uri.var.subscriberId')"/>
+      <payloadFactory media-type="json"><format>{"subscriberId":"$1","serviceStatus":"ACTIVE","accessNetwork":"5G","voice":"AVAILABLE","data":"AVAILABLE","roaming":"DISABLED","lastUpdated":"2026-07-09T12:00:00Z","partial":false,"source":"MI governed sandbox","partnerId":"$2","correlationId":"$3"}</format><args>
+        <arg evaluator="xml" expression="get-property('subscriberId')"/><arg evaluator="xml" expression="get-property('partnerId')"/><arg evaluator="xml" expression="get-property('correlationId')"/>
+      </args></payloadFactory><respond/>
+    </inSequence><faultSequence><sequence key="TelcoAiNormalizedFault"/></faultSequence>
+  </resource>
+  <resource methods="GET" uri-template="/outages/{outageId}">
+    <inSequence><sequence key="TelcoAiCommonInit"/>
+      <property name="outageId" expression="get-property('uri.var.outageId')"/>
+      <payloadFactory media-type="json"><format>{"outageId":"$1","status":"INVESTIGATING","affectedServices":["MOBILE_DATA"],"affectedRegion":"BR-SP-SAO-PAULO","estimatedRestoration":"2026-07-09T19:30:00Z","customerImpact":"DEGRADED","partial":false,"source":"MI governed sandbox","partnerId":"$2","correlationId":"$3"}</format><args>
+        <arg evaluator="xml" expression="get-property('outageId')"/><arg evaluator="xml" expression="get-property('partnerId')"/><arg evaluator="xml" expression="get-property('correlationId')"/>
+      </args></payloadFactory><respond/>
+    </inSequence><faultSequence><sequence key="TelcoAiNormalizedFault"/></faultSequence>
+  </resource>
+  <resource methods="POST" uri-template="/qod-sessions">
+    <inSequence><sequence key="TelcoAiCommonInit"/>
+      <property name="idempotencyKey" expression="get-property('transport','Idempotency-Key')"/>
+      <filter xpath="string-length(get-property('idempotencyKey')) &lt; 8"><then>
+        <property name="HTTP_SC" value="400" scope="axis2"/>
+        <payloadFactory media-type="json"><format>{"type":"https://telco.example/problems/validation","title":"Idempotency-Key is required","status":400,"code":"IDEMPOTENCY_KEY_REQUIRED","correlationId":"$1"}</format><args><arg evaluator="xml" expression="get-property('correlationId')"/></args></payloadFactory><respond/>
+      </then></filter>
+      <script language="js"><![CDATA[
+        var b=mc.getPayloadJSON()||{}; var sid=String(b.subscriberId||""), d=Number(b.durationSeconds||0);
+        mc.setProperty("toolValid",sid&&d>=60&&d<=3600?"true":"false");
+        mc.setProperty("toolSubscriber",sid); mc.setProperty("toolDuration",String(d)); mc.setProperty("toolProfile",String(b.profile||"LOW_LATENCY"));
+      ]]></script>
+      <filter xpath="get-property('toolValid') = 'false'"><then>
+        <property name="HTTP_SC" value="400" scope="axis2"/>
+        <payloadFactory media-type="json"><format>{"type":"https://telco.example/problems/validation","title":"Invalid QoD request","status":400,"code":"INVALID_QOD_REQUEST","correlationId":"$1"}</format><args><arg evaluator="xml" expression="get-property('correlationId')"/></args></payloadFactory><respond/>
+      </then></filter>
+      <property name="HTTP_SC" value="201" scope="axis2"/>
+      <payloadFactory media-type="json"><format>{"sessionId":"QOD-$1","status":"REQUESTED","subscriberId":"$2","durationSeconds":$3,"profile":"$4","idempotencyKey":"$5","source":"MI governed sandbox","partnerId":"$6","correlationId":"$7"}</format><args>
+        <arg evaluator="xml" expression="get-property('correlationId')"/><arg evaluator="xml" expression="get-property('toolSubscriber')"/><arg evaluator="xml" expression="get-property('toolDuration')"/><arg evaluator="xml" expression="get-property('toolProfile')"/><arg evaluator="xml" expression="get-property('idempotencyKey')"/><arg evaluator="xml" expression="get-property('partnerId')"/><arg evaluator="xml" expression="get-property('correlationId')"/>
+      </args></payloadFactory><respond/>
+    </inSequence><faultSequence><sequence key="TelcoAiNormalizedFault"/></faultSequence>
+  </resource>
+  <resource methods="POST" uri-template="/tickets">
+    <inSequence><sequence key="TelcoAiCommonInit"/>
+      <property name="idempotencyKey" expression="get-property('transport','Idempotency-Key')"/>
+      <filter xpath="string-length(get-property('idempotencyKey')) &lt; 8"><then>
+        <property name="HTTP_SC" value="400" scope="axis2"/>
+        <payloadFactory media-type="json"><format>{"type":"https://telco.example/problems/validation","title":"Idempotency-Key is required","status":400,"code":"IDEMPOTENCY_KEY_REQUIRED","correlationId":"$1"}</format><args><arg evaluator="xml" expression="get-property('correlationId')"/></args></payloadFactory><respond/>
+      </then></filter>
+      <script language="js"><![CDATA[
+        var b=mc.getPayloadJSON()||{}; var sid=String(b.subscriberId||""), summary=String(b.summary||"");
+        mc.setProperty("toolValid",sid&&summary.length>=5&&summary.length<=500?"true":"false");
+        mc.setProperty("toolSubscriber",sid); mc.setProperty("toolSummary",summary); mc.setProperty("toolSeverity",String(b.severity||"MEDIUM"));
+      ]]></script>
+      <filter xpath="get-property('toolValid') = 'false'"><then>
+        <property name="HTTP_SC" value="400" scope="axis2"/>
+        <payloadFactory media-type="json"><format>{"type":"https://telco.example/problems/validation","title":"Invalid ticket request","status":400,"code":"INVALID_TICKET_REQUEST","correlationId":"$1"}</format><args><arg evaluator="xml" expression="get-property('correlationId')"/></args></payloadFactory><respond/>
+      </then></filter>
+      <property name="HTTP_SC" value="201" scope="axis2"/>
+      <payloadFactory media-type="json"><format>{"ticketId":"TKT-$1","status":"OPEN","subscriberId":"$2","summary":"$3","severity":"$4","idempotencyKey":"$5","source":"MI governed sandbox","partnerId":"$6","correlationId":"$7"}</format><args>
+        <arg evaluator="xml" expression="get-property('correlationId')"/><arg evaluator="xml" expression="get-property('toolSubscriber')"/><arg evaluator="xml" expression="get-property('toolSummary')"/><arg evaluator="xml" expression="get-property('toolSeverity')"/><arg evaluator="xml" expression="get-property('idempotencyKey')"/><arg evaluator="xml" expression="get-property('partnerId')"/><arg evaluator="xml" expression="get-property('correlationId')"/>
+      </args></payloadFactory><respond/>
+    </inSequence><faultSequence><sequence key="TelcoAiNormalizedFault"/></faultSequence>
+  </resource>
+</api>

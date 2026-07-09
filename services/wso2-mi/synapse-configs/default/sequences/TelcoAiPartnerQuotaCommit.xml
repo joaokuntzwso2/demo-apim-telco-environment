@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="TelcoAiPartnerQuotaCommit" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+  <script language="js"><![CDATA[
+    var props=java.lang.System.getProperties();
+    var ledger=props.get("telco.ai.partner.token.ledger");
+    var key=String(mc.getProperty("aiQuotaLedgerKey"));
+    var before=Number(mc.getProperty("aiTokensUsedBefore")||0);
+    var current=Number(mc.getProperty("aiTotalTokens")||0);
+    var after=before+current;
+    if (ledger!=null) ledger.put(key,java.lang.Long.valueOf(String(after)));
+    var quota=Number(mc.getProperty("partnerDailyTokenQuota")||100000);
+    mc.setProperty("aiTokensUsedAfter",String(after));
+    mc.setProperty("aiTokensRemaining",String(Math.max(0,quota-after)));
+  ]]></script>
+</sequence>

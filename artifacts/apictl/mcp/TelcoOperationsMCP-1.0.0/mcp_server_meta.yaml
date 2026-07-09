@@ -1,0 +1,6 @@
+type: MCPServer
+version: v4.7.0
+data:
+  name: TelcoOperationsMCP
+  version: 1.0.0
+  provider: admin

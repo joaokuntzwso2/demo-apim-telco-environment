@@ -79,3 +79,5 @@ pipeline-state/
 .env.moesif.local
 
 services/wso2-apim/local-conf/
+.env.ai.local
+.telco-ai-runtime/

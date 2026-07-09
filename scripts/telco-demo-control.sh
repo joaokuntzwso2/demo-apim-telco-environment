@@ -74,6 +74,7 @@ for file in \
   docker-compose.opa.yml \
   docker-compose.central-policy.yml \
   docker-compose.mi.yml \
+  docker-compose.ai.yml \
   docker-compose.oauth-business-controls.yml \
   docker-compose.commercial.yml \
   docker-compose.mi.soap.yml \

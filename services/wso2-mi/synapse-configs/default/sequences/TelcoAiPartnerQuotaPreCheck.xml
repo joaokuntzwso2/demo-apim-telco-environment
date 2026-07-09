@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="TelcoAiPartnerQuotaPreCheck" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+  <property name="partnerDailyTokenQuota" expression="get-property('file','ai_partner_daily_token_quota')" scope="default"/>
+  <script language="js"><![CDATA[
+    var props=java.lang.System.getProperties();
+    var ledger=props.get("telco.ai.partner.token.ledger");
+    if (ledger==null) {
+      ledger=new java.util.concurrent.ConcurrentHashMap();
+      props.put("telco.ai.partner.token.ledger",ledger);
+    }
+    var fmt=new java.text.SimpleDateFormat("yyyy-MM-dd");
+    fmt.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+    var key=fmt.format(new java.util.Date())+"|"+String(mc.getProperty("partnerId"));
+    var used=Number(ledger.get(key)||0);
+    var quota=Number(mc.getProperty("partnerDailyTokenQuota")||100000);
+    mc.setProperty("aiQuotaLedgerKey",key);
+    mc.setProperty("aiTokensUsedBefore",String(used));
+    mc.setProperty("aiQuotaExceeded",used>=quota?"true":"false");
+  ]]></script>
+</sequence>

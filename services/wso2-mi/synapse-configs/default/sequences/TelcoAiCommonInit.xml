@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="TelcoAiCommonInit" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+  <property name="correlationId" expression="get-property('transport','X-Correlation-ID')" scope="default" type="STRING"/>
+  <filter xpath="string-length(get-property('correlationId')) = 0">
+    <then><property name="correlationId" expression="get-property('MessageID')" scope="default" type="STRING"/></then>
+  </filter>
+  <property name="partnerId" expression="get-property('transport','X-Partner-Id')" scope="default" type="STRING"/>
+  <filter xpath="string-length(get-property('partnerId')) = 0">
+    <then><property name="partnerId" value="partner-unknown" scope="default" type="STRING"/></then>
+  </filter>
+  <property name="X-Correlation-ID" expression="get-property('correlationId')" scope="transport" type="STRING"/>
+  <property name="X-Partner-Id" expression="get-property('partnerId')" scope="transport" type="STRING"/>
+  <property name="messageType" value="application/json" scope="axis2"/>
+</sequence>

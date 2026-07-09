@@ -1,0 +1,47 @@
+services:
+  wso2-mi:
+    env_file:
+      - .env.ai.local
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AI_LLM_BASE_URL: ${AI_LLM_BASE_URL:-https://api.openai.com/v1}
+      AI_MODEL_STANDARD: ${AI_MODEL_STANDARD:-gpt-4o-mini}
+      AI_MODEL_ADVANCED: ${AI_MODEL_ADVANCED:-gpt-4o}
+      AI_MAX_OUTPUT_TOKENS_STANDARD: ${AI_MAX_OUTPUT_TOKENS_STANDARD:-700}
+      AI_MAX_OUTPUT_TOKENS_ADVANCED: ${AI_MAX_OUTPUT_TOKENS_ADVANCED:-1200}
+      AI_TOOL_TIMEOUT_SECONDS: ${AI_TOOL_TIMEOUT_SECONDS:-12}
+      AI_MAX_HISTORY: ${AI_MAX_HISTORY:-6}
+      AI_PARTNER_DAILY_TOKEN_QUOTA: ${AI_PARTNER_DAILY_TOKEN_QUOTA:-100000}
+      AI_STANDARD_INPUT_USD_PER_1M: ${AI_STANDARD_INPUT_USD_PER_1M:-0.15}
+      AI_STANDARD_OUTPUT_USD_PER_1M: ${AI_STANDARD_OUTPUT_USD_PER_1M:-0.60}
+      AI_ADVANCED_INPUT_USD_PER_1M: ${AI_ADVANCED_INPUT_USD_PER_1M:-2.50}
+      AI_ADVANCED_OUTPUT_USD_PER_1M: ${AI_ADVANCED_OUTPUT_USD_PER_1M:-10.00}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          wget -qO- http://127.0.0.1:8290/telco-support/v1/health >/dev/null 2>&1
+          && wget -qO- http://127.0.0.1:8290/telco-agent-tools/v1/health >/dev/null 2>&1
+          || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 40
+      start_period: 120s
+
+  apim-bootstrapper:
+    environment:
+      TELCO_AI_ENABLED: "true"
+      WSO2_MI_URL: http://wso2-mi:8290
+    depends_on:
+      wso2-mi:
+        condition: service_healthy
+
+  demo-portal:
+    environment:
+      WSO2_APIM_URL: https://wso2-apim:9443
+      WSO2_APIM_GATEWAY_URL: https://wso2-apim:8243
+      APIM_PORTAL_STATE_FILE: /workspace/apim-portal-state/runtime.json
+      TELCO_AI_PARTNER_ID: partner-alpha
+    depends_on:
+      wso2-mi:
+        condition: service_healthy

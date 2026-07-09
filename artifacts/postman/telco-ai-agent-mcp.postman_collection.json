@@ -1,0 +1,97 @@
+{
+  "info": {
+    "name": "Telco AI Agent and MCP",
+    "_postman_id": "e1370a95-a516-4a45-b9f4-1a7765ce4001",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "gateway",
+      "value": "https://localhost:8243"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "partnerId",
+      "value": "partner-alpha"
+    }
+  ],
+  "item": [
+    {
+      "name": "Guard preview",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "X-Partner-Id",
+            "value": "{{partnerId}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"message\": \"My e-mail is user@example.com. Check subscriber 5511999999999.\", \"profile\": \"standard\"}"
+        },
+        "url": {
+          "raw": "{{gateway}}/telco-support/v1/guard-preview",
+          "host": [
+            "{{gateway}}"
+          ],
+          "path": [
+            "telco-support",
+            "v1",
+            "guard-preview"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Ask assistant",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "X-Agent-Tool-Token",
+            "value": "{{token}}"
+          },
+          {
+            "key": "X-Partner-Id",
+            "value": "{{partnerId}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"sessionId\": \"postman-demo\", \"message\": \"Retrieve service status for subscriber 5511999999999 and inspect outage OUT-2026.\", \"profile\": \"standard\"}"
+        },
+        "url": {
+          "raw": "{{gateway}}/telco-support/v1/chat",
+          "host": [
+            "{{gateway}}"
+          ],
+          "path": [
+            "telco-support",
+            "v1",
+            "chat"
+          ]
+        }
+      }
+    }
+  ]
+}

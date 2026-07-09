@@ -1,6 +1,8 @@
 const fs = require('fs');
 const express = require('express');
 const app = express();
+app.use(express.json({limit: '32kb'}));
+require('./telco-ai-routes')(app);
 const port = Number(process.env.PORT || 8080);
 
 const portalStateFile =

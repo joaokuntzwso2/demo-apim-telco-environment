@@ -1,0 +1,7 @@
+type: deployment_environments
+version: v4.7.0
+data:
+  - name: Default
+    deploymentEnvironment: Default
+    displayOnDevportal: true
+    deploymentVhost: localhost

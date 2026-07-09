@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="TelcoAiGuardPrompt" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+  <script language="js"><![CDATA[
+    var b=mc.getPayloadJSON() || {};
+    var original=String(b.message || "");
+    var masked=original, masks=[];
+    function mask(re,label,replacement) {
+      if (re.test(masked)) { masks.push(label); masked=masked.replace(re,replacement); }
+    }
+    mask(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,"EMAIL","[MASKED_EMAIL]");
+    mask(/\b(?:\+?\d[\d .()\-]{7,}\d)\b/g,"PHONE_OR_ACCOUNT","[MASKED_NUMBER]");
+    mask(/\b(?:IMSI|ICCID|MSISDN)\s*[:=]?\s*[A-Za-z0-9+_-]{6,30}\b/gi,"TELCO_IDENTIFIER","[MASKED_TELCO_ID]");
+    mask(/\bBearer\s+[A-Za-z0-9._~+\/=-]{10,}\b/gi,"BEARER_TOKEN","Bearer [MASKED_TOKEN]");
+    mask(/\b(?:sk|api)[-_][A-Za-z0-9_-]{12,}\b/gi,"API_KEY","[MASKED_API_KEY]");
+    var reasons=[], rules=[
+      ["IGNORE_PREVIOUS",/ignore\s+(all\s+)?(previous|prior)\s+(instructions|rules)/i],
+      ["SYSTEM_PROMPT_EXFILTRATION",/(show|reveal|print|repeat).{0,30}(system|developer)\s+(prompt|message|instructions)/i],
+      ["CONTROL_BYPASS",/(bypass|disable|evade).{0,30}(guardrail|policy|security|scope|authorization)/i],
+      ["SECRET_EXFILTRATION",/(reveal|dump|return).{0,30}(secret|token|password|api key|environment variable)/i],
+      ["ROLE_OVERRIDE",/(you are now|act as).{0,30}(unrestricted|root|developer mode|jailbroken)/i],
+      ["TOOL_POLICY_OVERRIDE",/(call|invoke|use).{0,30}(tool|api).{0,30}(without|ignore).{0,20}(scope|authorization|approval)/i]
+    ];
+    for (var i=0;i<rules.length;i++) if (rules[i][1].test(original)) reasons.push(rules[i][0]);
+    mc.setProperty("aiOriginalPrompt",original);
+    mc.setProperty("aiMaskedPrompt",masked);
+    mc.setProperty("aiMaskTypes",JSON.stringify(masks));
+    mc.setProperty("aiGuardReasons",JSON.stringify(reasons));
+    mc.setProperty("aiBlocked",reasons.length ? "true":"false");
+    mc.setProperty("aiProfile",String(b.profile||"").toLowerCase()==="advanced"?"advanced":"standard");
+    mc.setProperty("aiSessionId",String(b.sessionId||mc.getProperty("correlationId")));
+  ]]></script>
+</sequence>

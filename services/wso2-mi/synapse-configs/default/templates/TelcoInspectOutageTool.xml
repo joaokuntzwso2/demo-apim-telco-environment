@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template name="TelcoInspectOutageTool" xmlns="http://ws.apache.org/ns/synapse">
+  <parameter name="outageId" description="OUT-nnnn outage identifier" isMandatory="true"/>
+  <sequence>
+    <property name="uri.var.outageId" expression="$func:outageId"/>
+    <header name="Authorization" expression="fn:concat('Bearer ', get-property('transport','X-Agent-Tool-Token'))" scope="transport"/>
+    <header name="X-Correlation-ID" expression="get-property('correlationId')" scope="transport"/>
+    <header name="X-Partner-Id" expression="get-property('partnerId')" scope="transport"/>
+    <call><endpoint><http method="GET" uri-template="http://wso2-apim:8280/telco-agent-tools/v1/outages/{uri.var.outageId}">
+      <timeout><duration>5000</duration><responseAction>fault</responseAction></timeout>
+      <suspendOnFailure><initialDuration>5000</initialDuration><progressionFactor>2.0</progressionFactor><maximumDuration>30000</maximumDuration></suspendOnFailure>
+      <markForSuspension><retriesBeforeSuspension>1</retriesBeforeSuspension><retryDelay>500</retryDelay></markForSuspension>
+    </http></endpoint></call>
+  </sequence>
+</template>

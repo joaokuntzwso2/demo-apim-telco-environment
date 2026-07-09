@@ -1,0 +1,76 @@
+openapi: 3.0.3
+info:
+  title: Telco Support Assistant API
+  version: 1.0.0
+  description: Optional MI-native agent with APIM-governed tools, masking, injection protection, model routing, quotas and cost attribution.
+servers:
+  - url: /telco-support/v1
+x-telco-health-path: /health
+x-telco-health-method: GET
+x-telco-api-product: Telco AI Service Care Pack
+paths:
+  /health:
+    get:
+      operationId: getSupportAssistantHealth
+      security: []
+      responses: {'200': {description: Healthy}}
+  /guard-preview:
+    post:
+      operationId: previewPromptGuards
+      security: [{OAuth2: [telco_ai_support]}]
+      parameters:
+        - {$ref: '#/components/parameters/CorrelationId'}
+        - {$ref: '#/components/parameters/PartnerId'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AssistantRequest'}
+      responses: {'200': {description: Guard decision}}
+  /chat:
+    post:
+      operationId: askTelcoSupportAssistant
+      security:
+        - OAuth2: [telco_ai_support, telco_subscriber_status, telco_outage_read, telco_qod_request, telco_ticket_create]
+      parameters:
+        - {$ref: '#/components/parameters/CorrelationId'}
+        - {$ref: '#/components/parameters/PartnerId'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AssistantRequest'}
+      responses:
+        '200': {description: Assistant response with token usage and cost}
+        '400': {$ref: '#/components/responses/Problem'}
+        '429': {$ref: '#/components/responses/Problem'}
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9443/oauth2/token
+          scopes:
+            telco_ai_support: Invoke assistant
+            telco_subscriber_status: Read subscriber status
+            telco_outage_read: Inspect outages
+            telco_qod_request: Request QoD
+            telco_ticket_create: Open tickets
+  parameters:
+    CorrelationId: {name: X-Correlation-ID, in: header, required: false, schema: {type: string}}
+    PartnerId: {name: X-Partner-Id, in: header, required: true, schema: {type: string}}
+  schemas:
+    AssistantRequest:
+      type: object
+      required: [message]
+      properties:
+        sessionId: {type: string}
+        message: {type: string, minLength: 1, maxLength: 6000}
+        profile: {type: string, enum: [standard, advanced], default: standard}
+  responses:
+    Problem:
+      description: Normalized problem
+      content:
+        application/problem+json:
+          schema: {type: object}

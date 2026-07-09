@@ -1,0 +1,19 @@
+type: MCPServer
+version: v4.7.0
+data:
+  name: TelcoOperationsMCP
+  context: /telco-operations-mcp
+  version: 1.0.0
+  provider: admin
+  description: Governed telco operations generated from the APIM-managed tools OpenAPI.
+  lifeCycleStatus: PUBLISHED
+  isDefaultVersion: true
+  transport: [http, https]
+  securityScheme: [oauth2]
+  authorizationHeader: Authorization
+  visibility: PUBLIC
+  subscriptionAvailability: ALL_TENANTS
+  subscriptionPolicies: [Unlimited]
+  tags: [telco, ai, mcp, governed-tools]
+  subtypeConfiguration:
+    subtype: DIRECT_BACKEND

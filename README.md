@@ -163,3 +163,14 @@ The opt-in `docker-compose.moesif.yml` overlay enables WSO2 API Manager 4.7's na
 See `docs/live-gateway-moesif-analytics.md` for configuration, privacy, startup and end-to-end verification. Import `artifacts/postman/telco-live-moesif-analytics.postman_collection.json` for the successful, failed and rejected demonstration calls.
 <!-- END TELCO LIVE MOESIF ANALYTICS -->
 
+
+
+## Optional governed telco AI assistant and MCP
+
+Adds an MI-native agent, APIM-governed OpenAPI tools, an APIM 4.7 MCP server, token controls, safeguards, cost attribution and a portal widget. See `docs/telco-ai-agent-mcp.md`.
+
+```bash
+cp .env.ai.example .env.ai.local
+# Set OPENAI_API_KEY
+./scripts/reset-with-telco-ai.sh
+```
