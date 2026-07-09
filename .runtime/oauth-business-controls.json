@@ -1,0 +1,176 @@
+{
+  "marker": "oauth-consent-risk-controls-v1",
+  "generatedAt": "2026-07-09T11:39:49.604Z",
+  "api": {
+    "id": "7a169f3a-df5b-4b3b-a660-8044bcbb29c4",
+    "name": "SubscriberAuthorizationControlAPI",
+    "version": "1.0.0",
+    "context": "/subscriber-authorization/v1",
+    "gatewayUrl": "https://localhost:8243/subscriber-authorization/v1/1.0.0"
+  },
+  "scopes": [
+    {
+      "name": "Number Verification Read",
+      "key": "number-verification:read",
+      "description": "Read consented number-verification outcomes.",
+      "roles": [
+        "telco_partner",
+        "telco_operations",
+        "telco_platform_admin"
+      ]
+    },
+    {
+      "name": "SIM Swap Read",
+      "key": "sim-swap:read",
+      "description": "Read consented SIM-swap risk.",
+      "roles": [
+        "telco_partner",
+        "telco_operations",
+        "telco_platform_admin"
+      ]
+    },
+    {
+      "name": "Device Location Verify",
+      "key": "device-location:verify",
+      "description": "Verify device location for an approved purpose.",
+      "roles": [
+        "telco_partner",
+        "telco_operations",
+        "telco_platform_admin"
+      ]
+    },
+    {
+      "name": "Quality on Demand Request",
+      "key": "qod:request",
+      "description": "Request a purpose-bound Quality-on-Demand session.",
+      "roles": [
+        "telco_partner",
+        "telco_operations",
+        "telco_platform_admin"
+      ]
+    },
+    {
+      "name": "Commercial Usage Read",
+      "key": "commercial-usage:read",
+      "description": "Read usage and plan information for an authorized partner.",
+      "roles": [
+        "telco_partner",
+        "telco_operations",
+        "telco_product_manager",
+        "telco_platform_admin"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "partner.alpha",
+      "password": "PartnerAlpha#2026",
+      "role": "Internal/telco_partner",
+      "persona": "partner",
+      "partnerId": "partner-alpha",
+      "country": "BR",
+      "userStoreRole": "telco_partner",
+      "roles": [
+        "Internal/everyone",
+        "telco_partner"
+      ],
+      "userId": "partner.alpha",
+      "groupId": "Internal/telco_partner"
+    },
+    {
+      "username": "partner.beta",
+      "password": "PartnerBeta#2026",
+      "role": "Internal/telco_partner",
+      "persona": "partner",
+      "partnerId": "partner-beta",
+      "country": "MX",
+      "userStoreRole": "telco_partner",
+      "roles": [
+        "Internal/everyone",
+        "telco_partner"
+      ],
+      "userId": "partner.beta",
+      "groupId": "Internal/telco_partner"
+    },
+    {
+      "username": "telco.operations",
+      "password": "TelcoOperations#2026",
+      "role": "Internal/telco_operations",
+      "persona": "operations",
+      "partnerId": "*",
+      "country": "*",
+      "userStoreRole": "telco_operations",
+      "roles": [
+        "Internal/everyone",
+        "telco_operations"
+      ],
+      "userId": "telco.operations",
+      "groupId": "Internal/telco_operations"
+    },
+    {
+      "username": "telco.product",
+      "password": "TelcoProduct#2026",
+      "role": "Internal/telco_product_manager",
+      "persona": "product_manager",
+      "partnerId": "*",
+      "country": "*",
+      "userStoreRole": "telco_product_manager",
+      "roles": [
+        "Internal/everyone",
+        "telco_product_manager"
+      ],
+      "userId": "telco.product",
+      "groupId": "Internal/telco_product_manager"
+    },
+    {
+      "username": "telco.admin",
+      "password": "TelcoAdmin#2026",
+      "role": "Internal/telco_platform_admin",
+      "persona": "platform_administrator",
+      "partnerId": "*",
+      "country": "*",
+      "userStoreRole": "telco_platform_admin",
+      "roles": [
+        "Internal/everyone",
+        "telco_platform_admin"
+      ],
+      "userId": "telco.admin",
+      "groupId": "Internal/telco_platform_admin"
+    }
+  ],
+  "application": {
+    "applicationId": "ee3c3153-a84f-4f5b-940d-2153acc671ce",
+    "apiId": "7a169f3a-df5b-4b3b-a660-8044bcbb29c4",
+    "consumerKey": "0RhrtB6mfX_xUV1PmYlPNw13AUsa",
+    "consumerSecret": "oPV_UuLYF7mVzBoGUH5fTDoJYnYa",
+    "subscriptionPolicy": "TelcoConsentRiskPartner",
+    "operationsClient": {
+      "applicationId": "cfb389f9-042a-4db1-b2f2-f2a7840cf1f6",
+      "consumerKey": "Vgo56HlXq_0RQOVx4Us0TxLLLyQa",
+      "consumerSecret": "UatOsXUKFHmMzyWf8SN4XRk5X6Ia",
+      "subscriptionPolicy": "TelcoConsentRiskOperations"
+    },
+    "expiredTokenClient": {
+      "applicationId": "67bbb53a-24ca-4814-95f7-16b74cd58231",
+      "consumerKey": "5SbjghQ8651pcRHLB3t_KywUoxQa",
+      "consumerSecret": "mxQCxKsg9GNTfo3nhGlenmNKhp8a",
+      "validityTime": 2
+    }
+  },
+  "sandboxConsents": [
+    {
+      "consentId": "CONSENT-ALPHA-001",
+      "partnerId": "partner-alpha",
+      "country": "BR",
+      "subscriberNumber": "+5511999990001",
+      "status": "ACTIVE"
+    },
+    {
+      "consentId": "CONSENT-BETA-001",
+      "partnerId": "partner-beta",
+      "country": "MX",
+      "subscriberNumber": "+525512340001",
+      "status": "ACTIVE"
+    }
+  ]
+}

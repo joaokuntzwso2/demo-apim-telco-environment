@@ -57,19 +57,21 @@ volumes:
 YAML
 
 COMPOSE_FILES=(docker-compose.yml)
+
 for file in \
   docker-compose.kafka.yml \
   docker-compose.opa.yml \
   docker-compose.central-policy.yml \
   docker-compose.mi.yml \
-    docker-compose.oauth-business-controls.yml \
+  docker-compose.oauth-business-controls.yml \
   docker-compose.commercial.yml \
   docker-compose.mi.soap.yml \
   docker-compose.observability.yml \
   docker-compose.audit-siem.yml \
   docker-compose.runtime-persistence.yml
 do
-  [[ -f "$file" ]] && COMPOSE_FILES+=("$file")
+  [[ -f "$file" ]] &&
+    COMPOSE_FILES+=("$file")
 done
 
 COMPOSE=("${DC[@]}")
@@ -1022,7 +1024,7 @@ data:
     displayOnDevportal: true
     deploymentVhost: localhost
 YAML
-apictl import api --file "$PROJECT" --environment "$ENV_NAME" --update=true -k
+apictl import api --file "$PROJECT" --environment "$ENV_NAME" --update=true --rotate-revision -k
 for attempt in $(seq 1 30); do
   set +e
   output="$(apictl change-status api -a Publish -n TelcoObservabilityAPI -v 1.0.0 --provider "$APIM_USER" -e "$ENV_NAME" -k 2>&1)"
@@ -1637,6 +1639,7 @@ start_stack() {
   fi
   start_portals
   verify_base_demo
+  bash scripts/complete-oauth-post-start.sh
   seed_observability
   seed_audit_siem
 
@@ -1675,6 +1678,18 @@ status_stack() {
   "${COMPOSE[@]}" ps -a
 }
 
+
+recreate_stack() {
+  log "Recreating the complete demo while preserving named volumes"
+
+  "${COMPOSE[@]}" down \
+    --remove-orphans \
+    --timeout 30 ||
+    true
+
+  start_stack
+}
+
 case "$ACTION" in
   start)
     start_stack
@@ -1682,10 +1697,7 @@ case "$ACTION" in
   stop)
     stop_stack
     ;;
-  restart)
-    stop_stack
-    start_stack
-    ;;
+  restart) recreate_stack ;;
   reset)
     reset_stack
     start_stack
