@@ -312,3 +312,56 @@ pre {
   .side-nav { grid-template-columns: 1fr; }
   .health-card { min-width: 0; }
 }
+
+/* Telco AI governed-agent minimize control */
+.telco-ai-widget {
+  transition:
+    height 180ms ease,
+    min-height 180ms ease,
+    max-height 180ms ease;
+}
+
+.telco-ai-widget.is-minimized {
+  height: 60px !important;
+  min-height: 60px !important;
+  max-height: 60px !important;
+  overflow: hidden !important;
+}
+
+.telco-ai-minimize-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition:
+    transform 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.telco-ai-minimize-button:hover {
+  transform: translateY(-1px);
+  background: rgba(30, 41, 59, 0.98);
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
+.telco-ai-minimize-button:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.45);
+  outline-offset: 2px;
+}
