@@ -81,3 +81,61 @@ pipeline-state/
 services/wso2-apim/local-conf/
 .env.ai.local
 .telco-ai-runtime/
+
+# Repository cleanup reports and local recovery material
+.repo-audit/
+.repo-cleanup-backups/
+
+# Generated reset, restart, bootstrap and verification output
+.reset-validation-logs/
+.restart-backups/
+**/.reset-validation-logs/
+**/.restart-backups/
+**/.backups/
+.tmp-*/
+**/.tmp-*/
+
+# Local environment and secret material
+!.env.*.example
+*.local.env
+**/secrets/
+**/credentials/
+**/tokens/
+*.pfx
+!**/*.example.pem
+!**/*.example.key
+
+# Generated OAuth, DCR, token and bootstrap state
+**/*oauth-runtime-state*.json
+**/*oauth-application-state*.json
+**/*bootstrap-runtime-state*.json
+**/*application-keys*.json
+**/*generated-token*.json
+**/*dcr-response*.json
+**/*access-token*.txt
+**/*refresh-token*.txt
+
+# Logs, traces and local HTTP captures
+*.trace
+*.har
+*.retry
+
+# OS and editor files
+Thumbs.db
+*~
+
+# Java, JavaScript and Python build output
+**/target/
+*.class
+dist/
+build/
+coverage/
+.nyc_output/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# APICTL and temporary import/export workspaces
+.apictl/
+**/.apictl/
