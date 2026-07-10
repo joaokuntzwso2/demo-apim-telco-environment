@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="TelcoAiBuildResponse" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+  <property name="standardInputRate" expression="get-property('file','ai_standard_input_usd_per_1m')"/>
+  <property name="standardOutputRate" expression="get-property('file','ai_standard_output_usd_per_1m')"/>
+  <property name="advancedInputRate" expression="get-property('file','ai_advanced_input_usd_per_1m')"/>
+  <property name="advancedOutputRate" expression="get-property('file','ai_advanced_output_usd_per_1m')"/>
+  <script language="js"><![CDATA[
+    var raw=mc.getPayloadJSON()||{}, usage=raw.tokenUsage||{};
+    var input=Number(usage.inputTokenCount||0), output=Number(usage.outputTokenCount||0);
+    var total=Number(usage.totalTokenCount||(input+output));
+    var profile=String(mc.getProperty("aiProfile")||"standard");
+    var inRate=Number(mc.getProperty(profile==="advanced"?"advancedInputRate":"standardInputRate")||0);
+    var outRate=Number(mc.getProperty(profile==="advanced"?"advancedOutputRate":"standardOutputRate")||0);
+    var cost=((input*inRate)+(output*outRate))/1000000.0;
+    mc.setProperty("aiInputTokens",String(input)); mc.setProperty("aiOutputTokens",String(output));
+    mc.setProperty("aiTotalTokens",String(total)); mc.setProperty("aiCostUsd",String(cost));
+    mc.setPayloadJSON({
+      answer:String(raw.content||""),
+      modelRoute:{profile:profile,model:profile==="advanced"?"__AI_MODEL_ADVANCED__":"__AI_MODEL_STANDARD__"},
+      safeguards:{sensitiveDataMasked:String(mc.getProperty("aiMaskTypes")||"[]")!=="[]",
+        maskTypes:JSON.parse(String(mc.getProperty("aiMaskTypes")||"[]")),promptInjectionBlocked:false},
+      usage:{inputTokens:input,outputTokens:output,totalTokens:total},
+      costAttribution:{currency:"USD",estimatedCost:Number(cost.toFixed(8)),
+        partnerId:String(mc.getProperty("partnerId")),correlationId:String(mc.getProperty("correlationId")),
+        pricingSource:"demo environment configuration"},
+      toolExecutions:raw.toolExecutions||[],finishReason:raw.finishReason||null,
+      correlationId:String(mc.getProperty("correlationId"))
+    });
+  ]]></script>
+  <sequence key="TelcoAiPartnerQuotaCommit"/>
+  <script language="js"><![CDATA[
+    var b=mc.getPayloadJSON();
+    b.usage.partnerDailyTokenQuota=Number(mc.getProperty("partnerDailyTokenQuota")||0);
+    b.usage.partnerTokensUsedToday=Number(mc.getProperty("aiTokensUsedAfter")||0);
+    b.usage.partnerTokensRemainingToday=Number(mc.getProperty("aiTokensRemaining")||0);
+    mc.setPayloadJSON(b);
+  ]]></script>
+  <log level="custom">
+    <property name="event" value="AI_USAGE_COST"/>
+    <property name="partnerId" expression="get-property('partnerId')"/>
+    <property name="profile" expression="get-property('aiProfile')"/>
+    <property name="inputTokens" expression="get-property('aiInputTokens')"/>
+    <property name="outputTokens" expression="get-property('aiOutputTokens')"/>
+    <property name="totalTokens" expression="get-property('aiTotalTokens')"/>
+    <property name="estimatedCostUsd" expression="get-property('aiCostUsd')"/>
+    <property name="correlationId" expression="get-property('correlationId')"/>
+  </log>
+  <property name="HTTP_SC" value="200" scope="axis2"/>
+  <property name="messageType" value="application/json" scope="axis2"/>
+  <respond/>
+</sequence>

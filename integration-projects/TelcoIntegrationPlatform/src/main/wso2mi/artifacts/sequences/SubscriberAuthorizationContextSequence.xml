@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="SubscriberAuthorizationContextSequence"
+          trace="disable"
+          xmlns="http://ws.apache.org/ns/synapse">
+
+    <property name="correlation.id"
+              expression="$trp:X-Correlation-ID"
+              scope="default"
+              type="STRING"/>
+
+    <filter xpath="not(normalize-space(get-property('correlation.id')))">
+        <then>
+            <property name="correlation.id"
+                      expression="get-property('MessageID')"
+                      scope="default"
+                      type="STRING"/>
+        </then>
+    </filter>
+
+    <header name="X-Correlation-ID"
+            expression="get-property('correlation.id')"
+            scope="transport"/>
+
+    <property name="backend.jwt"
+              expression="$trp:X-JWT-Assertion"
+              scope="default"
+              type="STRING"/>
+
+    <script language="js"><![CDATA[
+        var registry = {"68deeefb-a0c4-48af-9347-f571701304d6":{"username":"partner.alpha","persona":"partner","partnerId":"partner-alpha","countries":"BR"},"partner.alpha":{"username":"partner.alpha","persona":"partner","partnerId":"partner-alpha","countries":"BR"},"d348db42-0ea7-410f-a708-379017c71dc6":{"username":"partner.beta","persona":"partner","partnerId":"partner-beta","countries":"MX"},"partner.beta":{"username":"partner.beta","persona":"partner","partnerId":"partner-beta","countries":"MX"},"16d77b00-c093-4e1b-bc8e-5cf061c8fdd1":{"username":"telco.operations","persona":"operations","partnerId":"*","countries":"BR,MX,CO,AR,PE,CL"},"telco.operations":{"username":"telco.operations","persona":"operations","partnerId":"*","countries":"BR,MX,CO,AR,PE,CL"},"a9608db0-9e9e-4e92-9cdd-e179cb09dbfb":{"username":"telco.product","persona":"product_manager","partnerId":"*","countries":"BR,MX,CO,AR,PE,CL"},"telco.product":{"username":"telco.product","persona":"product_manager","partnerId":"*","countries":"BR,MX,CO,AR,PE,CL"},"4fac630a-c616-4468-94ef-16c7450fe8af":{"username":"telco.admin","persona":"platform_administrator","partnerId":"*","countries":"*"},"telco.admin":{"username":"telco.admin","persona":"platform_administrator","partnerId":"*","countries":"*"},"admin":{"username":"admin","persona":"platform_administrator","partnerId":"*","countries":"*"}};
+        var jwt = String(
+            mc.getProperty('backend.jwt') || ''
+        );
+
+        var subjectRaw = '';
+        var username = '';
+        var persona = '';
+        var partnerId = '';
+        var countries = '';
+        var claimKeys = '';
+
+        function decodeBase64Url(value) {
+            var alphabet =
+                'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+                'abcdefghijklmnopqrstuvwxyz' +
+                '0123456789+/';
+
+            var normalized = String(value || '')
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+
+            while (normalized.length % 4 !== 0) {
+                normalized += '=';
+            }
+
+            var bytes = '';
+            var buffer = 0;
+            var bits = 0;
+
+            for (
+                var index = 0;
+                index < normalized.length;
+                index++
+            ) {
+                var character =
+                    normalized.charAt(index);
+
+                if (character === '=') {
+                    break;
+                }
+
+                var alphabetIndex =
+                    alphabet.indexOf(character);
+
+                if (alphabetIndex < 0) {
+                    continue;
+                }
+
+                buffer =
+                    (buffer << 6) |
+                    alphabetIndex;
+
+                bits += 6;
+
+                if (bits >= 8) {
+                    bits -= 8;
+
+                    bytes += String.fromCharCode(
+                        (buffer >> bits) & 255
+                    );
+                }
+            }
+
+            try {
+                var encoded = '';
+
+                for (
+                    var byteIndex = 0;
+                    byteIndex < bytes.length;
+                    byteIndex++
+                ) {
+                    var hex =
+                        bytes
+                            .charCodeAt(byteIndex)
+                            .toString(16);
+
+                    encoded +=
+                        '%' +
+                        (
+                            hex.length === 1
+                                ? '0' + hex
+                                : hex
+                        );
+                }
+
+                return decodeURIComponent(encoded);
+            } catch (ignored) {
+                return bytes;
+            }
+        }
+
+        function normalizeIdentity(value) {
+            if (
+                value === null ||
+                typeof value === 'undefined'
+            ) {
+                return '';
+            }
+
+            var normalized = String(value)
+                .replace(/^\s+|\s+$/g, '')
+                .replace(/^"+|"+$/g, '')
+                .replace(/@carbon\.super$/i, '')
+                .replace(/^PRIMARY\//i, '')
+                .replace(/^Internal\//i, '');
+
+            if (
+                normalized.indexOf('/') >= 0
+            ) {
+                var pieces =
+                    normalized.split('/');
+
+                normalized =
+                    pieces[pieces.length - 1];
+            }
+
+            return normalized;
+        }
+
+        try {
+            var token = jwt;
+
+            if (
+                token.indexOf('.') < 0 &&
+                token.length > 0
+            ) {
+                var outerDecoded =
+                    decodeBase64Url(token);
+
+                if (
+                    outerDecoded.indexOf('.') >= 0
+                ) {
+                    token = outerDecoded;
+                }
+            }
+
+            var tokenParts =
+                token.split('.');
+
+            if (tokenParts.length >= 2) {
+                var claims = JSON.parse(
+                    decodeBase64Url(
+                        tokenParts[1]
+                    )
+                );
+
+                var keys = [];
+
+                for (var key in claims) {
+                    if (
+                        Object.prototype
+                            .hasOwnProperty
+                            .call(claims, key)
+                    ) {
+                        keys.push(key);
+                    }
+                }
+
+                claimKeys = keys.join(',');
+
+                var candidates = [
+                    claims[
+                        'http://wso2.org/claims/enduser'
+                    ],
+                    claims[
+                        'http://wso2.org/claims/username'
+                    ],
+                    claims.preferred_username,
+                    claims.username,
+                    claims.sub
+                ];
+
+                subjectRaw = String(
+                    candidates[0] ||
+                    candidates[candidates.length - 1] ||
+                    ''
+                );
+
+                for (
+                    var candidateIndex = 0;
+                    candidateIndex < candidates.length;
+                    candidateIndex++
+                ) {
+                    var candidate =
+                        normalizeIdentity(
+                            candidates[candidateIndex]
+                        );
+
+                    if (
+                        candidate &&
+                        registry[candidate]
+                    ) {
+                        var identity =
+                            registry[candidate];
+
+                        username =
+                            identity.username;
+
+                        persona =
+                            identity.persona;
+
+                        partnerId =
+                            identity.partnerId;
+
+                        countries =
+                            identity.countries;
+
+                        break;
+                    }
+                }
+            }
+        } catch (error) {
+            mc.setProperty(
+                'backend.jwt.decode.error',
+                String(error)
+            );
+        }
+
+        mc.setProperty(
+            'backend.jwt.subject.raw',
+            subjectRaw
+        );
+
+        mc.setProperty(
+            'backend.jwt.claim.keys',
+            claimKeys
+        );
+
+        mc.setProperty(
+            'authenticated.user',
+            username
+        );
+
+        mc.setProperty(
+            'persona',
+            persona
+        );
+
+        mc.setProperty(
+            'authorized.partner.id',
+            partnerId
+        );
+
+        mc.setProperty(
+            'authorized.countries',
+            countries
+        );
+    ]]></script>
+</sequence>

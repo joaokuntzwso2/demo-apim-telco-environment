@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="BillingModernizationSoapFaultSequence">
+    <property name="legacyFaultCode"
+              expression="string(//*[local-name()='LegacyBillingFault']/*[local-name()='code'])"
+              scope="default"
+              type="STRING"/>
+    <property name="legacyFaultMessage"
+              expression="string(//*[local-name()='LegacyBillingFault']/*[local-name()='message'])"
+              scope="default"
+              type="STRING"/>
+    <property name="legacyFaultNode"
+              expression="string(//*[local-name()='LegacyBillingFault']/*[local-name()='backendNode'])"
+              scope="default"
+              type="STRING"/>
+
+    <switch source="get-property('legacyFaultCode')">
+        <case regex="BSS-ACCOUNT-NOT-FOUND">
+            <property name="normalizedErrorCode" value="BILLING_ACCOUNT_NOT_FOUND" scope="default" type="STRING"/>
+            <property name="normalizedErrorTitle" value="Billing account not found" scope="default" type="STRING"/>
+            <property name="normalizedHttpStatus" value="404" scope="default" type="STRING"/>
+            <property name="HTTP_SC" value="404" scope="axis2" type="STRING"/>
+        </case>
+        <case regex="BSS-ADJUSTMENT-REJECTED">
+            <property name="normalizedErrorCode" value="BILLING_ADJUSTMENT_REJECTED" scope="default" type="STRING"/>
+            <property name="normalizedErrorTitle" value="Billing adjustment rejected" scope="default" type="STRING"/>
+            <property name="normalizedHttpStatus" value="422" scope="default" type="STRING"/>
+            <property name="HTTP_SC" value="422" scope="axis2" type="STRING"/>
+        </case>
+        <case regex="BSS-AUTH-FAILED">
+            <property name="normalizedErrorCode" value="LEGACY_AUTHENTICATION_FAILED" scope="default" type="STRING"/>
+            <property name="normalizedErrorTitle" value="Legacy billing authentication failed" scope="default" type="STRING"/>
+            <property name="normalizedHttpStatus" value="502" scope="default" type="STRING"/>
+            <property name="HTTP_SC" value="502" scope="axis2" type="STRING"/>
+        </case>
+        <case regex="BSS-INVALID-REQUEST|BSS-ACTION-NOT-SUPPORTED">
+            <property name="normalizedErrorCode" value="LEGACY_REQUEST_REJECTED" scope="default" type="STRING"/>
+            <property name="normalizedErrorTitle" value="Legacy billing request rejected" scope="default" type="STRING"/>
+            <property name="normalizedHttpStatus" value="502" scope="default" type="STRING"/>
+            <property name="HTTP_SC" value="502" scope="axis2" type="STRING"/>
+        </case>
+        <default>
+            <property name="normalizedErrorCode" value="LEGACY_SOAP_FAULT" scope="default" type="STRING"/>
+            <property name="normalizedErrorTitle" value="Legacy billing SOAP fault" scope="default" type="STRING"/>
+            <property name="normalizedHttpStatus" value="502" scope="default" type="STRING"/>
+            <property name="HTTP_SC" value="502" scope="axis2" type="STRING"/>
+        </default>
+    </switch>
+
+    <log category="WARN" level="custom">
+        <property name="event" value="legacy-billing-soap-fault-normalized"/>
+        <property name="correlationId" expression="get-property('correlation.id')"/>
+        <property name="legacyFaultCode" expression="get-property('legacyFaultCode')"/>
+        <property name="backendNode" expression="get-property('legacyFaultNode')"/>
+    </log>
+
+    <script language="js"><![CDATA[
+        function value(name, fallback) {
+            var current = mc.getProperty(name);
+            return current == null || String(current).length === 0 ? fallback : String(current);
+        }
+        var status = Number(mc.getProperty('normalizedHttpStatus') || 502);
+        mc.setPayloadJSON({
+            type: 'https://demo.americamovil.com/errors/' + value('normalizedErrorCode', 'LEGACY_SOAP_FAULT').toLowerCase().replace(/_/g, '-'),
+            title: value('normalizedErrorTitle', 'Legacy billing SOAP fault'),
+            status: status,
+            code: value('normalizedErrorCode', 'LEGACY_SOAP_FAULT'),
+            detail: value('legacyFaultMessage', 'The legacy billing system returned a SOAP fault'),
+            legacy: {
+                code: value('legacyFaultCode', 'UNKNOWN'),
+                backendNode: value('legacyFaultNode', 'UNKNOWN')
+            },
+            correlationId: value('correlation.id', '')
+        });
+    ]]></script>
+    <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+    <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+    <property name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport" type="STRING"/>
+    <respond/>
+</sequence>

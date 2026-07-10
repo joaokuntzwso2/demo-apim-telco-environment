@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api context="/subscriber-authorization/v1" name="SubscriberAuthorizationControlAPI" xmlns="http://ws.apache.org/ns/synapse">
+    <resource methods="GET" uri-template="/health">
+        <inSequence>
+            <property name="correlation.id" expression="$trp:X-Correlation-ID" scope="default" type="STRING"/>
+            <filter xpath="not(normalize-space(get-property('correlation.id')))">
+                <then>
+                    <property name="correlation.id" expression="get-property('MessageID')" scope="default" type="STRING"/>
+                </then>
+            </filter>
+            <property name="HTTP_SC" scope="axis2" type="INTEGER" value="200"/>
+            <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+            <payloadFactory media-type="json">
+                <format>{"status":"UP","service":"SubscriberAuthorizationControlAPI","runtime":"WSO2 Integrator MI 4.6.0","correlationId":"$1"}</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="SubscriberAuthorizationFaultSequence"/>
+        </faultSequence>
+    </resource>
+
+    <resource methods="POST" uri-template="/number-verifications">
+        <inSequence>
+            <property name="capability" scope="default" type="STRING" value="number-verification"/>
+            <sequence key="SubscriberAuthorizationContextSequence"/>
+            <property name="requested.partner.id" expression="json-eval($.partnerId)" scope="default" type="STRING"/>
+            <property name="requested.country" expression="json-eval($.country)" scope="default" type="STRING"/>
+            <property name="requested.subscriber" expression="json-eval($.subscriberNumber)" scope="default" type="STRING"/>
+            <property name="requested.purpose" expression="json-eval($.purpose)" scope="default" type="STRING"/>
+            <property name="requested.consent.id" expression="json-eval($.consentId)" scope="default" type="STRING"/>
+            <property name="requested.transaction.id" expression="json-eval($.transactionId)" scope="default" type="STRING"/>
+            <property name="requested.data.access" expression="$trp:X-Data-Access" scope="default" type="STRING"/>
+            <sequence key="SubscriberAuthorizationBusinessControlSequence"/>
+            <payloadFactory media-type="json">
+                <format>{"transactionId":"$1","partnerId":"$2","msisdn":"$3","amount":10,"currency":"BRL","expectedCountry":"$4","device":{"latitude":-23.55052,"longitude":-46.633308},"partialResponsePolicy":"ALLOW_DEGRADED"}</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('requested.transaction.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.partner.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.subscriber')"/>
+                    <arg evaluator="xml" expression="get-property('requested.country')"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_METHOD" scope="axis2" type="STRING" value="POST"/>
+            <call>
+                <endpoint key="SubscriberRiskAssessmentFailoverEndpoint"/>
+            </call>
+            <sequence key="SubscriberRiskDecisionSequence"/>
+            <payloadFactory media-type="json">
+                <format>{
+                  "decision":"$1",
+                  "authorizationStatus":"$2",
+                  "capability":"number-verification",
+                  "persona":"$3",
+                  "partnerId":"$4",
+                  "country":"$5",
+                  "subscriber":{"phoneNumber":"$6","masked":$7},
+                  "consent":{"id":"$8","purpose":"$9","status":"ACTIVE"},
+                  "risk":{"orchestration":"SecureTransactionRiskAssessmentAPI","score":$10,"partialResponse":$11,"partialResponsePolicy":"ALLOW_DEGRADED","reasons":"$12","unavailableServices":"$13"},
+                  "correlationId":"$14"
+                }</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('risk.decision')"/>
+                    <arg evaluator="xml" expression="get-property('risk.authorization.status')"/>
+                    <arg evaluator="xml" expression="get-property('persona')"/>
+                    <arg evaluator="xml" expression="get-property('requested.partner.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.country')"/>
+                    <arg evaluator="xml" expression="get-property('returned.subscriber')"/>
+                    <arg evaluator="xml" expression="get-property('subscriber.masked')"/>
+                    <arg evaluator="xml" expression="get-property('requested.consent.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.purpose')"/>
+                    <arg evaluator="xml" expression="get-property('risk.score')"/>
+                    <arg evaluator="xml" expression="get-property('risk.partial')"/>
+                    <arg evaluator="xml" expression="get-property('risk.reason.summary')"/>
+                    <arg evaluator="xml" expression="get-property('risk.unavailable.summary')"/>
+                    <arg evaluator="xml" expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+            <property name="HTTP_SC" scope="axis2" type="INTEGER" value="200"/>
+            <respond/>
+        </inSequence>
+        <faultSequence><sequence key="SubscriberAuthorizationFaultSequence"/></faultSequence>
+    </resource>
+
+    <resource methods="POST" uri-template="/sim-swap-checks">
+        <inSequence>
+            <property name="capability" scope="default" type="STRING" value="sim-swap"/>
+            <sequence key="SubscriberAuthorizationContextSequence"/>
+            <property name="requested.partner.id" expression="json-eval($.partnerId)" scope="default" type="STRING"/>
+            <property name="requested.country" expression="json-eval($.country)" scope="default" type="STRING"/>
+            <property name="requested.subscriber" expression="json-eval($.subscriberNumber)" scope="default" type="STRING"/>
+            <property name="requested.purpose" expression="json-eval($.purpose)" scope="default" type="STRING"/>
+            <property name="requested.consent.id" expression="json-eval($.consentId)" scope="default" type="STRING"/>
+            <property name="requested.transaction.id" expression="json-eval($.transactionId)" scope="default" type="STRING"/>
+            <property name="requested.data.access" expression="$trp:X-Data-Access" scope="default" type="STRING"/>
+            <sequence key="SubscriberAuthorizationBusinessControlSequence"/>
+            <payloadFactory media-type="json">
+                <format>{"transactionId":"$1","partnerId":"$2","msisdn":"$3","amount":10,"currency":"BRL","expectedCountry":"$4","device":{"latitude":-23.55052,"longitude":-46.633308},"partialResponsePolicy":"ALLOW_DEGRADED"}</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('requested.transaction.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.partner.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.subscriber')"/>
+                    <arg evaluator="xml" expression="get-property('requested.country')"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_METHOD" scope="axis2" type="STRING" value="POST"/>
+            <call><endpoint key="SubscriberRiskAssessmentFailoverEndpoint"/></call>
+            <sequence key="SubscriberRiskDecisionSequence"/>
+            <payloadFactory media-type="json">
+                <format>{
+                  "decision":"$1",
+                  "authorizationStatus":"$2",
+                  "capability":"sim-swap",
+                  "persona":"$3",
+                  "partnerId":"$4",
+                  "country":"$5",
+                  "subscriber":{"phoneNumber":"$6","masked":$7},
+                  "consent":{"id":"$8","purpose":"$9","status":"ACTIVE"},
+                  "risk":{"orchestration":"SecureTransactionRiskAssessmentAPI","score":$10,"partialResponse":$11,"partialResponsePolicy":"ALLOW_DEGRADED","reasons":"$12","unavailableServices":"$13"},
+                  "correlationId":"$14"
+                }</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('risk.decision')"/>
+                    <arg evaluator="xml" expression="get-property('risk.authorization.status')"/>
+                    <arg evaluator="xml" expression="get-property('persona')"/>
+                    <arg evaluator="xml" expression="get-property('requested.partner.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.country')"/>
+                    <arg evaluator="xml" expression="get-property('returned.subscriber')"/>
+                    <arg evaluator="xml" expression="get-property('subscriber.masked')"/>
+                    <arg evaluator="xml" expression="get-property('requested.consent.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.purpose')"/>
+                    <arg evaluator="xml" expression="get-property('risk.score')"/>
+                    <arg evaluator="xml" expression="get-property('risk.partial')"/>
+                    <arg evaluator="xml" expression="get-property('risk.reason.summary')"/>
+                    <arg evaluator="xml" expression="get-property('risk.unavailable.summary')"/>
+                    <arg evaluator="xml" expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+            <property name="HTTP_SC" scope="axis2" type="INTEGER" value="200"/>
+            <respond/>
+        </inSequence>
+        <faultSequence><sequence key="SubscriberAuthorizationFaultSequence"/></faultSequence>
+    </resource>
+
+    <resource methods="POST" uri-template="/device-location-verifications">
+        <inSequence>
+            <property name="capability" scope="default" type="STRING" value="device-location"/>
+            <sequence key="SubscriberAuthorizationContextSequence"/>
+            <property name="requested.partner.id" expression="json-eval($.partnerId)" scope="default" type="STRING"/>
+            <property name="requested.country" expression="json-eval($.country)" scope="default" type="STRING"/>
+            <property name="requested.subscriber" expression="json-eval($.subscriberNumber)" scope="default" type="STRING"/>
+            <property name="requested.purpose" expression="json-eval($.purpose)" scope="default" type="STRING"/>
+            <property name="requested.consent.id" expression="json-eval($.consentId)" scope="default" type="STRING"/>
+            <property name="requested.transaction.id" expression="json-eval($.transactionId)" scope="default" type="STRING"/>
+            <property name="requested.latitude" expression="json-eval($.latitude)" scope="default" type="STRING"/>
+            <property name="requested.longitude" expression="json-eval($.longitude)" scope="default" type="STRING"/>
+            <property name="requested.data.access" expression="$trp:X-Data-Access" scope="default" type="STRING"/>
+            <sequence key="SubscriberAuthorizationBusinessControlSequence"/>
+            <payloadFactory media-type="json">
+                <format>{"transactionId":"$1","partnerId":"$2","msisdn":"$3","amount":10,"currency":"BRL","expectedCountry":"$4","device":{"latitude":$5,"longitude":$6},"partialResponsePolicy":"ALLOW_DEGRADED"}</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('requested.transaction.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.partner.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.subscriber')"/>
+                    <arg evaluator="xml" expression="get-property('requested.country')"/>
+                    <arg evaluator="xml" expression="get-property('requested.latitude')"/>
+                    <arg evaluator="xml" expression="get-property('requested.longitude')"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_METHOD" scope="axis2" type="STRING" value="POST"/>
+            <call><endpoint key="SubscriberRiskAssessmentFailoverEndpoint"/></call>
+            <sequence key="SubscriberRiskDecisionSequence"/>
+            <payloadFactory media-type="json">
+                <format>{
+                  "decision":"$1",
+                  "authorizationStatus":"$2",
+                  "capability":"device-location",
+                  "persona":"$3",
+                  "partnerId":"$4",
+                  "country":"$5",
+                  "subscriber":{"phoneNumber":"$6","masked":$7},
+                  "consent":{"id":"$8","purpose":"$9","status":"ACTIVE"},
+                  "risk":{"orchestration":"SecureTransactionRiskAssessmentAPI","score":$10,"partialResponse":$11,"partialResponsePolicy":"ALLOW_DEGRADED","reasons":"$12","unavailableServices":"$13"},
+                  "correlationId":"$14"
+                }</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('risk.decision')"/>
+                    <arg evaluator="xml" expression="get-property('risk.authorization.status')"/>
+                    <arg evaluator="xml" expression="get-property('persona')"/>
+                    <arg evaluator="xml" expression="get-property('requested.partner.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.country')"/>
+                    <arg evaluator="xml" expression="get-property('returned.subscriber')"/>
+                    <arg evaluator="xml" expression="get-property('subscriber.masked')"/>
+                    <arg evaluator="xml" expression="get-property('requested.consent.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.purpose')"/>
+                    <arg evaluator="xml" expression="get-property('risk.score')"/>
+                    <arg evaluator="xml" expression="get-property('risk.partial')"/>
+                    <arg evaluator="xml" expression="get-property('risk.reason.summary')"/>
+                    <arg evaluator="xml" expression="get-property('risk.unavailable.summary')"/>
+                    <arg evaluator="xml" expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+            <property name="HTTP_SC" scope="axis2" type="INTEGER" value="200"/>
+            <respond/>
+        </inSequence>
+        <faultSequence><sequence key="SubscriberAuthorizationFaultSequence"/></faultSequence>
+    </resource>
+
+    <resource methods="POST" uri-template="/qod-requests">
+        <inSequence>
+            <property name="capability" scope="default" type="STRING" value="qod"/>
+            <sequence key="SubscriberAuthorizationContextSequence"/>
+            <property name="requested.partner.id" expression="json-eval($.partnerId)" scope="default" type="STRING"/>
+            <property name="requested.country" expression="json-eval($.country)" scope="default" type="STRING"/>
+            <property name="requested.subscriber" expression="json-eval($.subscriberNumber)" scope="default" type="STRING"/>
+            <property name="requested.purpose" expression="json-eval($.purpose)" scope="default" type="STRING"/>
+            <property name="requested.consent.id" expression="json-eval($.consentId)" scope="default" type="STRING"/>
+            <property name="requested.transaction.id" expression="json-eval($.transactionId)" scope="default" type="STRING"/>
+            <property name="requested.profile" expression="json-eval($.profile)" scope="default" type="STRING"/>
+            <property name="requested.duration" expression="json-eval($.durationSeconds)" scope="default" type="STRING"/>
+            <property name="requested.data.access" expression="$trp:X-Data-Access" scope="default" type="STRING"/>
+            <sequence key="SubscriberAuthorizationBusinessControlSequence"/>
+            <payloadFactory media-type="json">
+                <format>{"transactionId":"$1","partnerId":"$2","msisdn":"$3","amount":10,"currency":"BRL","expectedCountry":"$4","device":{"latitude":-23.55052,"longitude":-46.633308},"partialResponsePolicy":"ALLOW_DEGRADED"}</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('requested.transaction.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.partner.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.subscriber')"/>
+                    <arg evaluator="xml" expression="get-property('requested.country')"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_METHOD" scope="axis2" type="STRING" value="POST"/>
+            <call><endpoint key="SubscriberRiskAssessmentFailoverEndpoint"/></call>
+            <sequence key="SubscriberRiskDecisionSequence"/>
+            <payloadFactory media-type="json">
+                <format>{
+                  "decision":"$1",
+                  "authorizationStatus":"$2",
+                  "capability":"qod",
+                  "persona":"$3",
+                  "partnerId":"$4",
+                  "country":"$5",
+                  "subscriber":{"phoneNumber":"$6","masked":$7},
+                  "consent":{"id":"$8","purpose":"$9","status":"ACTIVE"},
+                  "qod":{"profile":"$10","durationSeconds":"$11","status":"$2"},
+                  "risk":{"orchestration":"SecureTransactionRiskAssessmentAPI","score":$12,"partialResponse":$13,"partialResponsePolicy":"ALLOW_DEGRADED","reasons":"$14","unavailableServices":"$15"},
+                  "correlationId":"$16"
+                }</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('risk.decision')"/>
+                    <arg evaluator="xml" expression="get-property('risk.authorization.status')"/>
+                    <arg evaluator="xml" expression="get-property('persona')"/>
+                    <arg evaluator="xml" expression="get-property('requested.partner.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.country')"/>
+                    <arg evaluator="xml" expression="get-property('returned.subscriber')"/>
+                    <arg evaluator="xml" expression="get-property('subscriber.masked')"/>
+                    <arg evaluator="xml" expression="get-property('requested.consent.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.purpose')"/>
+                    <arg evaluator="xml" expression="get-property('requested.profile')"/>
+                    <arg evaluator="xml" expression="get-property('requested.duration')"/>
+                    <arg evaluator="xml" expression="get-property('risk.score')"/>
+                    <arg evaluator="xml" expression="get-property('risk.partial')"/>
+                    <arg evaluator="xml" expression="get-property('risk.reason.summary')"/>
+                    <arg evaluator="xml" expression="get-property('risk.unavailable.summary')"/>
+                    <arg evaluator="xml" expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+            <property name="HTTP_SC" scope="axis2" type="INTEGER" value="200"/>
+            <respond/>
+        </inSequence>
+        <faultSequence><sequence key="SubscriberAuthorizationFaultSequence"/></faultSequence>
+    </resource>
+
+    <resource methods="GET" uri-template="/partners/{partnerId}/commercial-usage">
+        <inSequence>
+            <property name="capability" scope="default" type="STRING" value="commercial-usage"/>
+            <sequence key="SubscriberAuthorizationContextSequence"/>
+            <property name="requested.partner.id" expression="get-property('uri.var.partnerId')" scope="default" type="STRING"/>
+            <property name="requested.country" expression="$url:country" scope="default" type="STRING"/>
+            <filter xpath="not(normalize-space(get-property('requested.country')))">
+                <then><property name="requested.country" scope="default" type="STRING" value="BR"/></then>
+            </filter>
+            <property name="requested.purpose" scope="default" type="STRING" value="commercial-reporting"/>
+            <property name="requested.consent.id" scope="default" type="STRING" value="NOT_REQUIRED"/>
+            <sequence key="SubscriberAuthorizationBusinessControlSequence"/>
+            <property name="uri.var.partnerId" expression="get-property('requested.partner.id')" scope="default" type="STRING"/>
+            <property name="HTTP_METHOD" scope="axis2" type="STRING" value="GET"/>
+            <call><endpoint key="SubscriberCommercialUsageFailoverEndpoint"/></call>
+            <payloadFactory media-type="json">
+                <format>{
+                  "decision":"ALLOW",
+                  "capability":"commercial-usage",
+                  "persona":"$1",
+                  "partnerId":"$2",
+                  "country":"$3",
+                  "consent":{"id":"NOT_REQUIRED","purpose":"commercial-reporting","status":"NOT_REQUIRED"},
+                  "commercial":{"source":"SecureMobileTransactionsCommercialAPI","planVisibility":"AUTHORIZED_PARTNER_ONLY"},
+                  "correlationId":"$4"
+                }</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('persona')"/>
+                    <arg evaluator="xml" expression="get-property('requested.partner.id')"/>
+                    <arg evaluator="xml" expression="get-property('requested.country')"/>
+                    <arg evaluator="xml" expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+            <property name="HTTP_SC" scope="axis2" type="INTEGER" value="200"/>
+            <respond/>
+        </inSequence>
+        <faultSequence><sequence key="SubscriberAuthorizationFaultSequence"/></faultSequence>
+    </resource>
+</api>

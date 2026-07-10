@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template name="TelcoOpenTicketTool" xmlns="http://ws.apache.org/ns/synapse">
+  <parameter name="subscriberId" description="Subscriber identifier" isMandatory="true"/>
+  <parameter name="summary" description="Service issue summary" isMandatory="true"/>
+  <parameter name="severity" description="LOW, MEDIUM, HIGH or CRITICAL" isMandatory="false"/>
+  <sequence>
+    <payloadFactory media-type="json"><format>{"subscriberId":"$1","summary":"$2","severity":"$3"}</format><args>
+      <arg evaluator="xml" expression="$func:subscriberId"/><arg evaluator="xml" expression="$func:summary"/><arg evaluator="xml" expression="$func:severity"/>
+    </args></payloadFactory>
+    <header name="Authorization" expression="fn:concat('Bearer ', get-property('transport','X-Agent-Tool-Token'))" scope="transport"/>
+    <header name="X-Correlation-ID" expression="get-property('correlationId')" scope="transport"/>
+    <header name="X-Partner-Id" expression="get-property('partnerId')" scope="transport"/>
+    <header name="Idempotency-Key" expression="fn:concat('agent-ticket-', get-property('correlationId'))" scope="transport"/>
+    <call><endpoint><http method="POST" uri-template="http://wso2-apim:8280/telco-agent-tools/v1/tickets">
+      <timeout><duration>7000</duration><responseAction>fault</responseAction></timeout>
+      <suspendOnFailure><initialDuration>5000</initialDuration><progressionFactor>2.0</progressionFactor><maximumDuration>30000</maximumDuration></suspendOnFailure>
+      <markForSuspension><retriesBeforeSuspension>0</retriesBeforeSuspension><retryDelay>0</retryDelay></markForSuspension>
+    </http></endpoint></call>
+  </sequence>
+</template>

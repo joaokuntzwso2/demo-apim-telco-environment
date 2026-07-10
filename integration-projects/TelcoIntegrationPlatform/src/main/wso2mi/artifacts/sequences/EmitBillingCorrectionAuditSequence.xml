@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="EmitBillingCorrectionAuditSequence">
+    <clone continueParent="true" sequential="false">
+        <target>
+            <sequence>
+                <script language="js"><![CDATA[
+                    var correlationId = String(mc.getProperty('correlation.id') || 'mi-billing-audit-' + Date.now());
+                    var transactionId = String(mc.getProperty('input.transactionId') || mc.getProperty('transactionId') || 'unknown');
+                    var subscriberId = String(mc.getProperty('input.subscriberId') || mc.getProperty('subscriberId') || 'unknown');
+                    var requestedBy = String(mc.getProperty('input.requestedBy') || mc.getProperty('requestedBy') || 'billing-integration');
+                    var country = String(mc.getProperty('input.country') || mc.getProperty('country') || 'BR').toUpperCase();
+                    var auditId = 'AUD-BILLING-' + transactionId + '-' + Date.now();
+                    mc.setProperty('correlation.id', correlationId);
+                    mc.setProperty('auditId', auditId);
+                    mc.setPayloadJSON({
+                        schemaVersion: '1.0',
+                        auditId: auditId,
+                        eventType: 'BILLING_CORRECTION',
+                        actor: requestedBy,
+                        timestamp: new Date().toISOString(),
+                        country: /^[A-Z]{2}$/.test(country) ? country : 'BR',
+                        resource: '/billing-adjustments/v1/adjustments/' + transactionId,
+                        action: 'CORRECT_BILLING',
+                        result: 'SUCCESS',
+                        details: {
+                            transactionId: transactionId,
+                            subscriberId: subscriberId,
+                            amount: String(mc.getProperty('input.amount') || mc.getProperty('amount') || ''),
+                            currency: String(mc.getProperty('input.currency') || mc.getProperty('currency') || ''),
+                            reasonCode: String(mc.getProperty('input.reasonCode') || mc.getProperty('reasonCode') || '')
+                        },
+                        correlationId: correlationId,
+                        stage: 'audit',
+                        component: 'wso2-mi-billing-adjustment',
+                        outcome: 'SUCCESS'
+                    });
+                ]]></script>
+                <sequence key="AuditDeliverySequence"/>
+            </sequence>
+        </target>
+    </clone>
+</sequence>

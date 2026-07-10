@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="InitializeCorrelationSequence">
+    <property name="correlation.id" expression="$trp:X-Correlation-ID" scope="default" type="STRING"/>
+    <script language="js"><![CDATA[
+        var correlationId = mc.getProperty('correlation.id');
+        if (correlationId == null || String(correlationId).trim().length === 0) {
+            correlationId = 'mi-' + Date.now().toString(36) + '-' +
+                Math.random().toString(36).substring(2, 12);
+            mc.setProperty('correlation.id', correlationId);
+        }
+    ]]></script>
+    <property name="X-Correlation-ID"
+              expression="get-property('correlation.id')"
+              scope="transport"
+              type="STRING"/>
+</sequence>

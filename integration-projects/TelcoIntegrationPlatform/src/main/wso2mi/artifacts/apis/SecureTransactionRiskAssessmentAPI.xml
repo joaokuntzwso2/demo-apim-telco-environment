@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse"
+     name="SecureTransactionRiskAssessmentAPI"
+     context="/secure-transaction-risk/v1">
+    <resource methods="GET" uri-template="/health">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+            <payloadFactory media-type="json" template-type="default">
+                <format>{
+                    "status": "UP",
+                    "service": "SecureTransactionRiskAssessmentAPI",
+                    "runtime": "WSO2 Integrator: MI 4.6.0",
+                    "correlationId": "$1"
+                }</format>
+                <args>
+                    <arg expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="RiskAssessmentFaultSequence"/>
+        </faultSequence>
+    </resource>
+
+    <resource methods="POST" uri-template="/assessments">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+
+            <script language="js"><![CDATA[
+                var request = mc.getPayloadJSON();
+                var missing = [];
+
+                function required(name, value) {
+                    if (value == null || String(value).trim().length === 0) {
+                        missing.push(name);
+                    }
+                }
+
+                required('transactionId', request.transactionId);
+                required('partnerId', request.partnerId);
+                required('msisdn', request.msisdn);
+                required('currency', request.currency);
+                required('expectedCountry', request.expectedCountry);
+                required('device.latitude', request.device && request.device.latitude);
+                required('device.longitude', request.device && request.device.longitude);
+
+                var amount = Number(request.amount);
+                if (!Number.isFinite(amount) || amount <= 0) {
+                    missing.push('amount');
+                }
+
+                var policy = String(request.partialResponsePolicy || 'ALLOW_DEGRADED').toUpperCase();
+                if (policy !== 'ALLOW_DEGRADED' && policy !== 'FAIL_CLOSED') {
+                    missing.push('partialResponsePolicy');
+                }
+
+                mc.setProperty('validation.errors', missing.join(', '));
+                mc.setProperty('request.transactionId', String(request.transactionId || ''));
+                mc.setProperty('request.partnerId', String(request.partnerId || ''));
+                mc.setProperty('request.msisdn', String(request.msisdn || ''));
+                mc.setProperty('request.amount', String(Number.isFinite(amount) ? amount : 0));
+                mc.setProperty('request.currency', String(request.currency || '').toUpperCase());
+                mc.setProperty('request.expectedCountry', String(request.expectedCountry || '').toUpperCase());
+                mc.setProperty('request.latitude', String(request.device && request.device.latitude != null ? Number(request.device.latitude) : 0));
+                mc.setProperty('request.longitude', String(request.device && request.device.longitude != null ? Number(request.device.longitude) : 0));
+                mc.setProperty('request.partialResponsePolicy', policy);
+                mc.setProperty('request.startedAt', String(Date.now()));
+            ]]></script>
+
+            <filter source="get-property('validation.errors')" regex="^.+$">
+                <then>
+                    <script language="js"><![CDATA[
+                        mc.setPayloadJSON({
+                            type: 'https://demo.telco/errors/invalid-request',
+                            title: 'Invalid risk assessment request',
+                            status: 400,
+                            detail: 'Missing or invalid fields: ' + String(mc.getProperty('validation.errors')),
+                            correlationId: String(mc.getProperty('correlation.id') || '')
+                        });
+                    ]]></script>
+                    <property name="HTTP_SC" value="400" scope="axis2" type="STRING"/>
+                    <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+                    <respond/>
+                </then>
+            </filter>
+
+            <log category="INFO" level="custom">
+                <property name="event" value="risk-assessment-started"/>
+                <property name="transactionId" expression="get-property('request.transactionId')"/>
+                <property name="partnerId" expression="get-property('request.partnerId')"/>
+                <property name="correlationId" expression="get-property('correlation.id')"/>
+                <property name="partialResponsePolicy" expression="get-property('request.partialResponsePolicy')"/>
+            </log>
+
+            <!-- True parallel fan-out. Each adapter isolates its own downstream faults
+                 and returns a canonical SUCCESS or UNAVAILABLE envelope. -->
+            <scatter-gather parallel-execution="true"
+                            target="Body"
+                            result-content-type="JSON">
+                <aggregation expression="${payload}"
+                             timeout="7000"
+                             min-messages="4"
+                             max-messages="4"/>
+
+                <sequence>
+                    <payloadFactory media-type="json" template-type="default">
+                        <format>{
+                            "transactionId": "$1",
+                            "partnerId": "$2",
+                            "msisdn": "$3"
+                        }</format>
+                        <args>
+                            <arg expression="get-property('request.transactionId')"/>
+                            <arg expression="get-property('request.partnerId')"/>
+                            <arg expression="get-property('request.msisdn')"/>
+                        </args>
+                    </payloadFactory>
+                    <call>
+                        <endpoint>
+                            <http method="post"
+                                  uri-template="http://localhost:8290/internal/risk/crm/v1/account-status">
+                                <timeout>
+                                    <duration>6000</duration>
+                                    <responseAction>fault</responseAction>
+                                </timeout>
+                            </http>
+                        </endpoint>
+                    </call>
+                </sequence>
+
+                <sequence>
+                    <payloadFactory media-type="json" template-type="default">
+                        <format>{
+                            "transactionId": "$1",
+                            "partnerId": "$2",
+                            "msisdn": "$3"
+                        }</format>
+                        <args>
+                            <arg expression="get-property('request.transactionId')"/>
+                            <arg expression="get-property('request.partnerId')"/>
+                            <arg expression="get-property('request.msisdn')"/>
+                        </args>
+                    </payloadFactory>
+                    <call>
+                        <endpoint>
+                            <http method="post"
+                                  uri-template="http://localhost:8290/internal/risk/sim-swap/v1/check">
+                                <timeout>
+                                    <duration>6000</duration>
+                                    <responseAction>fault</responseAction>
+                                </timeout>
+                            </http>
+                        </endpoint>
+                    </call>
+                </sequence>
+
+                <sequence>
+                    <payloadFactory media-type="json" template-type="default">
+                        <format>{
+                            "transactionId": "$1",
+                            "msisdn": "$2",
+                            "expectedCountry": "$3",
+                            "latitude": $4,
+                            "longitude": $5
+                        }</format>
+                        <args>
+                            <arg expression="get-property('request.transactionId')"/>
+                            <arg expression="get-property('request.msisdn')"/>
+                            <arg expression="get-property('request.expectedCountry')"/>
+                            <arg expression="get-property('request.latitude')"/>
+                            <arg expression="get-property('request.longitude')"/>
+                        </args>
+                    </payloadFactory>
+                    <call>
+                        <endpoint>
+                            <http method="post"
+                                  uri-template="http://localhost:8290/internal/risk/device-location/v1/verify">
+                                <timeout>
+                                    <duration>6000</duration>
+                                    <responseAction>fault</responseAction>
+                                </timeout>
+                            </http>
+                        </endpoint>
+                    </call>
+                </sequence>
+
+                <sequence>
+                    <payloadFactory media-type="json" template-type="default">
+                        <format>{
+                            "transactionId": "$1",
+                            "partnerId": "$2",
+                            "msisdn": "$3"
+                        }</format>
+                        <args>
+                            <arg expression="get-property('request.transactionId')"/>
+                            <arg expression="get-property('request.partnerId')"/>
+                            <arg expression="get-property('request.msisdn')"/>
+                        </args>
+                    </payloadFactory>
+                    <call>
+                        <endpoint>
+                            <http method="post"
+                                  uri-template="http://localhost:8290/internal/risk/oss/v1/network-status">
+                                <timeout>
+                                    <duration>6000</duration>
+                                    <responseAction>fault</responseAction>
+                                </timeout>
+                            </http>
+                        </endpoint>
+                    </call>
+                </sequence>
+            </scatter-gather>
+
+            <!-- Aggregate canonical results, score the transaction, and enforce the
+                 requested partial-response policy. -->
+            <script language="js"><![CDATA[
+                function asPlain(value) {
+                    return JSON.parse(JSON.stringify(value));
+                }
+
+                function flatten(value, output) {
+                    if (Array.isArray(value)) {
+                        value.forEach(function (item) { flatten(item, output); });
+                    } else if (value != null) {
+                        output.push(value);
+                    }
+                }
+
+                var raw = asPlain(mc.getPayloadJSON());
+                var items = [];
+                flatten(raw, items);
+
+                // Some aggregators can wrap the array in a generated property.
+                if (items.length === 1 && items[0] && Array.isArray(items[0].responses)) {
+                    items = items[0].responses;
+                }
+
+                var expected = ['crm', 'sim-swap', 'device-location', 'oss'];
+                var byService = {};
+                items.forEach(function (item) {
+                    if (item && item.service) {
+                        byService[String(item.service)] = item;
+                    }
+                });
+
+                var unavailable = [];
+                expected.forEach(function (service) {
+                    if (!byService[service] || byService[service].status !== 'SUCCESS') {
+                        unavailable.push(service);
+                        if (!byService[service]) {
+                            byService[service] = {
+                                service: service,
+                                status: 'UNAVAILABLE',
+                                error: {
+                                    code: 'AGGREGATION_TIMEOUT',
+                                    message: 'No response was received before the aggregation timeout'
+                                },
+                                correlationId: String(mc.getProperty('correlation.id') || '')
+                            };
+                        }
+                    }
+                });
+
+                var score = 0;
+                var reasons = [];
+                var crm = byService.crm;
+                var sim = byService['sim-swap'];
+                var device = byService['device-location'];
+                var oss = byService.oss;
+                var amount = Number(mc.getProperty('request.amount') || 0);
+
+                if (crm.status === 'SUCCESS') {
+                    if (crm.data.accountStatus === 'SUSPENDED') {
+                        score += 55;
+                        reasons.push('SUBSCRIBER_ACCOUNT_SUSPENDED');
+                    }
+                    if (crm.data.fraudWatch === true) {
+                        score += 35;
+                        reasons.push('SUBSCRIBER_ON_FRAUD_WATCH');
+                    }
+                    if (Number(crm.data.tenureMonths || 0) < 3) {
+                        score += 10;
+                        reasons.push('NEW_SUBSCRIBER_ACCOUNT');
+                    }
+                } else {
+                    score += 12;
+                    reasons.push('CRM_EVIDENCE_UNAVAILABLE');
+                }
+
+                if (sim.status === 'SUCCESS') {
+                    var swapAge = Number(sim.data.lastSwapAgeHours);
+                    if (swapAge <= 24) {
+                        score += 45;
+                        reasons.push('SIM_SWAP_WITHIN_24_HOURS');
+                    } else if (swapAge <= 72) {
+                        score += 30;
+                        reasons.push('SIM_SWAP_WITHIN_72_HOURS');
+                    } else if (swapAge <= 168) {
+                        score += 15;
+                        reasons.push('SIM_SWAP_WITHIN_7_DAYS');
+                    }
+                } else {
+                    score += 12;
+                    reasons.push('SIM_SWAP_EVIDENCE_UNAVAILABLE');
+                }
+
+                if (device.status === 'SUCCESS') {
+                    if (device.data.verified !== true) {
+                        score += 30;
+                        reasons.push('DEVICE_LOCATION_NOT_VERIFIED');
+                    }
+                    if (device.data.expectedCountry &&
+                        device.data.networkCountry &&
+                        device.data.expectedCountry !== device.data.networkCountry) {
+                        score += 20;
+                        reasons.push('DEVICE_COUNTRY_MISMATCH');
+                    }
+                } else {
+                    score += 12;
+                    reasons.push('DEVICE_LOCATION_EVIDENCE_UNAVAILABLE');
+                }
+
+                if (oss.status === 'SUCCESS') {
+                    if (oss.data.roaming === true) {
+                        score += 12;
+                        reasons.push('SUBSCRIBER_ROAMING');
+                    }
+                    if (oss.data.networkStatus === 'DEGRADED') {
+                        score += 10;
+                        reasons.push('NETWORK_STATUS_DEGRADED');
+                    }
+                } else {
+                    score += 12;
+                    reasons.push('OSS_EVIDENCE_UNAVAILABLE');
+                }
+
+                if (amount >= 20000) {
+                    score += 25;
+                    reasons.push('VERY_HIGH_TRANSACTION_AMOUNT');
+                } else if (amount >= 5000) {
+                    score += 10;
+                    reasons.push('HIGH_TRANSACTION_AMOUNT');
+                }
+
+                score = Math.min(100, score);
+                var decision = score >= 70 ? 'DENY' : score >= 35 ? 'CHALLENGE' : 'ALLOW';
+                var policy = String(mc.getProperty('request.partialResponsePolicy') || 'ALLOW_DEGRADED');
+                var elapsed = Date.now() - Number(mc.getProperty('request.startedAt') || Date.now());
+
+                // Critical evidence missing never produces an unconditional ALLOW.
+                if (unavailable.length > 0 && decision === 'ALLOW') {
+                    decision = 'CHALLENGE';
+                    reasons.push('PARTIAL_EVIDENCE_REQUIRES_STEP_UP');
+                }
+
+                if (policy === 'FAIL_CLOSED' && unavailable.length > 0) {
+                    mc.setProperty('response.http.sc', '503');
+                    mc.setProperty('response.content.type', 'application/problem+json');
+                    mc.setPayloadJSON({
+                        type: 'https://demo.telco/errors/risk-evidence-unavailable',
+                        title: 'Risk assessment could not be completed',
+                        status: 503,
+                        detail: 'One or more required evidence services were unavailable and FAIL_CLOSED was requested.',
+                        transactionId: String(mc.getProperty('request.transactionId') || ''),
+                        unavailableServices: unavailable,
+                        evidence: expected.map(function (service) { return byService[service]; }),
+                        correlationId: String(mc.getProperty('correlation.id') || ''),
+                        processingTimeMs: elapsed
+                    });
+                } else {
+                    mc.setProperty('response.http.sc', '200');
+                    mc.setProperty('response.content.type', 'application/json');
+                    mc.setPayloadJSON({
+                        transactionId: String(mc.getProperty('request.transactionId') || ''),
+                        partnerId: String(mc.getProperty('request.partnerId') || ''),
+                        decision: decision,
+                        riskScore: score,
+                        reasons: reasons,
+                        partialResponse: unavailable.length > 0,
+                        partialResponsePolicy: policy,
+                        unavailableServices: unavailable,
+                        evidence: expected.map(function (service) { return byService[service]; }),
+                        correlationId: String(mc.getProperty('correlation.id') || ''),
+                        processingTimeMs: elapsed
+                    });
+                }
+            ]]></script>
+
+            <property name="HTTP_SC"
+                      expression="get-property('response.http.sc')"
+                      scope="axis2"
+                      type="STRING"/>
+            <property name="messageType"
+                      expression="get-property('response.content.type')"
+                      scope="axis2"
+                      type="STRING"/>
+            <property name="ContentType"
+                      expression="get-property('response.content.type')"
+                      scope="axis2"
+                      type="STRING"/>
+            <property name="X-Correlation-ID"
+                      expression="get-property('correlation.id')"
+                      scope="transport"
+                      type="STRING"/>
+
+            <log category="INFO" level="custom">
+                <property name="event" value="risk-assessment-completed"/>
+                <property name="transactionId" expression="get-property('request.transactionId')"/>
+                <property name="correlationId" expression="get-property('correlation.id')"/>
+                <property name="httpStatus" expression="get-property('response.http.sc')"/>
+            </log>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="RiskAssessmentFaultSequence"/>
+        </faultSequence>
+    </resource>
+</api>

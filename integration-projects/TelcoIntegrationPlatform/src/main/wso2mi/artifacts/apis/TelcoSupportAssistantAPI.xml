@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api context="/telco-support/v1" name="TelcoSupportAssistantAPI" xmlns="http://ws.apache.org/ns/synapse">
+  <resource methods="GET" uri-template="/health">
+    <inSequence><sequence key="TelcoAiCommonInit"/>
+      <payloadFactory media-type="json"><format>{"status":"UP","service":"TelcoSupportAssistantAPI","agentRuntime":"MI_NATIVE_AI_MODULE","correlationId":"$1"}</format><args><arg evaluator="xml" expression="get-property('correlationId')"/></args></payloadFactory><respond/>
+    </inSequence><faultSequence><sequence key="TelcoAiNormalizedFault"/></faultSequence>
+  </resource>
+  <resource methods="POST" uri-template="/guard-preview">
+    <inSequence><sequence key="TelcoAiCommonInit"/><sequence key="TelcoAiGuardPrompt"/>
+      <script language="js"><![CDATA[
+        mc.setPayloadJSON({allowed:String(mc.getProperty("aiBlocked"))!=="true",maskedPrompt:String(mc.getProperty("aiMaskedPrompt")),
+          maskTypes:JSON.parse(String(mc.getProperty("aiMaskTypes")||"[]")),promptInjectionReasons:JSON.parse(String(mc.getProperty("aiGuardReasons")||"[]")),
+          modelProfile:String(mc.getProperty("aiProfile")),correlationId:String(mc.getProperty("correlationId"))});
+      ]]></script><respond/>
+    </inSequence><faultSequence><sequence key="TelcoAiNormalizedFault"/></faultSequence>
+  </resource>
+  <resource methods="POST" uri-template="/chat">
+    <inSequence><sequence key="TelcoAiCommonInit"/><sequence key="TelcoAiGuardPrompt"/>
+      <filter xpath="get-property('aiBlocked') = 'true'"><then>
+        <script language="js"><![CDATA[
+          mc.setPayloadJSON({type:"https://telco.example/problems/prompt-injection",title:"Prompt rejected by the AI safety policy",status:400,
+            code:"PROMPT_INJECTION_BLOCKED",reasons:JSON.parse(String(mc.getProperty("aiGuardReasons")||"[]")),correlationId:String(mc.getProperty("correlationId"))});
+        ]]></script>
+        <property name="HTTP_SC" value="400" scope="axis2"/><property name="messageType" value="application/problem+json" scope="axis2"/><respond/>
+      </then></filter>
+      <sequence key="TelcoAiPartnerQuotaPreCheck"/>
+      <filter xpath="get-property('aiQuotaExceeded') = 'true'"><then>
+        <payloadFactory media-type="json"><format>{"type":"https://telco.example/problems/ai-token-quota","title":"Partner AI token quota exceeded","status":429,"code":"AI_PARTNER_TOKEN_QUOTA_EXCEEDED","partnerId":"$1","quota":$2,"used":$3,"correlationId":"$4"}</format><args>
+          <arg evaluator="xml" expression="get-property('partnerId')"/><arg evaluator="xml" expression="get-property('partnerDailyTokenQuota')"/><arg evaluator="xml" expression="get-property('aiTokensUsedBefore')"/><arg evaluator="xml" expression="get-property('correlationId')"/>
+        </args></payloadFactory><property name="HTTP_SC" value="429" scope="axis2"/><property name="messageType" value="application/problem+json" scope="axis2"/><respond/>
+      </then></filter>
+      <filter xpath="get-property('aiProfile') = 'advanced'"><then><sequence key="TelcoAiAdvancedAgent"/></then><else><sequence key="TelcoAiStandardAgent"/></else></filter>
+      <sequence key="TelcoAiBuildResponse"/>
+    </inSequence><faultSequence><sequence key="TelcoAiNormalizedFault"/></faultSequence>
+  </resource>
+</api>

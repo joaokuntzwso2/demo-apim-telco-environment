@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse"
+     name="OssRiskAdapterAPI"
+     context="/internal/risk/oss/v1">
+    <resource methods="POST" uri-template="/network-status">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+            <property name="adapter.name" value="oss" scope="default" type="STRING"/>
+            <property name="backend.timeout.ms"
+                      expression="get-property('env','backend_timeout_ms')"
+                      scope="default"
+                      type="INTEGER"/>
+            <script language="js"><![CDATA[
+                var request = mc.getPayloadJSON();
+                mc.setProperty('input.msisdn', String(request.msisdn || ''));
+                mc.setProperty('input.transactionId', String(request.transactionId || ''));
+                mc.setProperty('input.partnerId', String(request.partnerId || ''));
+            ]]></script>
+
+            <!-- Canonical JSON -> pipe-delimited legacy OSS message -->
+            <payloadFactory media-type="text" template-type="default">
+                <format>NETWORK_STATUS|1.0|$1|$2|$3</format>
+                <args>
+                    <arg expression="get-property('input.msisdn')"/>
+                    <arg expression="get-property('input.transactionId')"/>
+                    <arg expression="get-property('input.partnerId')"/>
+                </args>
+            </payloadFactory>
+            <property name="messageType" value="text/plain" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="text/plain" scope="axis2" type="STRING"/>
+            <property name="X-Legacy-System-Key"
+                      expression="get-property('env','oss_legacy_key')"
+                      scope="transport"
+                      type="STRING"/>
+
+            <call>
+                <endpoint key="OssLegacyFailoverEndpoint"/>
+            </call>
+
+            <filter source="$axis2:HTTP_SC" regex="^[45][0-9][0-9]$">
+                <then>
+                    <property name="adapter.error.code"
+                              expression="concat('OSS-HTTP-', $axis2:HTTP_SC)"
+                              scope="default"
+                              type="STRING"/>
+                    <property name="adapter.error.message"
+                              value="Legacy OSS returned an error response"
+                              scope="default"
+                              type="STRING"/>
+                    <sequence key="RiskAdapterFallbackSequence"/>
+                </then>
+            </filter>
+
+            <property name="oss.raw"
+                      expression="string($body/*[local-name()='text'])"
+                      scope="default"
+                      type="STRING"/>
+            <!-- Pipe-delimited legacy response -> canonical JSON -->
+            <script language="js"><![CDATA[
+                var raw = String(mc.getProperty('oss.raw') || '');
+                var parts = raw.split('|');
+                if (parts[0] !== 'NETWORK_STATUS_RESPONSE' || parts.length < 9) {
+                    mc.setProperty('adapter.error.code', 'OSS-INVALID-LEGACY-RESPONSE');
+                    mc.setProperty('adapter.error.message', 'OSS returned an invalid legacy response');
+                    throw new Error('Invalid OSS legacy response: ' + raw);
+                }
+
+                mc.setPayloadJSON({
+                    service: 'oss',
+                    status: 'SUCCESS',
+                    data: {
+                        roaming: parts[5] === 'ROAMING',
+                        roamingStatus: parts[5],
+                        networkStatus: parts[6],
+                        accessType: parts[7]
+                    },
+                    correlationId: String(mc.getProperty('correlation.id') || '')
+                });
+            ]]></script>
+            <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="RiskAdapterFallbackSequence"/>
+        </faultSequence>
+    </resource>
+</api>

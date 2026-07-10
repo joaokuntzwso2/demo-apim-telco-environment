@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="TelcoAiPartnerQuotaPreCheck"
+          trace="disable"
+          xmlns="http://ws.apache.org/ns/synapse">
+
+  <property name="partnerDailyTokenQuota"
+            expression="get-property('file','ai_partner_daily_token_quota')"
+            scope="default"/>
+
+  <script language="js"><![CDATA[
+    /*
+     * Use Java Preferences as the demo's process-wide quota ledger.
+     * java.lang.System is intentionally unavailable in MI Script mediators.
+     */
+    var preferences =
+      java.util.prefs.Preferences
+        .userRoot()
+        .node("telco-ai/partner-token-ledger");
+
+    var partnerId = String(
+      mc.getProperty("partnerId") || "unknown-partner"
+    );
+
+    var safePartnerId = partnerId.replace(
+      /[^A-Za-z0-9_.-]/g,
+      "_"
+    );
+
+    /*
+     * Java Preferences limits key length. Keep enough room for the
+     * YYYY-MM-DD prefix.
+     */
+    if (safePartnerId.length > 60) {
+      safePartnerId = safePartnerId.substring(0, 60);
+    }
+
+    var utcDay =
+      new Date()
+        .toISOString()
+        .substring(0, 10);
+
+    var ledgerKey =
+      utcDay + "_" + safePartnerId;
+
+    var used = Number(
+      preferences.getLong(ledgerKey, 0)
+    );
+
+    var quota = Number(
+      mc.getProperty("partnerDailyTokenQuota") ||
+      100000
+    );
+
+    mc.setProperty(
+      "aiQuotaLedgerKey",
+      ledgerKey
+    );
+
+    mc.setProperty(
+      "aiTokensUsedBefore",
+      String(used)
+    );
+
+    mc.setProperty(
+      "aiQuotaExceeded",
+      used >= quota ? "true" : "false"
+    );
+  ]]></script>
+</sequence>

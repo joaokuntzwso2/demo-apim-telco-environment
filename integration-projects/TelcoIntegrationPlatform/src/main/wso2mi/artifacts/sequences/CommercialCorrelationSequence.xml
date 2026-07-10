@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="CommercialCorrelationSequence" trace="disable">
+  <property name="commercial.incomingCorrelationId" expression="get-property('transport','X-Correlation-ID')" scope="default" type="STRING"/>
+  <filter xpath="string-length(normalize-space(get-property('commercial.incomingCorrelationId'))) &gt; 0">
+    <then>
+      <property name="commercial.correlationId" expression="get-property('commercial.incomingCorrelationId')" scope="default" type="STRING"/>
+    </then>
+    <else>
+      <property name="commercial.correlationId" expression="fn:concat('commercial-', get-property('SYSTEM_TIME'))" scope="default" type="STRING"/>
+    </else>
+  </filter>
+  <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+  <property name="activityID" expression="get-property('commercial.correlationId')" scope="default" type="STRING"/>
+</sequence>

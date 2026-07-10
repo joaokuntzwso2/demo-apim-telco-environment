@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse" name="SecureMobileTransactionsCommercialAPI" context="/secure-mobile-transactions/v1">
+  <resource methods="GET" uri-template="/health">
+    <inSequence>
+      <sequence key="CommercialCorrelationSequence"/>
+      <payloadFactory media-type="json">
+        <format>{"status":"UP","service":"SecureMobileTransactionsCommercialAPI","runtime":"WSO2 Integrator: MI","ratingOwner":"MI","persistence":"replicated-failover-store","correlationId":"$1"}</format>
+        <args><arg evaluator="xml" expression="get-property('commercial.correlationId')"/></args>
+      </payloadFactory>
+      <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+      <respond/>
+    </inSequence>
+    <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
+  </resource>
+
+  <resource methods="GET" uri-template="/plans">
+    <inSequence>
+      <sequence key="CommercialCorrelationSequence"/>
+      <property name="REST_URL_POSTFIX" value="/catalog" scope="axis2" type="STRING"/>
+      <property name="HTTP_METHOD" value="GET" scope="axis2" type="STRING"/>
+      <property name="NO_ENTITY_BODY" value="true" scope="axis2" type="BOOLEAN"/>
+      <call><endpoint key="CommercialMeterStoreFailoverEndpoint"/></call>
+      <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+      <respond/>
+    </inSequence>
+    <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
+  </resource>
+
+  <resource methods="PUT" uri-template="/partners/{partnerId}/plan">
+    <inSequence>
+      <sequence key="CommercialCorrelationSequence"/>
+      <property name="REST_URL_POSTFIX" expression="fn:concat('/assignments/', get-property('uri.var.partnerId'))" scope="axis2" type="STRING"/>
+      <property name="HTTP_METHOD" value="PUT" scope="axis2" type="STRING"/>
+      <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+      <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+      <call><endpoint key="CommercialMeterStoreFailoverEndpoint"/></call>
+      <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+      <respond/>
+    </inSequence>
+    <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
+  </resource>
+
+  <resource methods="GET" uri-template="/partners/{partnerId}/usage">
+    <inSequence>
+      <sequence key="CommercialCorrelationSequence"/>
+      <property name="REST_URL_POSTFIX" expression="fn:concat('/usage?partnerId=', get-property('uri.var.partnerId'), '&amp;apiProduct=SecureMobileTransactionsProduct')" scope="axis2" type="STRING"/>
+      <property name="HTTP_METHOD" value="GET" scope="axis2" type="STRING"/>
+      <property name="NO_ENTITY_BODY" value="true" scope="axis2" type="BOOLEAN"/>
+      <call><endpoint key="CommercialMeterStoreFailoverEndpoint"/></call>
+      <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+      <respond/>
+    </inSequence>
+    <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
+  </resource>
+
+  <resource methods="POST" uri-template="/demo/seed">
+    <inSequence>
+      <sequence key="CommercialCorrelationSequence"/>
+      <property name="REST_URL_POSTFIX" value="/demo/seed" scope="axis2" type="STRING"/>
+      <property name="HTTP_METHOD" value="POST" scope="axis2" type="STRING"/>
+      <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+      <call><endpoint key="CommercialMeterStoreFailoverEndpoint"/></call>
+      <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+      <respond/>
+    </inSequence>
+    <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
+  </resource>
+
+  <resource methods="POST" uri-template="/demo/reset">
+    <inSequence>
+      <sequence key="CommercialCorrelationSequence"/>
+      <property name="REST_URL_POSTFIX" value="/demo/reset" scope="axis2" type="STRING"/>
+      <property name="HTTP_METHOD" value="POST" scope="axis2" type="STRING"/>
+      <payloadFactory media-type="json"><format>{}</format><args/></payloadFactory>
+      <call><endpoint key="CommercialMeterStoreFailoverEndpoint"/></call>
+      <header name="X-Correlation-ID" expression="get-property('commercial.correlationId')" scope="transport"/>
+      <respond/>
+    </inSequence>
+    <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
+  </resource>
+
+  <resource methods="POST" uri-template="/number-verification">
+    <inSequence>
+      <property name="commercial.meter" value="number_verification" scope="default" type="STRING"/>
+      <sequence key="CommercialExecuteTransactionSequence"/>
+    </inSequence>
+    <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
+  </resource>
+
+  <resource methods="POST" uri-template="/sim-swap">
+    <inSequence>
+      <property name="commercial.meter" value="sim_swap" scope="default" type="STRING"/>
+      <sequence key="CommercialExecuteTransactionSequence"/>
+    </inSequence>
+    <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
+  </resource>
+
+  <resource methods="POST" uri-template="/quality-on-demand">
+    <inSequence>
+      <property name="commercial.meter" value="quality_on_demand" scope="default" type="STRING"/>
+      <sequence key="CommercialExecuteTransactionSequence"/>
+    </inSequence>
+    <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
+  </resource>
+</api>

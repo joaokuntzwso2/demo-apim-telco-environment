@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="CentralPolicyFaultSequence">
+    <property name="HTTP_SC" value="503" scope="axis2" type="STRING"/>
+    <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+    <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+    <property name="Retry-After" value="2" scope="transport" type="STRING"/>
+    <property name="X-Correlation-ID"
+              expression="get-property('correlation.id')"
+              scope="transport"
+              type="STRING"/>
+    <payloadFactory media-type="json" template-type="default">
+        <format>{
+          "code": "CENTRAL_POLICY_UPSTREAM_UNAVAILABLE",
+          "message": "The central policy decision service could not obtain a valid response from either bounded OPA endpoint.",
+          "correlationId": "$1",
+          "retryable": true,
+          "details": {
+            "synapseErrorCode": "$2",
+            "synapseErrorMessage": "$3"
+          }
+        }</format>
+        <args>
+            <arg expression="get-property('correlation.id')"/>
+            <arg expression="get-property('ERROR_CODE')"/>
+            <arg expression="get-property('ERROR_MESSAGE')"/>
+        </args>
+    </payloadFactory>
+    <respond/>
+</sequence>

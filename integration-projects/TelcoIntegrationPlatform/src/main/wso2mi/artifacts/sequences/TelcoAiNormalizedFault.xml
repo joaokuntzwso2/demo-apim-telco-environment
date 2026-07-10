@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="TelcoAiNormalizedFault" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+  <property name="errorStatus" expression="get-property('axis2','HTTP_SC')" scope="default" type="STRING"/>
+  <filter xpath="string-length(get-property('errorStatus')) = 0">
+    <then><property name="errorStatus" value="500" scope="default" type="STRING"/></then>
+  </filter>
+  <property name="errorDetail" expression="get-property('ERROR_MESSAGE')" scope="default" type="STRING"/>
+  <filter xpath="string-length(get-property('errorDetail')) = 0">
+    <then><property name="errorDetail" value="The governed AI integration could not complete the request." scope="default"/></then>
+  </filter>
+  <payloadFactory media-type="json">
+    <format>{"type":"https://telco.example/problems/ai-integration","title":"Telco AI integration failure","status":$1,"code":"AI_INTEGRATION_FAILURE","detail":"$2","correlationId":"$3"}</format>
+    <args>
+      <arg evaluator="xml" expression="get-property('errorStatus')"/>
+      <arg evaluator="xml" expression="get-property('errorDetail')"/>
+      <arg evaluator="xml" expression="get-property('correlationId')"/>
+    </args>
+  </payloadFactory>
+  <property name="HTTP_SC" expression="get-property('errorStatus')" scope="axis2"/>
+  <property name="messageType" value="application/problem+json" scope="axis2"/>
+  <respond/>
+</sequence>

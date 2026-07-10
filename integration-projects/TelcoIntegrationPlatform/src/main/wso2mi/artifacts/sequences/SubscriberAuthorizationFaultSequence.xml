@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="SubscriberAuthorizationFaultSequence" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <property name="HTTP_SC" scope="axis2" type="INTEGER" value="503"/>
+    <property name="messageType" scope="axis2" type="STRING" value="application/json"/>
+    <property name="ContentType" scope="axis2" type="STRING" value="application/json"/>
+    <header name="X-Correlation-ID" expression="get-property('correlation.id')" scope="transport"/>
+    <payloadFactory media-type="json">
+        <format>{
+          "code":"DOWNSTREAM_CONTROL_UNAVAILABLE",
+          "message":"A required authorization or telco risk dependency is unavailable.",
+          "correlationId":"$1",
+          "details":{
+            "errorCode":"$2",
+            "errorMessage":"$3",
+            "errorDetail":"$4",
+            "retryable":true
+          }
+        }</format>
+        <args>
+            <arg evaluator="xml" expression="get-property('correlation.id')"/>
+            <arg evaluator="xml" expression="get-property('ERROR_CODE')"/>
+            <arg evaluator="xml" expression="get-property('ERROR_MESSAGE')"/>
+            <arg evaluator="xml" expression="get-property('ERROR_DETAIL')"/>
+        </args>
+    </payloadFactory>
+    <respond/>
+</sequence>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence name="SubscriberRiskDecisionSequence" trace="disable" xmlns="http://ws.apache.org/ns/synapse">
+    <script language="js"><![CDATA[
+        var risk = {};
+        try {
+            risk = mc.getPayloadJSON() || {};
+        } catch (e) {
+            risk = {};
+        }
+        var decision = String(risk.decision || '').toUpperCase();
+        var downstreamStatus = Number(risk.status || 0);
+        if (downstreamStatus >= 400 || (decision !== 'ALLOW' && decision !== 'CHALLENGE' && decision !== 'DENY')) {
+            decision = 'ERROR';
+        }
+        var score = Number(risk.riskScore || 0);
+        var partial = risk.partialResponse === true;
+        var reasons = Array.isArray(risk.reasons) ? risk.reasons : [];
+        var unavailable = Array.isArray(risk.unavailableServices) ? risk.unavailableServices : [];
+        mc.setProperty('risk.decision', decision);
+        mc.setProperty('risk.score', String(Number.isFinite(score) ? score : 0));
+        mc.setProperty('risk.partial', partial ? 'true' : 'false');
+        mc.setProperty('risk.reason.summary', reasons.join(','));
+        mc.setProperty('risk.unavailable.summary', unavailable.join(','));
+        mc.setProperty('risk.authorization.status',
+            decision === 'ALLOW' ? 'AUTHORIZED' :
+            decision === 'CHALLENGE' ? 'STEP_UP_REQUIRED' :
+            decision === 'DENY' ? 'DENIED' : 'UNAVAILABLE');
+    ]]></script>
+
+    <filter source="get-property('risk.decision')" regex="^ERROR$">
+        <then>
+            <property name="auth.error.status" scope="default" type="INTEGER" value="503"/>
+            <property name="auth.error.code" scope="default" type="STRING" value="RISK_DECISION_UNAVAILABLE"/>
+            <property name="auth.error.message" scope="default" type="STRING" value="The risk engine did not return a usable authorization decision."/>
+            <sequence key="SubscriberAuthorizationDenySequence"/>
+        </then>
+    </filter>
+
+    <filter source="get-property('risk.decision')" regex="^DENY$">
+        <then>
+            <property name="auth.error.status" scope="default" type="INTEGER" value="403"/>
+            <property name="auth.error.code" scope="default" type="STRING" value="RISK_POLICY_DENIED"/>
+            <property name="auth.error.message" scope="default" type="STRING" value="The telco risk score denied this subscriber control request."/>
+            <sequence key="SubscriberAuthorizationDenySequence"/>
+        </then>
+    </filter>
+</sequence>

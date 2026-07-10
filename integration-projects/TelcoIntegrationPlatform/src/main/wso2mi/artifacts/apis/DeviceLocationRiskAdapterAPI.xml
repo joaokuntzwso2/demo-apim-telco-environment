@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse"
+     name="DeviceLocationRiskAdapterAPI"
+     context="/internal/risk/device-location/v1">
+    <resource methods="POST" uri-template="/verify">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+            <property name="adapter.name" value="device-location" scope="default" type="STRING"/>
+            <property name="backend.timeout.ms"
+                      expression="get-property('env','backend_timeout_ms')"
+                      scope="default"
+                      type="INTEGER"/>
+
+            <script language="js"><![CDATA[
+                var request = mc.getPayloadJSON();
+                mc.setPayloadJSON({
+                    msisdn: String(request.msisdn || ''),
+                    transactionId: String(request.transactionId || ''),
+                    expectedCountry: String(request.expectedCountry || ''),
+                    latitude: Number(request.latitude),
+                    longitude: Number(request.longitude)
+                });
+            ]]></script>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+
+            <call>
+                <endpoint key="DeviceLocationFailoverEndpoint"/>
+            </call>
+
+            <filter source="$axis2:HTTP_SC" regex="^[45][0-9][0-9]$">
+                <then>
+                    <property name="adapter.error.code"
+                              expression="concat('DEVICE-LOCATION-HTTP-', $axis2:HTTP_SC)"
+                              scope="default"
+                              type="STRING"/>
+                    <property name="adapter.error.message"
+                              value="Device Location service returned an error response"
+                              scope="default"
+                              type="STRING"/>
+                    <sequence key="RiskAdapterFallbackSequence"/>
+                </then>
+            </filter>
+
+            <script language="js"><![CDATA[
+                var response = mc.getPayloadJSON();
+                mc.setPayloadJSON({
+                    service: 'device-location',
+                    status: 'SUCCESS',
+                    data: {
+                        verified: response.verified === true,
+                        expectedCountry: String(response.expectedCountry || ''),
+                        networkCountry: String(response.networkCountry || ''),
+                        accuracyMeters: Number(response.accuracyMeters || 0)
+                    },
+                    correlationId: String(mc.getProperty('correlation.id') || '')
+                });
+            ]]></script>
+            <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="RiskAdapterFallbackSequence"/>
+        </faultSequence>
+    </resource>
+</api>

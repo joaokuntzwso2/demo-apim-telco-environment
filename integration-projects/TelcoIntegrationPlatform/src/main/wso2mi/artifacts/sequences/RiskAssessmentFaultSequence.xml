@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="RiskAssessmentFaultSequence">
+    <log category="ERROR" level="custom">
+        <property name="event" value="risk-assessment-fault"/>
+        <property name="correlationId" expression="get-property('correlation.id')"/>
+        <property name="errorCode" expression="get-property('ERROR_CODE')"/>
+        <property name="errorMessage" expression="get-property('ERROR_MESSAGE')"/>
+        <property name="errorDetail" expression="get-property('ERROR_DETAIL')"/>
+    </log>
+    <script language="js"><![CDATA[
+        function value(name, fallback) {
+            var current = mc.getProperty(name);
+            return current == null || String(current).length === 0
+                ? fallback
+                : String(current);
+        }
+
+        mc.setPayloadJSON({
+            type: 'https://demo.telco/errors/integration-failure',
+            title: 'Secure transaction risk assessment failed',
+            status: 500,
+            detail: value('ERROR_MESSAGE', 'Unexpected integration runtime failure'),
+            correlationId: value('correlation.id', ''),
+            integrationErrorCode: value('ERROR_CODE', 'MI-UNEXPECTED')
+        });
+    ]]></script>
+    <property name="HTTP_SC" value="500" scope="axis2" type="STRING"/>
+    <property name="messageType" value="application/problem+json" scope="axis2" type="STRING"/>
+    <property name="ContentType" value="application/problem+json" scope="axis2" type="STRING"/>
+    <property name="X-Correlation-ID"
+              expression="get-property('correlation.id')"
+              scope="transport"
+              type="STRING"/>
+    <respond/>
+</sequence>

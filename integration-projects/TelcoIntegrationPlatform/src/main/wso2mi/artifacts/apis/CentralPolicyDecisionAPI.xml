@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api xmlns="http://ws.apache.org/ns/synapse"
+     name="CentralPolicyDecisionAPI"
+     context="/internal/central-policy/v1">
+    <resource methods="GET" uri-template="/health">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+            <payloadFactory media-type="json" template-type="default">
+                <format>{
+                  "status": "UP",
+                  "service": "CentralPolicyDecisionAPI",
+                  "runtime": "WSO2 Integrator: MI 4.6.0",
+                  "opaFailover": true,
+                  "boundedRetry": true,
+                  "partialResponse": "advisories remain non-blocking",
+                  "correlationId": "$1"
+                }</format>
+                <args>
+                    <arg expression="get-property('correlation.id')"/>
+                </args>
+            </payloadFactory>
+            <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <respond/>
+        </inSequence>
+        <faultSequence>
+            <sequence key="CentralPolicyFaultSequence"/>
+        </faultSequence>
+    </resource>
+
+    <resource methods="POST" uri-template="/decisions">
+        <inSequence>
+            <sequence key="InitializeCorrelationSequence"/>
+            <log level="custom">
+                <property name="event" value="central-policy-evaluation-start"/>
+                <property name="correlationId" expression="get-property('correlation.id')"/>
+            </log>
+            <script language="js"><![CDATA[
+                var request = mc.getPayloadJSON();
+                var correlationId = String(mc.getProperty('correlation.id') || '');
+                if (request == null || typeof request !== 'object' || Array.isArray(request)) {
+                    request = {};
+                }
+                request.correlationId = correlationId;
+                mc.setPayloadJSON({ input: request });
+            ]]></script>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+            <header name="X-Correlation-ID"
+                    expression="get-property('correlation.id')"
+                    scope="transport"/>
+            <property name="REST_URL_POSTFIX"
+                      scope="axis2"
+                      action="remove"/>
+            <call>
+                <endpoint key="CentralPolicyOpaFailoverEndpoint"/>
+            </call>
+            <script language="js"><![CDATA[
+                var envelope = mc.getPayloadJSON();
+                var correlationId = String(mc.getProperty('correlation.id') || '');
+                if (envelope == null || typeof envelope !== 'object' ||
+                    envelope.result == null || typeof envelope.result !== 'object') {
+                    mc.setProperty('central.policy.invalid.response', 'true');
+                } else {
+                    var decision = envelope.result;
+                    decision.correlationId = correlationId;
+                    decision.partialResponse =
+                        Array.isArray(decision.advisories) && decision.advisories.length > 0;
+                    mc.setProperty(
+                        'central.policy.decision.status',
+                        String(decision.decisionStatus || (decision.allow ? 'ALLOW' : 'DENY'))
+                    );
+                    mc.setPayloadJSON(decision);
+                }
+            ]]></script>
+            <log level="custom">
+                <property name="event" value="central-policy-evaluation-complete"/>
+                <property name="correlationId" expression="get-property('correlation.id')"/>
+                <property name="decisionStatus" expression="get-property('central.policy.decision.status')"/>
+            </log>
+            <filter source="get-property('central.policy.invalid.response')" regex="true">
+                <then>
+                    <property name="ERROR_CODE" value="CENTRAL_POLICY_INVALID_RESPONSE"/>
+                    <property name="ERROR_MESSAGE" value="OPA returned a response without a result object."/>
+                    <sequence key="CentralPolicyFaultSequence"/>
+                </then>
+                <else>
+                    <property name="HTTP_SC" value="200" scope="axis2" type="STRING"/>
+                    <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+                    <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+                    <header name="X-Correlation-ID"
+                            expression="get-property('correlation.id')"
+                            scope="transport"/>
+                    <header name="X-Policy-Decision"
+                            expression="get-property('central.policy.decision.status')"
+                            scope="transport"/>
+                    <respond/>
+                </else>
+            </filter>
+        </inSequence>
+        <faultSequence>
+            <sequence key="CentralPolicyFaultSequence"/>
+        </faultSequence>
+    </resource>
+</api>

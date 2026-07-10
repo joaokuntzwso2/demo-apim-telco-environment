@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse" name="AuditDeliverySequence" onError="AuditDeliveryFaultSequence">
+    <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+    <property name="ContentType" value="application/json" scope="axis2" type="STRING"/>
+    <property name="HTTP_METHOD" value="POST" scope="axis2" type="STRING"/>
+    <property name="NO_ENTITY_BODY" value="false" scope="axis2" type="BOOLEAN"/>
+    <property name="OUT_ONLY" value="true" scope="default" type="BOOLEAN"/>
+    <log level="custom">
+        <property name="event" value="AUDIT_EVENT_ACCEPTED_BY_MI"/>
+        <property name="auditId" expression="$ctx:auditId"/>
+        <property name="eventType" expression="json-eval($.eventType)"/>
+        <property name="actor" expression="json-eval($.actor)"/>
+        <property name="country" expression="json-eval($.country)"/>
+        <property name="resource" expression="json-eval($.resource)"/>
+        <property name="action" expression="json-eval($.action)"/>
+        <property name="result" expression="json-eval($.result)"/>
+        <property name="correlationId" expression="get-property('correlation.id')"/>
+    </log>
+    <call blocking="false">
+        <endpoint key="AuditTelemetryFailoverEndpoint"/>
+    </call>
+    <drop/>
+</sequence>

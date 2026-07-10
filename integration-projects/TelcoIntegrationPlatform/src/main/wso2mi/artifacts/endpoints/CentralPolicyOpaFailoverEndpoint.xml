@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoint xmlns="http://ws.apache.org/ns/synapse"
+          name="CentralPolicyOpaFailoverEndpoint">
+    <failover>
+        <endpoint name="CentralPolicyOpaPrimary">
+            <http method="post"
+                  uri-template="http://opa:8181/v1/data/telco/central_policy/decision">
+                <timeout>
+                    <duration>3000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+
+                <suspendOnFailure>
+                    <errorCodes>101503,101504,101505,101507</errorCodes>
+                    <initialDuration>100</initialDuration>
+                    <progressionFactor>1.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+            </http>
+        </endpoint>
+
+        <endpoint name="CentralPolicyOpaDisasterRecovery">
+            <http method="post"
+                  uri-template="http://opa-dr:8181/v1/data/telco/central_policy/decision">
+                <timeout>
+                    <duration>3000</duration>
+                    <responseAction>fault</responseAction>
+                </timeout>
+
+                <suspendOnFailure>
+                    <errorCodes>101503,101504,101505,101507</errorCodes>
+                    <initialDuration>100</initialDuration>
+                    <progressionFactor>1.0</progressionFactor>
+                    <maximumDuration>30000</maximumDuration>
+                </suspendOnFailure>
+
+                <retryConfig>
+                    <disabledErrorCodes>101503,101504,101505,101507</disabledErrorCodes>
+                </retryConfig>
+            </http>
+        </endpoint>
+    </failover>
+</endpoint>
