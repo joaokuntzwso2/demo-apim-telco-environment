@@ -4,6 +4,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const prepaidCommercial = require('./prepaid-commercial-extension');
 
 const PORT = Number(process.env.PORT || 8086);
 const STATE_FILE = process.env.STATE_FILE || '/data/commercial-meter-state.json';
@@ -134,11 +135,16 @@ async function readJson(req, limit = 1024 * 1024) {
 function normalizedAssignment(partnerId, input = {}) {
   const planId = input.planId || 'Sandbox';
   const plan = PLAN_CATALOG[planId];
-  if (!plan) throw Object.assign(new Error(`unknown planId ${planId}`), { status: 400 });
+  if (!plan) throw Object.assign(new Error(`unknown planId ${planId}`), { status: 400, code: 'UNKNOWN_COMMERCIAL_PLAN' });
+  const billingMode = String(input.billingMode || 'POSTPAID').toUpperCase();
+  if (!['POSTPAID', 'PREPAID'].includes(billingMode)) {
+    throw Object.assign(new Error(`unsupported billingMode ${billingMode}`), { status: 400, code: 'INVALID_BILLING_MODE' });
+  }
   return {
     partnerId,
     apiProduct: PRODUCT,
     planId,
+    billingMode,
     country: String(input.country || plan.country).toUpperCase(),
     currency: String(input.currency || plan.currency).toUpperCase(),
     effectiveFrom: input.effectiveFrom || new Date().toISOString(),
@@ -291,7 +297,7 @@ function metrics(state) {
     lines.push(`telco_commercial_usage_requests_total{partner="${partner}",product="${product}",plan="${plan}",meter="${meter}",outcome="${outcome}"} ${row.count}`);
     lines.push(`telco_commercial_billed_amount_total{partner="${partner}",product="${product}",plan="${plan}",meter="${meter}",currency="${currency}"} ${row.amount.toFixed(6)}`);
   }
-  return `${lines.join('\n')}\n`;
+  return prepaidCommercial.appendPrometheusMetrics(state, lines, PLAN_CATALOG);
 }
 
 const server = http.createServer(async (req, res) => {
@@ -345,7 +351,12 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ...aggregateUsage(readState(), partnerId, url.searchParams.get('apiProduct') || PRODUCT), correlationId });
     }
 
-    const capabilityMatch = url.pathname.match(/^\/capabilities\/(number_verification|sim_swap|quality_on_demand)$/);
+    if (await prepaidCommercial.handleRequest({
+    req, res, url, correlationId, readJson, readState, writeState,
+    PLAN_CATALOG, PRODUCT, aggregateUsage, json, problem, logEvent
+  })) return;
+
+  const capabilityMatch = url.pathname.match(/^\/capabilities\/(number_verification|sim_swap|quality_on_demand)$/);
     if (capabilityMatch && req.method === 'POST') {
       const body = await readJson(req);
       const delay = Math.min(5000, Math.max(0, Number(body.simulatedDelayMs || 0)));
@@ -373,6 +384,7 @@ const server = http.createServer(async (req, res) => {
         occurredAt: event.occurredAt || new Date().toISOString(),
         correlationId: event.correlationId || correlationId
       };
+      prepaidCommercial.applyPrepaidDebit(state, persisted);
       state.events.push(persisted);
       if (state.events.length > MAX_EVENTS) state.events.splice(0, state.events.length - MAX_EVENTS);
       writeState(state);
@@ -427,7 +439,8 @@ const server = http.createServer(async (req, res) => {
   } catch (error) {
     const status = Number(error.status || 500);
     logEvent('error', { correlationId, status, message: error.message });
-    return problem(res, status, status === 500 ? 'INTERNAL_ERROR' : 'INVALID_REQUEST', error.message, correlationId);
+    const code = error.code || (status === 500 ? 'INTERNAL_ERROR' : 'INVALID_REQUEST');
+    return problem(res, status, code, error.message, correlationId);
   }
 });
 

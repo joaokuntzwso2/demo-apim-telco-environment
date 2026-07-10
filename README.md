@@ -1,11 +1,11 @@
 # WSO2 Telco API Platform — End-to-End Demonstration Environment
 
 > **Customer-facing reference architecture and demonstration cookbook**  
-> WSO2 API Manager 4.7 · WSO2 Integrator: MI 4.6 · Open Gateway/CAMARA-style APIs · API products and monetization · OAuth and consent controls · OPA and Siddhi governance · AI/MCP · observability and SIEM
+> WSO2 API Manager 4.7 · WSO2 Integrator: MI 4.6 · Open Gateway/CAMARA-style APIs · API products and monetization · prepaid credit and commercial reconciliation · OAuth and consent controls · OPA and Siddhi governance · AI/MCP · observability and SIEM
 
 This repository implements a runnable, containerized API platform for a multinational telecommunications group. It demonstrates how a regional telco can expose network, customer, charging, fraud-prevention, service-assurance, legacy BSS and AI capabilities as governed digital products while preserving enterprise integration patterns behind the API layer.
 
-The environment is intentionally more complete than a collection of mock APIs. It includes API lifecycle automation, WSO2 API Manager Gateway enforcement, WSO2 Integrator mediation, API products, commercial plans, usage metering, optional Moesif analytics, local Prometheus/Grafana reporting, central policy decisions with OPA, event-driven controls with Siddhi, OAuth scopes and business authorization, SOAP modernization, audit/SIEM evidence, and an optional governed telco support assistant with MCP-style tools.
+The environment is intentionally more complete than a collection of mock APIs. It includes API lifecycle automation, WSO2 API Manager Gateway enforcement, WSO2 Integrator mediation, API products, commercial plans, usage metering, an executable prepaid-credit wallet with preauthorization and settlement reconciliation, optional Moesif analytics, local Prometheus/Grafana reporting, central policy decisions with OPA, event-driven controls with Siddhi, OAuth scopes and business authorization, SOAP modernization, audit/SIEM evidence, and an optional governed telco support assistant with MCP-style tools.
 
 All commercial figures, SLAs, partner names, subscriber identifiers and countries in this repository are demonstration data. They must be replaced by the operator's approved catalog, contracts, policies and data-classification rules before production use.
 
@@ -51,10 +51,10 @@ Yes. Native WSO2 API Products combine selected operations from multiple APIs int
 Yes, at three complementary levels:
 
 1. **WSO2 API Manager establishes and enforces the commercial access contract** through published APIs and API Products, applications, subscriptions, business plans, OAuth credentials, scopes and technical quotas.
-2. **The local commercial implementation performs outcome-aware rating and durable usage accounting** per partner, product, plan and meter. It demonstrates free, fixed-fee, included-volume, committed-volume, overage, outcome-based and partial-result charging.
+2. **The local commercial implementation performs outcome-aware rating and durable usage accounting** per partner, product, plan and meter. It demonstrates free, fixed-fee, included-volume, committed-volume, overage, outcome-based, partial-result and prepaid charging, including credit exhaustion, idempotent wallet debit and commercial reconciliation.
 3. **Usage and value evidence can be exported** to Moesif, Prometheus/Grafana, a data platform, mediation layer or an enterprise billing/settlement platform.
 
-The demo deliberately distinguishes **traffic enforcement**, **usage analytics**, **rating** and **invoicing**. These are related concerns but are not the same function.
+The demo deliberately distinguishes **traffic enforcement**, **usage analytics**, **rating**, **prepaid credit authorization**, **commercial reconciliation** and **invoicing**. These are related concerns but are not the same function. The prepaid implementation proves the control pattern; a production operator would normally connect the same governed API context to an approved online charging system, billing platform or prepaid-balance service.
 
 ### 1.4 Can WSO2 modernize and protect legacy BSS/OSS services?
 
@@ -265,6 +265,7 @@ This distinction is important in a bid response.
 | Central policy decision | **MI + OPA** | Sends structured descriptors to external PDPs and separates blocking/advisory findings |
 | Event-driven abuse controls | **APIM + Siddhi + Kafka** | Contextual fair-use/QoD controls, HTTP 429 normalization and alert evidence |
 | Local commercial rating | **MI + demo meter store** | Outcome-aware per-partner/product/plan/meter rating and durable usage ledger |
+| Prepaid credit and commercial reconciliation | **MI + demo meter store + Prometheus/Grafana** | Preauthorizes paid calls, debits credit idempotently, rejects insufficient credit before backend execution, detects settlement mismatches and exposes reconciled evidence |
 | Moesif analytics | **WSO2 APIM native integration + Moesif** | Near-real-time API analytics and commercial segmentation; not runtime enforcement |
 | Local dashboards | **Prometheus + Grafana** | Operational and commercial reporting from exposed metrics |
 | Logs and traces | **APIM/MI + OTel/Loki/Tempo** | Cross-layer observability using correlation IDs |
@@ -312,7 +313,7 @@ services/
   apim-bootstrapper/          Idempotent APIM control-plane provisioning
   wso2-apim/                  Customized APIM 4.7 image/configuration
   wso2-mi/                    MI 4.6 artifacts and image
-  commercial-meter-store/    Persistent local usage/rating store
+  commercial-meter-store/    Persistent local usage/rating store, prepaid wallet and reconciliation adapter
   telco-backend/              Mock digital/BSS/OSS API backend
   demo-portal/                Regional business/demo portal
   pipeline-portal/            API governance and APIOps demonstration UI
@@ -328,7 +329,7 @@ services/
 | `docker-compose.central-policy.yml` | OPA DR and central-policy startup dependencies |
 | `docker-compose.mi.yml` | WSO2 MI plus CRM, SIM-swap, location and OSS backends |
 | `docker-compose.oauth-business-controls.yml` | OAuth persona/consent startup and state wiring |
-| `docker-compose.commercial.yml` | Commercial meter primary/DR and MI commercial flow |
+| `docker-compose.commercial.yml` | Commercial meter primary/DR, MI rating flow, prepaid wallet, preauthorization and reconciliation |
 | `docker-compose.mi.soap.yml` | Legacy billing SOAP primary/DR |
 | `docker-compose.observability.yml` | OTel, Prometheus, Grafana, Loki, Tempo and exporters |
 | `docker-compose.audit-siem.yml` | Audit/SIEM integration overlay |
@@ -364,7 +365,7 @@ The lifecycle controller dynamically includes overlays that exist in the checkou
 | APIM correlation exporter | `9470` | APIM log-derived metrics |
 | Kafka exporter | `9308` | Kafka metrics |
 | Legacy SOAP primary/DR | `18091`, `18092` | BSS failover demonstration |
-| Commercial meter primary/DR | implementation-defined local ports | Persistent usage/rating failover |
+| Commercial meter primary/DR | `18086`, `18087` | Persistent usage/rating, prepaid wallet and reconciliation state |
 
 Ports can be changed by Compose/environment configuration. Run `docker compose ... ps` for the authoritative mapping in a specific session.
 
@@ -445,7 +446,7 @@ From the repository root:
 TELCO_AI_ENV_FILE=.env.ai.local ./scripts/reset-with-telco-ai.sh
 ```
 
-This is the preferred path for a customer demonstration of the complete environment. It rebuilds the required images, recreates state, starts the dependencies in order, runs the APIM bootstrap, registers MI services and executes verification.
+This is the preferred path for a customer demonstration of the complete environment. It rebuilds the required images, recreates state, starts the dependencies in order, runs the APIM bootstrap, registers MI services and executes verification. In a checkout containing the prepaid extension, the same reset also recreates the dedicated prepaid partner, proves credit exhaustion and reconciliation, waits for Prometheus to observe the final state and validates the provisioned Grafana dashboard.
 
 ### 7.2 Core environment without the AI overlay
 
@@ -521,6 +522,7 @@ Never commit the application ID or key.
 | Regional telco portal | `http://localhost:8080` | application-specific demo UI |
 | API pipeline portal | `http://localhost:8090` | no production authentication |
 | Grafana | `http://localhost:3000` | usually `admin/admin` in the demo |
+| Prepaid wallet and reconciliation dashboard | `http://localhost:3000/d/prepaid-wallet-reconciliation` | Grafana demo credentials |
 | Prometheus | `http://localhost:9090` | none in local demo |
 | Loki API | `http://localhost:3100` | none in local demo |
 | Tempo API | `http://localhost:3200` | none in local demo |
@@ -599,7 +601,9 @@ ensure-telco-ai-docs.js
 - Create `SecureMobileSandbox`, `SecureMobileBusiness` and `SecureMobileEnterprise` policies.
 - Publish the native `SecureMobileTransactionsProduct`.
 - Seed partner/plan/usage data.
+- Exercise the dedicated prepaid partner when the prepaid extension is installed: top-ups, paid debits, credit exhaustion, recovery, settlement discrepancy and idempotent replay.
 - Export product and meter metadata for Moesif or downstream billing.
+- Expose wallet and reconciliation metrics for Prometheus/Grafana and validate the customer-facing dashboard.
 
 ### 9.6 OAuth business controls
 
@@ -654,7 +658,7 @@ The exact list is generated by `services/apim-bootstrapper/src/bootstrap.js`. Th
 | `BillingAdjustmentModernizationAPI` | Modern REST/JSON facade over legacy SOAP with WS-Security and failover | WSO2 MI → SOAP primary/DR |
 | `SecureTransactionRiskAssessmentAPI` | Aggregated fraud/risk decision across CRM, SIM, location and OSS | WSO2 MI orchestration |
 | `NetworkEventsStreamAPI` | SSE/AsyncAPI network and charging events | Telco event backend/Kafka |
-| `SecureMobileTransactionsCommercialAPI` | Executable commercial plans for number verification, SIM swap and QoD | WSO2 MI + meter store |
+| `SecureMobileTransactionsCommercialAPI` | Executable commercial plans for number verification, SIM swap and QoD, including prepaid credit enforcement and reconciliation evidence | WSO2 MI + meter store |
 | `CentralPolicyDecisionAPI` | Group and country policy evaluation | WSO2 MI → OPA primary/DR |
 | `SubscriberAuthorizationControlAPI` | Scope, persona, consent, purpose, country, partner and masking controls | APIM + WSO2 MI |
 | `TelcoAuditEventsAPI` | Normalized audit-event ingestion and evidence | WSO2 MI → telemetry/SIEM path |
@@ -776,6 +780,39 @@ The runtime allowance is enforced by APIM. The amount, allowance period, overage
 
 The demo also supports a **partial-result rating factor**. For example, a QoD result with incomplete radio telemetry can be rated at 70% of the normal unit amount while still returning useful business data.
 
+#### Prepaid settlement mode on the existing Business plan
+
+The prepaid scenario deliberately does **not** create a fourth APIM subscription policy. The existing `SecureMobileBusiness` policy remains the native APIM technical contract, while the commercial assignment adds `billingMode: PREPAID` for the dedicated partner `prepaid-fintech-br-001`.
+
+This separation demonstrates four independent controls:
+
+1. **APIM technical quota** — the Gateway protects request volume and the subscription contract.
+2. **Commercial tariff** — the existing Business meter prices determine the amount for each successful operation.
+3. **Prepaid credit** — MI checks available monetary credit before invoking the protected backend.
+4. **Financial reconciliation** — the rated-event ledger is compared with downstream settlement records.
+
+The deterministic demonstration sequence is:
+
+| Step | Commercial action | Amount | Balance |
+|---:|---|---:|---:|
+| 1 | Initial top-up | +BRL 0.57 | BRL 0.57 |
+| 2 | Number Verification | -BRL 0.08 | BRL 0.49 |
+| 3 | SIM Swap | -BRL 0.14 | BRL 0.35 |
+| 4 | Quality on Demand | -BRL 0.35 | BRL 0.00 |
+| 5 | Another Number Verification | rejected with HTTP 402 | BRL 0.00 |
+| 6 | Recovery top-up | +BRL 0.20 | BRL 0.20 |
+| 7 | Number Verification after recovery | -BRL 0.08 | BRL 0.12 |
+
+The final equation is therefore:
+
+```text
+BRL 0.77 total topped up
+- BRL 0.65 total debited
+= BRL 0.12 available balance
+```
+
+The rejected request is not billed and does not advance backend usage because the preauthorization decision is made before the normal transaction sequence invokes the backend.
+
 ### 12.3 OAuth business-control plans
 
 | Policy | Runtime allowance | Commercial/data posture |
@@ -895,6 +932,40 @@ sum by (partner, product, plan, meter, currency) (
 )
 ```
 
+The prepaid extension also exposes the following metric families:
+
+```text
+telco_prepaid_wallet_balance
+telco_prepaid_wallet_topup_amount_total
+telco_prepaid_wallet_debited_amount_total
+telco_prepaid_credit_denials_total
+telco_commercial_reconciliation_reconciled
+telco_commercial_reconciliation_discrepancies
+telco_commercial_reconciliation_discrepancies_by_type
+telco_commercial_reconciliation_ledger_records
+telco_commercial_reconciliation_settlement_records
+telco_commercial_reconciliation_ledger_amount
+telco_commercial_reconciliation_settlement_amount
+```
+
+Open the dedicated dashboard:
+
+```text
+http://localhost:3000/d/prepaid-wallet-reconciliation
+```
+
+The dashboard is organized as a business story:
+
+1. **Credit added** — successful top-ups.
+2. **Credit consumed** — idempotent debits for billable successful outcomes.
+3. **Available credit** — current spendable balance.
+4. **Protected requests rejected** — proof that insufficient credit blocked an operation.
+5. **Settlement status** — proof that the rated ledger and downstream settlement agree.
+6. **Reconciliation evidence** — amount difference, record-count difference and discrepancies by type.
+7. **API consumption** — the operations and outcomes that produced the debits.
+
+The commercial meter primary and DR replicas can expose the same persisted state. Dashboard queries therefore use `max(...)` rather than `sum(...)` for wallet, debit, top-up, denial and reconciliation gauges/counters. This avoids presenting the same commercial state twice when Prometheus sees equivalent replica series.
+
 The Grafana dashboard is a **commercial evidence and operational reporting view**, not an invoice engine. In production, financial close should reconcile the rated ledger with the BSS/charging platform and finance controls.
 
 ### 12.9 Other viable monetization patterns
@@ -930,6 +1001,91 @@ For a regional telco, the recommended pattern is:
 6. Feed invoicing, revenue share and finance reconciliation.
 7. Use Moesif and/or Grafana for near-real-time product analytics, not as the sole accounting book unless selected and controlled as such.
 8. Reconcile APIM counts, event counts, rated records and invoices.
+
+### 12.10.1 Executable prepaid wallet and commercial reconciliation extension
+
+The extension is intentionally additive and keeps all existing postpaid, Sandbox, Business and Enterprise behavior intact.
+
+#### Runtime flow
+
+```mermaid
+sequenceDiagram
+  participant C as Partner application
+  participant G as APIM Gateway
+  participant M as WSO2 MI
+  participant W as Commercial wallet/ledger
+  participant B as Telco backend
+  participant S as Settlement system
+
+  C->>G: Protected API request
+  G->>G: OAuth, subscription, scope and technical quota
+  G->>M: Forward authenticated request and context
+  M->>W: Preauthorize partner + meter
+  alt Sufficient prepaid credit
+    W-->>M: Authorized + quoted amount
+    M->>B: Execute business operation
+    B-->>M: Business outcome
+    M->>W: Persist rated event and debit idempotently
+    W-->>M: Balance before/debit/balance after
+    M-->>G: Business response + commercial usage
+    G-->>C: Success
+  else Insufficient prepaid credit
+    W-->>M: Not authorized + available balance
+    M-->>G: HTTP 402 PREPAID_CREDIT_EXHAUSTED
+    G-->>C: Controlled rejection
+  end
+  W-->>S: Rated/settlement integration
+  M->>W: Reconciliation query or replay
+```
+
+#### Main implementation artifacts
+
+| Artifact | Responsibility |
+|---|---|
+| `services/commercial-meter-store/src/server.js` | Loads the prepaid extension and preserves the existing plan, rating and event APIs |
+| `services/commercial-meter-store/src/prepaid-commercial-extension.js` | Wallets, top-up idempotency, credit checks, settlement records, replay and reconciliation metrics |
+| `services/wso2-mi/synapse-configs/default/sequences/CommercialPrepaidPreAuthorizationSequence.xml` | Calls the credit check before backend execution and returns a normalized HTTP 402 response when funds are insufficient |
+| `services/wso2-mi/synapse-configs/default/api/SecureMobileTransactionsCommercialAPI.xml` | Hooks prepaid preauthorization into the three existing commercial operations and exposes operational demo resources where installed |
+| `scripts/verify-prepaid-reconciliation.sh` | Recreates the deterministic scenario and proves debit, denial, recovery and reconciliation |
+| `scripts/demo-prepaid-reconciliation.sh` | Runs the same scenario with customer-facing output and preserved final state |
+| `scripts/verify-prepaid-grafana.sh` | Waits for Prometheus convergence and validates metrics and dashboard provisioning |
+| `observability/grafana/dashboards/prepaid-wallet-reconciliation.json` | Friendly customer-facing wallet and reconciliation dashboard |
+| `scripts/reset-with-telco-ai.sh` | Includes the commercial, prepaid and Grafana checks in the preferred full reset |
+
+#### Idempotency and consistency
+
+- A top-up requires an idempotency reference; replaying the same reference does not add credit twice.
+- A wallet debit is tied to the immutable usage `eventId`; replaying the same usage event does not debit twice.
+- An insufficient-credit request is rejected before backend execution and therefore creates no normal rated usage event.
+- Reconciliation uses the rated event as the authoritative demo record and can create or correct a downstream settlement record without duplicating it.
+- The primary and DR meter-store containers share demonstration state; production must use an approved transactional data store or charging platform.
+
+#### Reset behavior
+
+`reset-with-telco-ai.sh` removes demonstration state and recreates it. When the extension is present, the reset then:
+
+1. validates the prepaid wiring;
+2. runs the existing commercial regression;
+3. creates the dedicated prepaid partner;
+4. executes the deterministic wallet scenario;
+5. creates and repairs settlement discrepancies;
+6. waits for Prometheus to observe the final state;
+7. validates the Grafana dashboard.
+
+The expected final evidence is:
+
+| Evidence | Expected result |
+|---|---:|
+| Available credit | BRL 0.12 |
+| Total topped up | BRL 0.77 |
+| Total debited | BRL 0.65 |
+| Credit denials | at least 1 |
+| Rated ledger amount | BRL 0.65 |
+| Settlement amount | BRL 0.65 |
+| Rated records | 4 |
+| Settlement records | 4 |
+| Open discrepancies | 0 |
+| Reconciliation status | `RECONCILED` |
 
 ---
 
@@ -1477,6 +1633,86 @@ curl -ksS -X POST \
 
 Open the commercial Grafana dashboard and correlate the partner, plan, meter, outcome and billed amount.
 
+### 14.9.1 Demonstrate prepaid credit exhaustion and reconciliation
+
+The preferred full reset executes and verifies this scenario automatically:
+
+```bash
+TELCO_AI_ENV_FILE=.env.ai.local ./scripts/reset-with-telco-ai.sh
+```
+
+To rerun only the prepaid scenario:
+
+```bash
+./scripts/verify-prepaid-reconciliation.sh
+```
+
+For a presenter-friendly execution that prints the wallet and reconciliation evidence:
+
+```bash
+./scripts/demo-prepaid-reconciliation.sh
+```
+
+Validate the authoritative wallet directly:
+
+```bash
+curl -fsS \
+  'http://localhost:18086/wallets/prepaid-fintech-br-001' | jq .
+```
+
+Expected final values:
+
+```json
+{
+  "wallet": {
+    "partnerId": "prepaid-fintech-br-001",
+    "currency": "BRL",
+    "balance": 0.12
+  }
+}
+```
+
+Validate commercial reconciliation:
+
+```bash
+curl -fsS \
+  'http://localhost:18086/reconciliation?partnerId=prepaid-fintech-br-001' | jq .
+```
+
+Expected final result:
+
+```json
+{
+  "partnerId": "prepaid-fintech-br-001",
+  "discrepancyCount": 0,
+  "reconciled": true
+}
+```
+
+Validate metrics and dashboard provisioning:
+
+```bash
+./scripts/verify-prepaid-grafana.sh
+```
+
+Open the customer-facing dashboard:
+
+```text
+http://localhost:3000/d/prepaid-wallet-reconciliation
+```
+
+Read the first row from left to right:
+
+```text
+BRL 0.77 credit added
+- BRL 0.65 credit consumed
+= BRL 0.12 available
+1 protected request rejected
+settlement RECONCILED
+```
+
+The dashboard is the best visual proof of the scenario. The terminal verifier is the executable definition of done, and the wallet/reconciliation endpoints provide the detailed source records.
+
 ### 14.10 Demonstrate central policy allow and deny
 
 Allow example for Mexico:
@@ -1716,6 +1952,8 @@ Run the scripts that exist in the checkout. The matrix below groups the principa
 | SOAP modernization | `scripts/test-mi-soap-api.sh` | REST-to-SOAP, WS-Security and normalized result |
 | SOAP failure | `scripts/test-mi-soap-failure.sh` | DR/fault normalization |
 | Commercial | `scripts/verify-commercial-plan-usage.sh` | Plans, rating, usage, product and Gateway call |
+| Prepaid and reconciliation | `scripts/verify-prepaid-reconciliation.sh` | Wallet top-ups/debits, HTTP 402 exhaustion, recovery, missing/mismatched settlement and idempotent repair |
+| Prepaid Grafana | `scripts/verify-prepaid-grafana.sh` | Final wallet metrics, denial evidence, reconciliation totals and dashboard provisioning |
 | OPA governance | `scripts/verify-opa-governance.sh` | Product bundles comply or are rejected |
 | Central policy | `scripts/verify-central-policy-overlays.sh` | OAuth, MI→OPA, allow/deny, docs and Service Catalog |
 | OAuth business controls | `scripts/verify-oauth-consent-risk-controls.sh` | Scopes, personas, consent, purpose, isolation and masking |
@@ -1734,6 +1972,8 @@ mkdir -p demo-evidence
 for script in \
   scripts/verify-mi-resilience-config.sh \
   scripts/verify-commercial-plan-usage.sh \
+  scripts/verify-prepaid-reconciliation.sh \
+  scripts/verify-prepaid-grafana.sh \
   scripts/verify-central-policy-overlays.sh \
   scripts/verify-oauth-consent-risk-controls.sh \
   scripts/verify-siddhi-runtime-enforcement.sh \
@@ -1881,6 +2121,45 @@ Generate traffic and wait for the next scrape interval:
 ./scripts/generate-observability-traffic.sh
 ```
 
+#### Prepaid dashboard shows doubled amounts or duplicate values
+
+The primary and DR commercial meter stores can expose the same persisted demonstration state. If a panel uses `sum(...)`, the same top-up, debit, balance, denial or reconciliation result may be counted twice.
+
+Use `max(...)` for state replicated identically across instances, for example:
+
+```promql
+max(telco_prepaid_wallet_balance{partner="prepaid-fintech-br-001"})
+```
+
+```promql
+max(telco_prepaid_wallet_topup_amount_total{partner="prepaid-fintech-br-001"})
+```
+
+```promql
+max(telco_prepaid_wallet_debited_amount_total{partner="prepaid-fintech-br-001"})
+```
+
+The provisioned `Prepaid Wallet & Commercial Reconciliation` dashboard already uses replica-safe queries.
+
+#### Prepaid Grafana verifier appears to wait after the authoritative checks
+
+The meter store is authoritative immediately, but Prometheus observes changes only on its next scrape. The verifier waits until Prometheus sees the final BRL 0.12 balance and clean reconciliation.
+
+Inspect the current series:
+
+```bash
+curl -sG \
+  --data-urlencode \
+  'query=telco_prepaid_wallet_balance{partner="prepaid-fintech-br-001"}' \
+  http://localhost:9090/api/v1/query | jq .
+```
+
+Then rerun:
+
+```bash
+./scripts/verify-prepaid-grafana.sh
+```
+
 ### 16.11 Moesif events do not appear
 
 Check:
@@ -1966,6 +2245,23 @@ This repository is a demonstration, not a production deployment blueprint. The f
 - Integrate taxation, currency conversion and legal-entity rules.
 - Separate operational dashboards from the financial system of record.
 - Protect commercial data with finance-grade access and audit controls.
+
+#### Production prepaid pattern for an existing API
+
+The demonstration meter store is not an online charging system. For production, preserve the same architectural control points while replacing the local wallet with an approved charging or prepaid-balance platform:
+
+1. The partner subscribes to an existing API or API Product in APIM and selects an approved plan.
+2. APIM authenticates the request, validates the subscription/scope and enforces technical rate limits.
+3. APIM propagates stable commercial identifiers such as partner, application, API Product, operation and plan.
+4. MI or a dedicated policy/rating service derives the billable meter and requests a real-time **authorize/reserve** decision from the online charging system.
+5. If credit is insufficient, the flow returns a controlled business rejection without invoking the backend.
+6. If authorized, the existing API backend executes normally.
+7. The final business outcome determines whether the reservation is captured, adjusted or released.
+8. An immutable usage/rating event is emitted with idempotency key, tariff version, amount, currency and outcome.
+9. Billing/settlement consumes the event and finance reconciliation compares authorization, capture, rated ledger and invoice/settlement records.
+10. Dashboards show operational state, while the charging/billing platform remains the monetary source of truth.
+
+For high-value or variable-cost operations, use a reservation/capture/release model rather than a simple balance read followed by debit. This prevents race conditions when multiple requests consume the same wallet concurrently.
 
 ### 17.6 Observability and SIEM
 
@@ -2053,6 +2349,7 @@ This demonstration shows a practical separation of concerns:
 
 - **WSO2 API Manager** turns APIs into governed, discoverable and subscribable products and enforces the access contract at the Gateway.
 - **WSO2 Integrator: MI** decouples consumers from BSS/OSS complexity and implements resilient integration, transformation and contextual business controls.
+- **The commercial extension** demonstrates how the same governed API can use prepaid credit authorization, idempotent debit, settlement discrepancy detection and replay without changing the API Product or existing APIM Business plan.
 - **OPA and Siddhi** demonstrate pluggable central and event-driven policy decisions.
 - **The commercial meter and exports** demonstrate how Gateway context becomes rated usage and settlement evidence.
 - **Moesif and Grafana** provide complementary analytics options; neither needs to replace the operator's financial system of record.

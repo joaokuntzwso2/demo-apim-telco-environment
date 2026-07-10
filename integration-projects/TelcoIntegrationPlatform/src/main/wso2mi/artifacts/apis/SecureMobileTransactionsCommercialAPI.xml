@@ -82,7 +82,8 @@
   <resource methods="POST" uri-template="/number-verification">
     <inSequence>
       <property name="commercial.meter" value="number_verification" scope="default" type="STRING"/>
-      <sequence key="CommercialExecuteTransactionSequence"/>
+      <sequence key="CommercialPrepaidPreAuthorizationSequence"/>
+    <sequence key="CommercialExecuteTransactionSequence"/>
     </inSequence>
     <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
   </resource>
@@ -90,7 +91,8 @@
   <resource methods="POST" uri-template="/sim-swap">
     <inSequence>
       <property name="commercial.meter" value="sim_swap" scope="default" type="STRING"/>
-      <sequence key="CommercialExecuteTransactionSequence"/>
+      <sequence key="CommercialPrepaidPreAuthorizationSequence"/>
+    <sequence key="CommercialExecuteTransactionSequence"/>
     </inSequence>
     <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
   </resource>
@@ -98,7 +100,8 @@
   <resource methods="POST" uri-template="/quality-on-demand">
     <inSequence>
       <property name="commercial.meter" value="quality_on_demand" scope="default" type="STRING"/>
-      <sequence key="CommercialExecuteTransactionSequence"/>
+      <sequence key="CommercialPrepaidPreAuthorizationSequence"/>
+    <sequence key="CommercialExecuteTransactionSequence"/>
     </inSequence>
     <faultSequence><sequence key="CommercialNormalizedFaultSequence"/></faultSequence>
   </resource>

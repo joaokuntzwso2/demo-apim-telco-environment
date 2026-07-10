@@ -141,6 +141,13 @@ wait_for_container_health() {
   fail "$description did not become healthy"
 }
 
+
+# BEGIN PREPAID RECONCILIATION RESET PREFLIGHT
+echo "[telco-ai-reset] Validating prepaid and reconciliation wiring."
+bash scripts/verify-prepaid-reset-wiring.sh
+pass "Prepaid and reconciliation reset wiring"
+# END PREPAID RECONCILIATION RESET PREFLIGHT
+
 echo "[telco-ai-reset] Validating complete Compose topology."
 
 dc config --quiet
@@ -200,6 +207,27 @@ wait_for_container_health \
   180 \
   5
 
+
+# BEGIN PREPAID RECONCILIATION RUNTIME READINESS
+wait_for_url \
+  "Primary commercial meter store" \
+  "http://127.0.0.1:18086/health" \
+  120 \
+  3
+
+wait_for_url \
+  "Secondary commercial meter store" \
+  "http://127.0.0.1:18087/health" \
+  120 \
+  3
+
+wait_for_url \
+  "MI commercial API" \
+  "http://127.0.0.1:8290/secure-mobile-transactions/v1/health" \
+  120 \
+  3
+# END PREPAID RECONCILIATION RUNTIME READINESS
+
 echo "[telco-ai-reset] Running the complete APIM bootstrap chain."
 
 dc run --rm --no-deps \
@@ -230,6 +258,21 @@ wait_for_url \
   "http://127.0.0.1:8080/portal-status" \
   60 \
   3
+
+
+# BEGIN COMMERCIAL AND PREPAID VERIFICATION
+echo "[telco-ai-reset] Verifying the existing commercial implementation."
+bash scripts/verify-commercial-plan-usage.sh
+pass "Existing commercial plans and usage metering"
+
+echo "[telco-ai-reset] Verifying prepaid exhaustion and reconciliation."
+bash scripts/verify-prepaid-reconciliation.sh
+pass "Prepaid credit exhaustion and commercial reconciliation"
+
+echo "[telco-ai-reset] Verifying prepaid Grafana observability."
+bash scripts/verify-prepaid-grafana.sh
+pass "Prepaid wallet and reconciliation Grafana dashboard"
+# END COMMERCIAL AND PREPAID VERIFICATION
 
 echo "[telco-ai-reset] Running complete AI verification."
 

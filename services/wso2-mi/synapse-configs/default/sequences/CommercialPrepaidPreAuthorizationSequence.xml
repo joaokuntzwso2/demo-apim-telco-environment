@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence xmlns="http://ws.apache.org/ns/synapse"
+          name="CommercialPrepaidPreAuthorizationSequence"
+          trace="disable">
+    <sequence key="CommercialCorrelationSequence"/>
+    <enrich>
+        <source clone="true" type="body"/>
+        <target action="replace" property="commercial.prepaid.originalPayload" type="property"/>
+    </enrich>
+    <property name="commercial.prepaid.partnerId"
+              expression="json-eval($.partnerId)"
+              scope="default"
+              type="STRING"/>
+    <filter source="get-property('commercial.prepaid.partnerId')" regex=".+">
+        <then>
+            <payloadFactory media-type="json">
+                <format>{"partnerId":"$1","meter":"$2"}</format>
+                <args>
+                    <arg evaluator="xml" expression="get-property('commercial.prepaid.partnerId')"/>
+                    <arg evaluator="xml" expression="get-property('commercial.meter')"/>
+                </args>
+            </payloadFactory>
+            <property name="REST_URL_POSTFIX" value="/preauthorizations" scope="axis2" type="STRING"/>
+            <property name="HTTP_METHOD" value="POST" scope="axis2" type="STRING"/>
+            <property name="messageType" value="application/json" scope="axis2" type="STRING"/>
+            <header name="X-Correlation-ID"
+                    expression="get-property('commercial.correlationId')"
+                    scope="transport"/>
+            <call><endpoint key="CommercialMeterStoreFailoverEndpoint"/></call>
+            <property name="commercial.prepaid.authorized"
+                      expression="json-eval($.authorized)" scope="default" type="STRING"/>
+            <property name="commercial.prepaid.quotedAmount"
+                      expression="json-eval($.quotedAmount)" scope="default" type="STRING"/>
+            <property name="commercial.prepaid.balance"
+                      expression="json-eval($.balance)" scope="default" type="STRING"/>
+            <property name="commercial.prepaid.currency"
+                      expression="json-eval($.currency)" scope="default" type="STRING"/>
+            <filter source="get-property('commercial.prepaid.authorized')" regex="false">
+                <then>
+                    <payloadFactory media-type="json">
+                        <format>{"type":"https://example.telco/errors/prepaid-credit-exhausted","title":"Prepaid credit exhausted","status":402,"code":"PREPAID_CREDIT_EXHAUSTED","detail":"The partner does not have sufficient prepaid credit for this operation.","partnerId":"$1","meter":"$2","requiredAmount":$3,"availableBalance":$4,"currency":"$5","correlationId":"$6"}</format>
+                        <args>
+                            <arg evaluator="xml" expression="get-property('commercial.prepaid.partnerId')"/>
+                            <arg evaluator="xml" expression="get-property('commercial.meter')"/>
+                            <arg evaluator="xml" expression="get-property('commercial.prepaid.quotedAmount')"/>
+                            <arg evaluator="xml" expression="get-property('commercial.prepaid.balance')"/>
+                            <arg evaluator="xml" expression="get-property('commercial.prepaid.currency')"/>
+                            <arg evaluator="xml" expression="get-property('commercial.correlationId')"/>
+                        </args>
+                    </payloadFactory>
+                    <property name="HTTP_SC" value="402" scope="axis2" type="STRING"/>
+                    <property name="messageType"
+                              value="application/json"
+                              scope="axis2"
+                              type="STRING"/>
+                    <property name="ContentType"
+                              value="application/problem+json"
+                              scope="axis2"
+                              type="STRING"/>
+                    <header name="X-Correlation-ID"
+                            expression="get-property('commercial.correlationId')"
+                            scope="transport"/>
+                    <respond/>
+                </then>
+            </filter>
+        </then>
+    </filter>
+    <enrich>
+        <source clone="true" property="commercial.prepaid.originalPayload" type="property"/>
+        <target action="replace" type="body"/>
+    </enrich>
+</sequence>
