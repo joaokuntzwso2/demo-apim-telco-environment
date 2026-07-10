@@ -28,11 +28,11 @@
         <button class="nav-item" data-tab="runtime">Streaming & legacy</button>
         <button class="nav-item" data-tab="openGateway">Open Gateway</button>
         <button class="nav-item" data-tab="governanceScorecard">Governance Scorecard</button>
-        <button class="nav-item" data-tab="demoCommander">Demo Commander</button>
+        <button class="nav-item" data-tab="demoCommander">Operations Workspace</button>
       </nav>
 
       <div class="sidebar-footer">
-        <span class="label">Demo architecture</span>
+        <span class="label">Platform architecture</span>
         <strong>WSO2 APIM 4.7</strong>
         <span>REST · SOAP · AsyncAPI · API Products · APIOps</span>
       </div>
@@ -41,7 +41,7 @@
     <div class="workspace">
       <header class="topbar">
         <div>
-          <div class="eyebrow">12-country telco API commercialization demo</div>
+          <div class="eyebrow">Regional telco API commercialization platform</div>
           <h1 id="pageTitle">Executive overview</h1>
           <p id="pageSubtitle">Business, network and partner API capabilities governed through WSO2 API Manager.</p>
         </div>
@@ -53,7 +53,7 @@
               <small id="backendProtocols">REST · SOAP · Events</small>
             </div>
           </div>
-          <a class="primary-action" id="pipelineLink" href="http://localhost:8090" target="_blank" rel="noreferrer">Open API Pipeline</a>
+          <a class="primary-action" id="pipelineLink" href="http://localhost:8090" target="_blank" rel="noreferrer">Open API Delivery Pipeline</a>
         </div>
       </header>
 
@@ -61,7 +61,7 @@
         <section class="kpi-grid">
           <article class="kpi-card"><span>Markets</span><strong id="marketsCount">--</strong><small>federated operating companies</small></article>
           <article class="kpi-card"><span>API products</span><strong id="productsCount">--</strong><small>commercial packages</small></article>
-          <article class="kpi-card"><span>Monthly API calls</span><strong id="callsKpi">--</strong><small>Moesif-style usage view</small></article>
+          <article class="kpi-card"><span>Monthly API calls</span><strong id="callsKpi">--</strong><small>API consumption analytics</small></article>
           <article class="kpi-card"><span>API revenue</span><strong id="revenueKpi">--</strong><small>usage-based monetization</small></article>
         </section>
 
@@ -70,7 +70,7 @@
             <article class="panel hero-panel">
               <div class="panel-kicker">Operating model</div>
               <h2>One API control plane for a regional telco group</h2>
-              <p>This portal simulates the executive view a group API office would use to track multi-country APIs, partner products, monetization, and runtime network events.</p>
+              <p>This portal provides the group API office with an executive view of multi-country APIs, partner products, monetization, and runtime network events.</p>
               <div class="proof-list">
                 <div><strong>Central governance</strong><span>API contracts, lifecycle, policies and pipeline checks.</span></div>
                 <div><strong>Distributed telco runtime</strong><span>Country-specific BSS, OSS and network capabilities.</span></div>
@@ -80,7 +80,7 @@
 
             <article class="panel">
               <div class="panel-header">
-                <div><span class="panel-kicker">Architecture coverage</span><h2>Demo capability map</h2></div>
+                <div><span class="panel-kicker">Architecture coverage</span><h2>Platform capability map</h2></div>
               </div>
               <div class="capability-map">
                 <div><b>REST</b><span>Customer 360, number lifecycle, charging, network slice</span></div>
@@ -98,8 +98,8 @@
             </article>
             <article class="panel emphasis-panel">
               <span class="panel-kicker">Executive message</span>
-              <h2>From gateway demo to API business platform</h2>
-              <p>Use this screen to set the narrative: the customer is not buying only a gateway. They are buying the foundation for API productization across countries, partners and network capabilities.</p>
+              <h2>From API gateway to API business platform</h2>
+              <p>The platform provides a foundation for API productization across operating companies, partners and network capabilities, extending beyond gateway traffic management.</p>
               <a class="secondary-action" data-open-tab="commercial">Show monetization view</a>
             </article>
           </div>
@@ -190,14 +190,14 @@
 
             <article class="panel">
               <div class="panel-header"><div><span class="panel-kicker">Legacy modernization</span><h2>SOAP billing adjustment</h2></div><button id="callSoap">Create adjustment</button></div>
-              <p class="muted">Demonstrates legacy BSS exposure under the same governance and API product strategy.</p>
+              <p class="muted">Legacy BSS services are exposed under the same governance, security and API product strategy.</p>
               <pre id="soapResult"></pre>
             </article>
           </div>
         
         <article class="story-card accent">
           <div class="card-kicker">Event-native monetization</div>
-          <h2>Event-native broker simulation</h2>
+          <h2>Event-native broker services</h2>
           <p>
             Kafka-style topic catalog for network, fraud and settlement events.
             This shows how the telco monetizes real-time event delivery in addition to REST APIs.
@@ -210,7 +210,7 @@
         </article>
 
         <article class="story-card accent kafka-demo-card">
-          <div class="card-kicker">Real Kafka event-native demo</div>
+          <div class="card-kicker">Kafka event delivery</div>
           <h2>Kafka broker event monetization</h2>
           <p>
             Publish a real Kafka-protocol network SLA event into Redpanda, then read the consumed event back from the telco broker topic.
@@ -283,14 +283,14 @@
             </article>
 
             <article class="story-card">
-              <div class="card-kicker">Failover simulation</div>
+              <div class="card-kicker">Runtime resilience</div>
               <h2>Regional runtime failover</h2>
               <p>
                 Simulate a degraded country gateway and show how selected API traffic can move to another runtime
                 without changing the central API product model.
               </p>
               <div class="gateway-actions">
-                <button class="gateway-action" id="simulateRegionalFailover">Simulate failover</button>
+                <button class="gateway-action" id="simulateRegionalFailover">Run resilience test</button>
               </div>
               <pre class="gateway-output" id="regionalGatewayOutput">Waiting...</pre>
             </article>
@@ -311,5 +311,6 @@
   <script src="/siddhi-governance-ui.js?v=20260704-siddhi-governance"></script>
   <script src="/telco-ai-assistant.js"></script>
   <script src="telco-ai-minimize.js" defer></script>
+  <script src="/portal-route-context.js?v=3"></script>
 </body>
 </html>

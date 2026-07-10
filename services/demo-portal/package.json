@@ -1,5 +1,5 @@
 {
-  "name": "telco-demo-portal",
+  "name": "telco-api-business-portal",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -8,5 +8,6 @@
   "dependencies": {
     "express": "^4.19.2",
     "undici": "^6.21.1"
-  }
+  },
+  "description": "Regional telecommunications API business and operations portal."
 }

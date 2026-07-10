@@ -77,7 +77,7 @@
         'Governed candidate APIs'
       ],
       actions: [
-        ['Open APIOps Pipeline', 'http://localhost:8090'],
+        ['Open API Delivery Pipeline', 'http://localhost:8090'],
         ['Open Publisher', 'https://localhost:9443/publisher']
       ]
     }

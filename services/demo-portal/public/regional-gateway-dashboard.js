@@ -1,5 +1,5 @@
 (function () {
-  const BACKEND = window.DEMO_CONFIG?.backendUrl || 'http://localhost:8081';
+  const BACKEND = window.PORTAL_CONFIG?.backendUrl || 'http://localhost:8081';
 
   function money(value) {
     return new Intl.NumberFormat('en-US', {

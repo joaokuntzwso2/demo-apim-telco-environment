@@ -119,13 +119,13 @@ app.get('/api/pipeline/imported', (req, res) => {
 
 app.post('/api/pipeline/reset', (req, res) => {
   writeConsumed({ imported: {} });
-  res.json({ ok: true, message: 'Pipeline backlog reset. All APIs are available again.' });
+  res.json({ ok: true, message: 'Delivery backlog reset. All APIs are available again.' });
 });
 
 app.post('/api/pipeline/run', (req, res) => {
   const apiId = req.body.apiId;
   const imported = consumed().imported || {};
-  if (imported[apiId]) return res.status(409).json({ error: 'API was already processed by the pipeline', imported: imported[apiId] });
+  if (imported[apiId]) return res.status(409).json({ error: 'API was already processed by the delivery pipeline', imported: imported[apiId] });
   const entry = catalog().apis.find(a => a.id === apiId);
   if (!entry) return res.status(404).json({ error: 'API not found' });
   const jobId = `job-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -148,8 +148,8 @@ function addLog(job, level, message, data) {
 function finish(job, entry, status, level, message) {
   job.status = status;
   addLog(job, level, message);
-  // Per demo requirement: once a pipeline has run to a final business result, it disappears from the selectable backlog.
-  // Failed technical imports stay available so the presenter can rerun after APIM becomes healthy.
+  // Operational behavior: once a pipeline has run to a final business result, it disappears from the selectable backlog.
+  // Failed technical imports stay available so the operator can rerun after APIM becomes healthy.
   if (['APPROVED_IMPORTED'].includes(status)) {
     markConsumed(entry, job);
     addLog(job, 'INFO', 'Backlog updated: this API will no longer appear as selectable in the pipeline portal.');
@@ -205,7 +205,7 @@ function runPipeline(job, entry) {
     if (mode.apimOutput) addLog(job, mode.apimReachable ? 'PASS' : 'ERROR', `APIM check: ${mode.apimOutput}`);
 
     if (mode.effective !== 'real') {
-      addLog(job, 'ERROR', 'Simulation mode is disabled for this demo flow. Set APIM_MODE=real and start APIM.');
+      addLog(job, 'ERROR', 'Offline import mode is disabled. Set APIM_MODE=real and ensure API Manager is available.');
       job.status = 'FAILED';
       return;
     }
@@ -224,4 +224,4 @@ function runPipeline(job, entry) {
 }
 
 ensureState();
-app.listen(port, () => console.log(`Pipeline portal running on ${port}`));
+app.listen(port, () => console.log(`API delivery portal running on ${port}`));

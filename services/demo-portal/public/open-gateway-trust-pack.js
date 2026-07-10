@@ -1,5 +1,5 @@
 (function () {
-  const BACKEND = window.DEMO_CONFIG?.backendUrl || 'http://localhost:8081';
+  const BACKEND = window.PORTAL_CONFIG?.backendUrl || 'http://localhost:8081';
 
   const commanderSteps = [
     {
@@ -126,7 +126,7 @@
               <span id="rtx-step-time"></span>
             </div>
             <article class="rtx-card">
-              <h3>Talk track</h3>
+              <h3>Operational guidance</h3>
               <p id="rtx-step-talk"></p>
             </article>
             <article class="rtx-card">

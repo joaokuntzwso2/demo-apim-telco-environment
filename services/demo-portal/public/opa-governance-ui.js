@@ -1,5 +1,5 @@
 (function () {
-  const BACKEND = window.DEMO_CONFIG?.backendUrl || `${window.location.protocol}//${window.location.hostname}:8081`;
+  const BACKEND = window.PORTAL_CONFIG?.backendUrl || `${window.location.protocol}//${window.location.hostname}:8081`;
 
   function pretty(value) {
     return JSON.stringify(value, null, 2);

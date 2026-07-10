@@ -73,7 +73,7 @@
       "domain": "Rejected Candidate / Roaming Sponsorship",
       "owner": "Roaming Innovation",
       "countryScope": "MX,BR",
-      "description": "Negative pipeline scenario: candidate API intentionally misses mandatory monetization metadata and should be rejected before APIM import.",
+      "description": "governance remediation case: candidate API is missing mandatory monetization metadata and should be rejected before APIM import.",
       "spec": "invalid/candidate-roaming-sponsor-missing-monetization.openapi.yaml",
       "contractType": "OpenAPI"
     },
@@ -85,7 +85,7 @@
       "domain": "Rejected Candidate / Device Certification",
       "owner": "Device Certification Lab",
       "countryScope": "BR,CO",
-      "description": "Negative pipeline scenario: candidate API intentionally misses health-check metadata and operation IDs.",
+      "description": "governance remediation case: candidate API is missing health-check metadata and operation IDs.",
       "spec": "invalid/candidate-device-certification-missing-healthcheck.openapi.yaml",
       "contractType": "OpenAPI"
     },

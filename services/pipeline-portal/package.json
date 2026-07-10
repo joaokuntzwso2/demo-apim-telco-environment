@@ -1,9 +1,11 @@
 {
-  "name": "telco-pipeline-portal",
+  "name": "telco-api-delivery-portal",
   "version": "1.0.0",
-  "description": "API governance and APICTL import portal for WSO2 APIM 4.7 demo.",
+  "description": "Governed API delivery and APICTL integration portal for WSO2 API Manager 4.7.",
   "main": "src/server.js",
-  "scripts": { "start": "node src/server.js" },
+  "scripts": {
+    "start": "node src/server.js"
+  },
   "dependencies": {
     "adm-zip": "^0.5.12",
     "express": "^4.19.2",

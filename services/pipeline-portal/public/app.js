@@ -85,7 +85,7 @@ function renderCatalog() {
     catalogBox.innerHTML = `
       <article class="empty-card">
         <h3>No APIs in this view</h3>
-        <p>${apis.length ? 'Change the filter to see other API candidates.' : 'The pipeline backlog is empty. Use Reset backlog to make APIs selectable again for another demo run.'}</p>
+        <p>${apis.length ? 'Change the filter to see other API candidates.' : 'The pipeline backlog is empty. Use Reset delivery backlog to make APIs selectable again for another demo run.'}</p>
       </article>
     `;
     return;
@@ -369,7 +369,7 @@ qs('#resetBacklog').addEventListener('click', async () => {
   consoleBox.innerHTML = logRow({
     ts: new Date().toISOString(),
     level: 'INFO',
-    message: 'Pipeline backlog reset. All APIs are selectable again.'
+    message: 'Delivery backlog reset. All APIs are selectable again.'
   });
 
   selectedApiId = null;
